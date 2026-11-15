@@ -471,12 +471,12 @@ details[open] summary::before{content:"－ "}
       <div class="err" id="liveErr"></div>
       <div id="live">
         <div class="cmp">
-          <div class="cmpmap"><div id="lmap"><div class="mapload"><span class="spin"></span>Map...</div></div><div class="medot"></div></div>
+          <div class="cmpmap" id="cmpmap"><div id="lmap"><div class="mapload"><span class="spin"></span>Map...</div></div><div class="medot"></div></div>
           <svg id="liveSvg" viewBox="0 0 320 320"></svg>
         </div>
         <div class="turn" id="turn"></div>
         <p class="hint" id="mode" style="text-align:center"></p>
-        <div class="btns" style="justify-content:center"><button onclick="zoomMap(-1)" style="width:44px">－</button><button onclick="zoomMap(1)" style="width:44px">＋</button><button id="layerBtn" onclick="toggleLayer()">🗺️ Street</button><button onclick="downloadArea()">⬇️ Area save</button><button id="flipBtn" onclick="toggleFlip()">↕️ Direction ulti hai?</button></div>
+        <div class="btns" style="justify-content:center"><button onclick="zoomMap(-1)" style="width:44px">－</button><button onclick="zoomMap(1)" style="width:44px">＋</button><button onclick="fitLine()">↔️ Poori line</button><button id="layerBtn" onclick="toggleLayer()">🗺️ Street</button><button onclick="downloadArea()">⬇️ Area save</button><button id="flipBtn" onclick="toggleFlip()">↕️ Direction ulti hai?</button></div>
         <p class="hint" id="meInfo" style="text-align:center"></p>
         <p class="hint" id="dlInfo" style="text-align:center"></p>
       </div>
@@ -1014,7 +1014,7 @@ function cachedLayer(tpl,opt){
       const img=document.createElement('img'); img.alt=''; const url=this.getTileUrl(coords);
       img.onload=()=>{ if(img.src.startsWith('blob:')) setTimeout(()=>URL.revokeObjectURL(img.src),2000); done(null,img); };
       img.onerror=e=>done(e,img);
-      (async()=>{ let u=await tileFromCache(url); if(!u) u=await tileFetchSave(url); img.src=u||url; })();
+      if(navigator.onLine!==false){ img.src=url; } else { tileFromCache(url).then(u=>{ img.src=u||url; }); }
       return img;
     }
   });
@@ -1057,7 +1057,7 @@ async function initMap(){
   try{ await loadLeaflet(); }catch(_){ $('lmap').innerHTML='<div class="mapload">Map ke liye internet chahiye</div>'; return; }
   if(!LM){
     $('lmap').innerHTML='';
-    LM=L.map('lmap',{zoomControl:false,attributionControl:true,dragging:false,touchZoom:false,doubleClickZoom:false,scrollWheelZoom:false,boxZoom:false,keyboard:false,fadeAnimation:false,zoomAnimation:false});
+    LM=L.map('lmap',{zoomSnap:0.25,minZoom:6,maxZoom:19,zoomControl:false,attributionControl:true,dragging:false,touchZoom:false,doubleClickZoom:false,scrollWheelZoom:false,boxZoom:false,keyboard:false,fadeAnimation:false,zoomAnimation:false});
     LM.attributionControl.setPrefix(false);
     // Satellite: is area mein zoom 17 tak tasveer hai, us se upar bara kar ke dikhao
     LMl.sat=cachedLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:15,maxZoom:19,attribution:'Esri'});
@@ -1080,11 +1080,20 @@ function drawTowers(){
     L.circleMarker(b,{radius:8,color:'#0a0b0c',weight:3,fillColor:'#ff6b6b',fillOpacity:1,interactive:false})
   ]).addTo(LM);
 }
+let mapFit=true;
+// Aap ko beech mein rakh kar itna zoom karo ke ISP aur Client dono daire mein aa jayein
+function fitZoom(c){
+  const far=Math.max(distance(c,result.a), distance(c,result.b), 50);
+  const rPx=$('cmpmap')? $('cmpmap').offsetWidth*0.46 : 140;
+  const mpp0=156543.03*Math.cos(toRad(c.lat));
+  return Math.max(6, Math.min(17, Math.log2(mpp0*rPx/far)));
+}
 function centerMap(){
   if(!LM||!result) return;
-  const c = mePos ? [mePos.lat,mePos.lon] : [result.a.lat,result.a.lon];
-  LM.setView(c,LM._zoom||16,{animate:false});
+  const c = mePos || result.a;
+  LM.setView([c.lat,c.lon], mapFit? fitZoom(c) : (LM.getZoom()||16), {animate:false});
 }
+function fitLine(){ mapFit=true; centerMap(); toast('↔️ Poori line'); }
 // Is jagah satellite tasveer kitne zoom tak hai — Esri se pooch kar wahi tak asli tiles lo, aage bara kar ke dikhao
 let satChecked=null;
 async function satDepth(){
@@ -1103,7 +1112,7 @@ async function satDepth(){
   LMl.sat.options.maxNativeZoom=best;
   if(curLayer==='sat' && LM){ LM.removeLayer(LMl.sat); LMl.sat.addTo(LM); }
 }
-function zoomMap(d){ if(!LM) return; const z=Math.max(12,Math.min(19,LM.getZoom()+d)); LM.setZoom(z,{animate:false}); }
+function zoomMap(d){ if(!LM) return; mapFit=false; const z=Math.max(6,Math.min(19,Math.round(LM.getZoom())+d)); LM.setZoom(z,{animate:false}); }
 function toggleLayer(){
   if(!LM) return;
   LM.removeLayer(LMl[curLayer]); curLayer = curLayer==='sat'?'street':'sat'; LMl[curLayer].addTo(LM);
@@ -1115,7 +1124,7 @@ function startWatch(){
     meWatch=navigator.geolocation.watchPosition(p=>{
       const first=!mePos;
       mePos={lat:p.coords.latitude, lon:p.coords.longitude};
-      if(LM) LM.setView([mePos.lat,mePos.lon], LM.getZoom()||16, {animate:!first});
+      if(LM) LM.setView([mePos.lat,mePos.lon], (first&&mapFit)? fitZoom(mePos) : LM.getZoom(), {animate:false});
       if(result){
         const dB=distance(mePos,result.b), bB=bearing(mePos,result.b);
         $('meInfo').innerHTML='Client tower aap se <b>'+fmtDist(dB)+'</b>, <b>'+bB.toFixed(0)+'°</b> par · GPS ±'+Math.round(p.coords.accuracy)+' m';
