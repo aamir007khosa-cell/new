@@ -140,6 +140,8 @@
       <div id="live">
         <svg id="liveSvg" viewBox="0 0 320 320"></svg>
         <div class="turn" id="turn"></div>
+        <p class="hint" id="mode" style="text-align:center"></p>
+        <div class="btns" style="justify-content:center"><button id="flipBtn" onclick="toggleFlip()">↕️ Direction ulti hai? Theek karo</button></div>
       </div>
     </div>
   </div>
@@ -406,6 +408,23 @@ function useGPS(which){
 }
 
 // Live compass
+let flip=false;
+// Phone flat ho to upar wala kinara, khara ho to peeche wala camera — dono ki direction
+function phoneHeading(a,b,g){
+  const A=toRad(a),B=toRad(b),G=toRad(g);
+  const cA=Math.cos(A),sA=Math.sin(A),cB=Math.cos(B),sB=Math.sin(B),cG=Math.cos(G),sG=Math.sin(G);
+  let vx,vy;
+  if(Math.abs(b) > 50){ // phone khara (camera tower ki taraf)
+    vx = -(cG*sA*sB + cA*sG);
+    vy = -(sA*sG - cA*cG*sB);
+    $('mode').textContent='📷 Phone khara: peeche wala camera tower ki taraf karo';
+  } else {              // phone flat
+    vx = -sA*cB; vy = cA*cB;
+    $('mode').textContent='📱 Phone flat: upar wala kinara (speaker wali side) tower ki taraf karo';
+  }
+  return (toDeg(Math.atan2(vx,vy))+360)%360;
+}
+function toggleFlip(){ flip=!flip; $('flipBtn').textContent = flip ? '↕️ Direction ulti (ON)' : '↕️ Direction ulti hai? Theek karo'; }
 let liveOn=false;
 function startLive(){
   if(!result){ return; }
@@ -416,8 +435,9 @@ function startLive(){
     const handler = ev => {
       let h = null;
       if(typeof ev.webkitCompassHeading === 'number') h = ev.webkitCompassHeading;
-      else if(ev.absolute && ev.alpha!=null) h = (360-ev.alpha)%360;
+      else if(ev.absolute && ev.alpha!=null) h = phoneHeading(ev.alpha, ev.beta||0, ev.gamma||0);
       if(h===null) return;
+      if(flip) h = (h+180)%360;
       got=true; drawLive(h);
     };
     window.addEventListener('deviceorientationabsolute', handler);
