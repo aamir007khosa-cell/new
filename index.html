@@ -351,7 +351,7 @@ details[open] summary::before{content:"－ "}
         <h2><span class="ic">🧭</span> Seedhi line <span class="hint" style="margin:0 0 0 auto">phone ke saath ghoomta hai</span></h2>
         <svg id="map" viewBox="0 0 320 320" style="max-width:340px;margin:0 auto"></svg>
         <div class="turn" id="turn2" style="font-size:18px"></div>
-        <p class="hint">Phone flat pakdo aur ghumao — jab lime tower ka nishaan <b>upar wale lime teer</b> ke neeche aa jaye, phone ka upar wala kinara Client tower ki taraf hai.</p>
+        <p class="hint">Seedhi line = phone ka <b>front</b> (upar wala kinara). Phone ghumao jab tak <b>tower ka nishaan line par</b> na aa jaye — peela hissa batata hai kitna aur kis taraf ghumana hai.</p>
       </div>
       <div class="card">
         <h2><span class="ic">📍</span> Coordinates Mimosa mein bhejo</h2>
@@ -672,21 +672,33 @@ function dialMarkup(br, center){
   }
   // tower ki direction: line + nishaan
   const tx=160+128*Math.sin(toRad(br)), ty=160-128*Math.cos(toRad(br));
-  g+='<line class="tline" x1="160" y1="160" x2="'+tx.toFixed(1)+'" y2="'+ty.toFixed(1)+'" stroke="#c8f135" stroke-width="4" stroke-dasharray="8 7" stroke-linecap="round"/>';
   g+='<g transform="translate('+tx.toFixed(1)+' '+ty.toFixed(1)+')"><circle r="15" fill="#c8f135" stroke="#0a0b0c" stroke-width="3"/><path d="M0 -8 L-5 7 M0 -8 L5 7 M-3 2 L3 2" stroke="#0a0b0c" stroke-width="2.4" stroke-linecap="round" fill="none"/></g>';
   g+='</g>';
-  g+='<polygon points="160,0 149,22 171,22" fill="#c8f135"/><line x1="160" y1="22" x2="160" y2="40" stroke="#c8f135" stroke-width="3"/>';
+  // gap arc (phone ke front se tower tak) — har frame update hota hai
+  g+='<path class="garc" d="" fill="none" stroke="#fbbf24" stroke-width="8" stroke-linecap="round" opacity=".9"/>';
+  // phone ka front: hamesha seedha upar
+  g+='<line class="beam" x1="160" y1="96" x2="160" y2="20" stroke="#c8f135" stroke-width="6" stroke-linecap="round"/>';
+  g+='<polygon class="beamhead" points="160,0 147,24 173,24" fill="#c8f135"/>';
   g+='<circle class="dcore" cx="160" cy="160" r="62" fill="#0a0b0c" stroke="#24282b" stroke-width="2"/>';
   g+='<text class="dtop" x="160" y="160" fill="#f4f6f5" font-size="34" font-weight="900" text-anchor="middle">'+center[0]+'</text>';
   g+='<text class="dsub" x="160" y="186" fill="#8b9290" font-size="13" font-weight="700" text-anchor="middle">'+center[1]+'</text>';
   return g;
+}
+function setArc(svg, rel){
+  const a=svg.querySelector('.garc'); if(!a) return;
+  const ok=Math.abs(rel)<=3;
+  if(ok){ a.setAttribute('d',''); }
+  else{
+    const r=140, x0=160, y0=160-r, x1=160+r*Math.sin(toRad(rel)), y1=160-r*Math.cos(toRad(rel));
+    a.setAttribute('d','M'+x0+' '+y0+' A'+r+' '+r+' 0 0 '+(rel>0?1:0)+' '+x1.toFixed(1)+' '+y1.toFixed(1));
+  }
+  svg.querySelectorAll('.beam,.beamhead').forEach(e=>{ const c=ok?'#c8f135':'#f4f6f5'; e.getAttribute('stroke')?e.setAttribute('stroke',c):e.setAttribute('fill',c); });
 }
 const DIRS16=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
 function dir16(h){ return DIRS16[Math.round(h/22.5)%16]; }
 
 function drawMap(br,d){
   $('map').innerHTML = dialMarkup(br, [br.toFixed(0)+'°', fmtDist(d)]);
-  const ln=$('map').querySelector('.tline'); if(ln){ ln.setAttribute('pathLength','1'); ln.style.strokeDasharray='1'; ln.classList.add('draw'); setTimeout(()=>{ ln.style.strokeDasharray=''; ln.removeAttribute('pathLength'); ln.classList.remove('draw'); },1300); }
   if(hShow!==null) applyHeading(hShow);
   ensureCompass();
 }
@@ -973,7 +985,7 @@ function applyHeading(h){
   // Compass tab
   if(liveOn && $('liveDial').firstChild){
     const tb=tgtBearing(), rel=wrap180(tb-h), ok=Math.abs(rel)<=3;
-    $('ptr').classList.toggle('ok',ok);
+    $('ptr').classList.toggle('ok',ok); setArc($('liveDial'),rel);
     const top=$('liveDial').querySelector('.dtop'), sub=$('liveDial').querySelector('.dsub');
     const ht=h.toFixed(0)+'°'; if(top.textContent!==ht){ top.textContent=ht; sub.textContent=dir16(h); }
     top.setAttribute('fill', ok?'#c8f135':'#f4f6f5');
@@ -983,7 +995,7 @@ function applyHeading(h){
   }
   // Direction page
   if(result && $('turn2')){
-    const rel=wrap180(result.br-h), ok=Math.abs(rel)<=3;
+    const rel=wrap180(result.br-h), ok=Math.abs(rel)<=3; setArc($('map'),rel);
     const t2=ok?'✅ Seedha Client tower ki taraf':(rel>0?'➡️ '+rel.toFixed(0)+'° right':'⬅️ '+(-rel).toFixed(0)+'° left');
     if($('turn2').textContent!==t2){ $('turn2').textContent=t2; $('turn2').style.color=ok?'var(--lime)':'var(--txt)'; }
   }
