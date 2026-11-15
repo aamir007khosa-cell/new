@@ -20,6 +20,7 @@
   label{display:block;font-size:13px;color:var(--mut);margin:8px 0 4px}
   input{width:100%;background:#0b0e12;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:11px 12px;font-size:16px}
   input:focus{outline:none;border-color:var(--acc)}
+  select{width:100%;background:#0b0e12;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:11px 12px;font-size:16px}
   .row{display:flex;gap:8px}
   .row > div{flex:1}
   button{background:#232a35;color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;cursor:pointer}
@@ -100,6 +101,38 @@
     </div>
 
     <div class="card">
+      <h2>🗼 Tower height design</h2>
+      <p class="hint">Rastay ki zameen ki unchai satellite data se lega aur bataye ga ke kitne feet ka tower chahiye.</p>
+      <div class="row">
+        <div><label>Rastay mein darakht/building (ft)</label><input id="clut" type="number" inputmode="decimal" value="35"></div>
+        <div><label>Frequency</label>
+          <select id="freq">
+            <option value="5.8" selected>5.8 GHz</option>
+            <option value="5.2">5.2 GHz</option>
+            <option value="2.4">2.4 GHz</option>
+            <option value="60">60 GHz</option>
+          </select></div>
+      </div>
+      <div class="row">
+        <div><label>ISP tower kitna hai/hoga (ft)</label><input id="ispH" type="number" inputmode="decimal" placeholder="jaise 50"></div>
+      </div>
+      <div class="btns"><button class="main" style="background:#3a7bd5;color:#fff" onclick="design()">Tower height nikalo</button></div>
+      <div class="err" id="dErr"></div>
+      <div id="dOut" style="display:none">
+        <div class="big" style="margin-top:10px">
+          <div class="stat"><div class="k">ISP tower</div><div class="v" id="dIsp">–</div><div class="s">feet</div></div>
+          <div class="stat"><div class="k">Client tower chahiye</div><div class="v" id="dCli">–</div><div class="s">feet (kam se kam)</div></div>
+        </div>
+        <p class="hint" id="dNote" style="margin-top:8px"></p>
+        <svg id="prof" viewBox="0 0 340 200" style="margin-top:6px;background:#0b0e12;border-radius:10px"></svg>
+        <p class="hint" style="margin-top:6px"><span style="color:#8b6b3d">■</span> zameen &nbsp;<span style="color:#2f7d3a">■</span> darakht &nbsp;<span style="color:#f2b33d">━</span> signal line &nbsp;<span style="color:#4ea1ff">┄</span> Fresnel zone (60%)</p>
+        <h2 style="margin-top:12px">Doosre options</h2>
+        <ul class="list" id="dTable"></ul>
+        <p class="hint" style="margin-top:8px">Zameen ka data satellite se hai (±5–10 m farq ho sakta hai). Darakht/building ki unchai aap ke daale hue number se li gayi hai, is liye site survey mein sab se ooncha darakht dekh kar number theek daalo. Safety ke liye 5–10 ft extra rakho.</p>
+      </div>
+    </div>
+
+    <div class="card">
       <h2>🧭 Live compass</h2>
       <p class="hint">Yeh tab chalega jab yeh page phone ke <b>Chrome</b> mein khula ho. Phone flat pakdo aur tower se 5–10 qadam door raho.</p>
       <div class="btns"><button onclick="startLive()">Live compass chalao</button></div>
@@ -171,16 +204,7 @@ function calc(){
   $('rev').textContent = rv.toFixed(1)+'° ('+dirName(rv)+')';
   $('mag').textContent = ((br-2+360)%360).toFixed(1)+'°';
 
-  // Tilt (earth curvature k=4/3 ke saath)
-  const ga=num('ga'), ha=num('ha'), gb=num('gb'), hb=num('hb');
-  if(ga!==null && ha!==null && gb!==null && hb!==null){
-    const h1=(ga+ha)*0.3048, h2=(gb+hb)*0.3048, k=4/3;
-    const tA = toDeg((h2-h1)/d - d/(2*k*R));
-    const tB = toDeg((h1-h2)/d - d/(2*k*R));
-    const t = x => (x>=0?'+':'')+x.toFixed(2)+'° '+(x>=0?'(upar)':'(neeche)');
-    $('tiltA').textContent=t(tA); $('tiltB').textContent=t(tB);
-    $('tiltRow').style.display=''; $('tiltRowB').style.display='';
-  } else { $('tiltRow').style.display='none'; $('tiltRowB').style.display='none'; }
+  calcTilt();
 
   // Fresnel zone radius at midpoint, 5.8 GHz
   const lam = 3e8/5.8e9;
@@ -224,6 +248,146 @@ function drawMap(br,d){
   s += `<text x="160" y="185" fill="#4ea1ff" font-size="12" text-anchor="middle">ISP</text>`;
   s += `<text x="160" y="338" fill="#f2b33d" font-size="15" font-weight="800" text-anchor="middle">${br.toFixed(1)}° ${dirName(br)}</text>`;
   $('map').innerHTML = s;
+}
+
+function calcTilt(){
+  if(!result) return; const d=result.d;
+  const ga=num('ga'), ha=num('ha'), gb=num('gb'), hb=num('hb');
+  if(ga!==null && ha!==null && gb!==null && hb!==null){
+    const h1=(ga+ha)*0.3048, h2=(gb+hb)*0.3048, k=4/3;
+    const tA = toDeg((h2-h1)/d - d/(2*k*R));
+    const tB = toDeg((h1-h2)/d - d/(2*k*R));
+    const t = x => (x>=0?'+':'')+x.toFixed(2)+'° '+(x>=0?'(upar)':'(neeche)');
+    $('tiltA').textContent=t(tA); $('tiltB').textContent=t(tB);
+    $('tiltRow').style.display=''; $('tiltRowB').style.display='';
+  } else { $('tiltRow').style.display='none'; $('tiltRowB').style.display='none'; }
+
+}
+
+// ===== Tower height design =====
+const FT = 0.3048;
+let profCache = {key:null, elev:null};
+
+async function getProfile(a,b,N){
+  const key = [a.lat,a.lon,b.lat,b.lon,N].map(x=>(+x).toFixed(6)).join(',');
+  if(profCache.key===key) return profCache.elev;
+  const lats=[], lons=[];
+  for(let i=0;i<N;i++){
+    const t=i/(N-1);
+    lats.push((a.lat+(b.lat-a.lat)*t).toFixed(6));
+    lons.push((a.lon+(b.lon-a.lon)*t).toFixed(6));
+  }
+  const url='https://api.open-meteo.com/v1/elevation?latitude='+lats.join(',')+'&longitude='+lons.join(',');
+  const r = await fetch(url);
+  if(!r.ok) throw new Error('http '+r.status);
+  const j = await r.json();
+  if(!j.elevation || j.elevation.length!==N) throw new Error('data');
+  profCache={key, elev:j.elevation};
+  return j.elevation;
+}
+
+// Har point par line ko kitna ooncha hona chahiye (meter, MSL)
+function needLine(elev, D, clutM, fGHz){
+  const N=elev.length, out=[];
+  const k=4/3, Re=6371;
+  for(let i=1;i<N-1;i++){
+    const t=i/(N-1), d1=D*t/1000, d2=D*(1-t)/1000;      // km
+    const bulge = d1*d2/(12.742*k);                      // m
+    const F1 = 17.32*Math.sqrt(d1*d2/(fGHz*(d1+d2)));    // m
+    out.push({t, terr:elev[i], need: elev[i]+clutM+bulge+0.6*F1, bulge, F1});
+  }
+  return out;
+}
+// ISP height (m) diya ho to client ki kam se kam height (m)
+function clientNeeded(pts, gA, gB, hA){
+  const HA=gA+hA; let HB=-Infinity, worst=null;
+  for(const p of pts){
+    const hb=(p.need - HA*(1-p.t))/p.t;
+    if(hb>HB){HB=hb; worst=p;}
+  }
+  return {h: Math.max(0, HB-gB), worst};
+}
+function equalHeight(pts,gA,gB){
+  for(let hf=0; hf<=600; hf+=1){
+    const h=hf*FT, HA=gA+h, HB=gB+h;
+    if(pts.every(p=> HA+(HB-HA)*p.t >= p.need)) return hf;
+  }
+  return null;
+}
+const ceil5 = ft => Math.ceil(ft/5)*5;
+
+async function design(){
+  const e=$('dErr'); e.textContent='';
+  if(!result){ e.textContent='Pehle upar Calculate karo.'; return; }
+  const {a,b,d}=result;
+  const clutFt=num('clut')??0, f=parseFloat($('freq').value);
+  e.textContent='Zameen ka data le raha hai...';
+  let elev;
+  try{ elev = await getProfile(a,b,100); }
+  catch(_){ e.textContent='Zameen ka data nahi mila. Internet check karo, aur yeh app github link (aamir007khosa-cell.github.io/new) se kholo — Claude ke andar yeh kaam nahi karta.'; return; }
+  e.textContent='';
+  const gA=elev[0], gB=elev[elev.length-1];
+  const pts=needLine(elev,d,clutFt*FT,f);
+
+  let ispFt=num('ispH');
+  const eq=equalHeight(pts,gA,gB);
+  if(ispFt===null) ispFt = eq!==null ? ceil5(eq) : 100;
+  const res=clientNeeded(pts,gA,gB,ispFt*FT);
+  const cliFt=res.h/FT;
+
+  $('dIsp').textContent=Math.round(ispFt);
+  const minFt = Math.max(ceil5(cliFt), ceil5(clutFt+10));
+  if(cliFt>400){
+    $('dCli').textContent='400+';
+    $('dNote').innerHTML='⚠️ Is ISP height ke saath link mushkil hai. ISP tower ooncha karo — neeche options dekho.';
+  } else {
+    $('dCli').textContent=minFt;
+    const wd=(res.worst.t*d);
+    $('dNote').innerHTML='Sab se bari rukawat ISP se <b>'+fmtDist(wd)+'</b> door hai. Zameen ka farq: ISP '+Math.round(gA/FT)+' ft, Client '+Math.round(gB/FT)+' ft (samandar se).';
+  }
+
+  // Options table
+  let rows='';
+  if(eq!==null) rows+=`<li><span>Dono tower barabar</span><b>${ceil5(eq)} ft + ${ceil5(eq)} ft</b></li>`;
+  [20,30,40,50,60,80,100,120].forEach(h=>{
+    const c=clientNeeded(pts,gA,gB,h*FT).h/FT;
+    const cTxt = c>400 ? 'mumkin nahi' : Math.max(ceil5(c),ceil5(clutFt+10))+' ft';
+    rows+=`<li><span>ISP ${h} ft ho to Client</span><b>${cTxt}</b></li>`;
+  });
+  $('dTable').innerHTML=rows;
+
+  // Tilt bhi bharo
+  $('ga').value=Math.round(gA/FT); $('gb').value=Math.round(gB/FT);
+  $('ha').value=Math.round(ispFt); $('hb').value=cliFt>400?'':minFt;
+
+  calcTilt();
+  save();
+  drawProfile(elev,pts,gA+ispFt*FT,gB+(cliFt>400?cliFt:minFt)*FT,clutFt*FT,d);
+  $('dOut').style.display='';
+}
+
+function drawProfile(elev,pts,HA,HB,clutM,D){
+  const W=340,H=200,pl=8,pr=8,pt=12,pb=22, N=elev.length;
+  let lo=Math.min(...elev)-5, hi=Math.max(HA,HB,...pts.map(p=>p.need))+5;
+  const x=i=>pl+(W-pl-pr)*i/(N-1);
+  const y=m=>pt+(H-pt-pb)*(1-(m-lo)/(hi-lo));
+  // zameen (curvature ke saath)
+  const bul=i=>{ if(i===0||i===N-1) return 0; return pts[i-1].bulge; };
+  let g=`<polygon fill="#8b6b3d" points="${x(0)},${y(lo)} ${elev.map((e,i)=>x(i)+','+y(e+bul(i))).join(' ')} ${x(N-1)},${y(lo)}"/>`;
+  g+=`<polyline fill="none" stroke="#2f7d3a" stroke-width="3" points="${elev.map((e,i)=>x(i)+','+y(e+bul(i)+((i===0||i===N-1)?0:clutM))).join(' ')}"/>`;
+  // Fresnel
+  const top=[],bot=[];
+  for(let i=1;i<N-1;i++){ const t=i/(N-1), L=HA+(HB-HA)*t, f=0.6*pts[i-1].F1; top.push(x(i)+','+y(L+f)); bot.push(x(i)+','+y(L-f)); }
+  g+=`<polyline fill="none" stroke="#4ea1ff" stroke-dasharray="4 3" points="${x(0)},${y(HA)} ${bot.join(' ')} ${x(N-1)},${y(HB)}"/>`;
+  g+=`<polyline fill="none" stroke="#4ea1ff" stroke-dasharray="4 3" points="${x(0)},${y(HA)} ${top.join(' ')} ${x(N-1)},${y(HB)}"/>`;
+  // towers + line
+  g+=`<line x1="${x(0)}" y1="${y(elev[0])}" x2="${x(0)}" y2="${y(HA)}" stroke="#e8eaed" stroke-width="3"/>`;
+  g+=`<line x1="${x(N-1)}" y1="${y(elev[N-1])}" x2="${x(N-1)}" y2="${y(HB)}" stroke="#e8eaed" stroke-width="3"/>`;
+  g+=`<line x1="${x(0)}" y1="${y(HA)}" x2="${x(N-1)}" y2="${y(HB)}" stroke="#f2b33d" stroke-width="2"/>`;
+  g+=`<text x="${pl+2}" y="${H-6}" fill="#4ea1ff" font-size="11">ISP</text>`;
+  g+=`<text x="${W-pr-2}" y="${H-6}" fill="#ff5c5c" font-size="11" text-anchor="end">Client</text>`;
+  g+=`<text x="${W/2}" y="${H-6}" fill="#9aa3ae" font-size="11" text-anchor="middle">${fmtDist(D)}</text>`;
+  $('prof').innerHTML=g;
 }
 
 // GPS
@@ -279,8 +443,8 @@ function drawLive(h){
 }
 
 // Pichli values yaad rakho (sirf isi phone par)
-function save(){ try{ ['a','b','ga','ha','gb','hb'].forEach(k=>localStorage.setItem('tdf_'+k,$(k).value)); }catch(_){} }
-try{ ['a','b','ga','ha','gb','hb'].forEach(k=>{ const v=localStorage.getItem('tdf_'+k); if(v) $(k).value=v; }); }catch(_){}
+function save(){ try{ ['a','b','ga','ha','gb','hb','clut','ispH'].forEach(k=>localStorage.setItem('tdf_'+k,$(k).value)); }catch(_){} }
+try{ ['a','b','ga','ha','gb','hb','clut','ispH'].forEach(k=>{ const v=localStorage.getItem('tdf_'+k); if(v) $(k).value=v; }); }catch(_){}
 </script>
 </body>
 </html>
