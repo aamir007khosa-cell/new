@@ -222,6 +222,28 @@ details[open] summary::before{content:"－ "}
 .aimkv b{color:var(--txt);font-weight:800}
 #mapBox{height:400px!important}
 #mapBox,#mapBox .leaflet-container{touch-action:none!important}
+
+/* Fullscreen map + tap */
+.mfab{position:absolute;z-index:1100;top:10px;right:10px;width:42px;height:42px;padding:0;border-radius:50%;background:rgba(10,11,12,.85);border:1px solid var(--line);color:var(--txt);font-size:18px;display:grid;place-items:center}
+.fsui{display:none}
+#mapBox.fs{position:fixed!important;inset:0;height:auto!important;border-radius:0;margin:0;z-index:2000}
+#mapBox.fs #fsBtn{display:none}
+#mapBox.fs .fsui{display:block}
+.fsturn{position:absolute;z-index:1100;top:calc(12px + env(safe-area-inset-top));left:12px;right:64px;background:rgba(10,11,12,.88);border:1px solid var(--line);border-radius:999px;padding:10px 14px;font-weight:900;font-size:16px;text-align:center}
+.fsx{top:calc(12px + env(safe-area-inset-top))}
+.fsbar{position:absolute;z-index:1100;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom));display:flex;gap:8px}
+.fsbar button{background:rgba(10,11,12,.9);white-space:nowrap}
+.taphint{position:absolute;z-index:1000;left:10px;bottom:10px;background:rgba(10,11,12,.8);border-radius:999px;padding:5px 10px;font-size:11px;color:var(--mut);pointer-events:none;white-space:nowrap}
+#mapBox.fs .taphint{bottom:calc(76px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%)}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#141617!important;color:var(--txt)!important;border:1px solid var(--line);box-shadow:0 8px 24px rgba(0,0,0,.5)!important}
+.leaflet-popup-content{margin:12px 14px!important;font-family:inherit}
+.pick b{display:block;font-size:14px;margin-bottom:2px}
+.pick small{color:var(--mut);display:block;margin-bottom:10px}
+.pick .pb{display:flex;gap:6px}
+.pick button{padding:9px 12px;font-size:13px}
+.pick button.isp{background:#fff;color:#0a0b0c;border:none}
+.pick button.cli{background:#ff6b6b;color:#0a0b0c;border:none}
+.leaflet-container a.leaflet-popup-close-button{color:var(--mut)!important}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -512,7 +534,15 @@ details[open] summary::before{content:"－ "}
           </div>
         </div>
         <p class="hint" id="mode" style="text-align:center"></p>
-        <div id="mapBox"><div id="lmap"><div class="mapload"><span class="spin"></span>Map...</div></div></div>
+        <div id="mapBox"><div id="lmap"><div class="mapload"><span class="spin"></span>Map...</div></div>
+          <button class="mfab" id="fsBtn" onclick="toggleFs()" title="Full screen">⛶</button>
+          <div class="fsui">
+            <div class="fsturn" id="fsTurn">--</div>
+            <button class="mfab fsx" onclick="toggleFs()">✕</button>
+            <div class="fsbar"><button onclick="fitLine()">↔️ Sab</button><button onclick="followMe()">📍 Main</button><button onclick="toggleLayer()" id="layerBtn2">🛰️ Map</button></div>
+          </div>
+          <div class="taphint">👆 Map par tap karo — tower ki jagah set karo</div>
+        </div>
         <div class="btns" style="justify-content:center">
           <button onclick="fitLine()">↔️ Sab dikhao</button><button onclick="followMe()">📍 Meri jagah</button><button id="layerBtn" onclick="toggleLayer()">🛰️ Clarity</button><button onclick="downloadArea()">⬇️ Area save</button><button id="flipBtn" onclick="toggleFlip()">↕️ Ulti?</button>
         </div>
@@ -929,7 +959,7 @@ function applyHeading(h){
   const ok=Math.abs(rel)<=3; $('ptr').classList.toggle('ok',ok);
   const cone=document.getElementById('meCone'); if(cone) cone.style.transform='rotate('+h+'deg)';
   let txt; if(ok) txt='✅ Seedha tower ki taraf'; else if(rel>0) txt='➡️ '+rel.toFixed(0)+'° right ghumao'; else txt='⬅️ '+(-rel).toFixed(0)+'° left ghumao';
-  if(txt!==lastTurn){ lastTurn=txt; const t=$('turn'); t.textContent=txt; t.style.color=ok?'var(--lime)':'var(--txt)'; }
+  if(txt!==lastTurn){ lastTurn=txt; const t=$('turn'); t.textContent=txt; t.style.color=ok?'var(--lime)':'var(--txt)'; const f=$('fsTurn'); f.textContent=txt; f.style.color=t.style.color; }
   const hn=h.toFixed(0)+'°'; if($('hNow').textContent!==hn) $('hNow').textContent=hn;
 }
 window.nativeHeading=function(h,up){ setHeading(h); const m=$('mode'); const tx=up?'📷 Phone khara — peeche wala camera tower ki taraf':'📱 Phone flat — upar wala kinara tower ki taraf'; if(m.textContent!==tx) m.textContent=tx; };
@@ -1116,6 +1146,7 @@ async function initMap(){
     LMl.street=cachedLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxNativeZoom:19,maxZoom:19,attribution:'© OSM'});
     LMl[curLayer].addTo(LM);
     LM.on('dragstart',()=>{ mapFollow=false; });
+    LM.on('click',mapClicked);
   }
   drawTowers(); LM.invalidateSize(); fitLine(true); satDepth();
 }
@@ -1314,6 +1345,38 @@ async function rdSendLoc(side){
 }
 try{ const sv=JSON.parse(localStorage.getItem('tdf_rd')||'null'); if(sv){ $('rdIp').value=sv.ip; $('rdUser').value=sv.u; } }catch(_){}
 
+
+
+// ===== Fullscreen map + tap se tower set karo =====
+let fsHome=null;
+function toggleFs(){
+  const m=$('mapBox'); const on=!m.classList.contains('fs');
+  // Card ke andar 'fixed' kaam nahi karta, is liye full screen par map ko body mein le jao
+  if(on){ fsHome={parent:m.parentNode, next:m.nextSibling}; document.body.appendChild(m); }
+  else if(fsHome){ fsHome.parent.insertBefore(m, fsHome.next); }
+  m.classList.toggle('fs',on); document.body.style.overflow=on?'hidden':'';
+  if(LM) setTimeout(()=>{ LM.invalidateSize(); if(!on) fitLine(true); },60);
+}
+function mapClicked(e){
+  const lat=e.latlng.lat, lon=e.latlng.lng;
+  const html='<div class="pick"><b>Yeh jagah kaun sa tower hai?</b><small>'+lat.toFixed(6)+', '+lon.toFixed(6)+'</small>'+
+    '<div class="pb"><button class="isp" onclick="pickTower(\'a\','+lat+','+lon+')">ISP tower</button><button class="cli" onclick="pickTower(\'b\','+lat+','+lon+')">Client tower</button></div></div>';
+  L.popup({closeButton:true,autoPan:true,maxWidth:260}).setLatLng(e.latlng).setContent(html).openOn(LM);
+}
+function pickTower(k,lat,lon){
+  $(k).value=lat.toFixed(6)+', '+lon.toFixed(6);
+  if(LM) LM.closePopup();
+  if(parse($('a').value) && parse($('b').value)){
+    const fs=$('mapBox').classList.contains('fs');
+    const t=toast; toast=()=>{}; calc(); toast=t;
+    if(LM){ drawTowers(); if(!fs) fitLine(true); }
+    setTarget(tgt);
+    toast((k==='a'?'ISP':'Client')+' tower set ho gaya ✅');
+  } else {
+    toast((k==='a'?'ISP':'Client')+' set — ab doosra tower bhi tap karo');
+  }
+  save();
+}
 
 // ===== UI helpers =====
 const TITLES={dir:'Direction',h:'Tower height',s:'Expected signal',f:'Frequency planner',c:'Live compass'};
