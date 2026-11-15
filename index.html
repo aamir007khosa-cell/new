@@ -538,6 +538,7 @@ details[open] summary::before{content:"－ "}
           <label>Password</label><input id="rpass-isp" type="password" placeholder="Radio ka password" autocomplete="off">
           <div class="btns" style="margin-top:10px"><button class="main" onclick="devConnect('isp')">Jodo</button></div>
           <div class="err" id="rerr-isp"></div>
+          <p class="hint">🔒 Login phone mein mehfooz save hoga — agli dafa app khud jod degi.</p>
         </div>
         <div id="rl-isp" style="display:none">
           <div class="rssi" style="margin:0"><div class="rv" id="rr-isp" style="font-size:44px">--</div><div class="ru">dBm</div></div>
@@ -545,7 +546,7 @@ details[open] summary::before{content:"－ "}
           <p class="hint" id="rn-isp" style="text-align:center"></p>
           <div class="kv" id="rk-isp"></div>
           <p class="hint" id="rloc-isp" style="margin-top:10px;line-height:1.6"></p>
-          <div class="btns"><button class="beepBtn" onclick="rdBeepToggle()">🔊 Beep</button><button onclick="devDisconnect('isp')">✖ Band karo</button></div>
+          <div class="btns"><button class="beepBtn" onclick="rdBeepToggle()">🔊 Beep</button><button onclick="devDisconnect('isp')">✖ Band karo</button><button onclick="devForget('isp')">🗑️ Login bhool jao</button></div>
         </div>
       </div>
       <div style="height:1px;background:var(--line);margin:16px 0"></div>
@@ -556,6 +557,7 @@ details[open] summary::before{content:"－ "}
           <label>Password</label><input id="rpass-client" type="password" placeholder="Radio ka password" autocomplete="off">
           <div class="btns" style="margin-top:10px"><button class="main" onclick="devConnect('client')">Jodo</button></div>
           <div class="err" id="rerr-client"></div>
+          <p class="hint">🔒 Login phone mein mehfooz save hoga — agli dafa app khud jod degi.</p>
         </div>
         <div id="rl-client" style="display:none">
           <div class="rssi" style="margin:0"><div class="rv" id="rr-client" style="font-size:44px">--</div><div class="ru">dBm</div></div>
@@ -563,7 +565,7 @@ details[open] summary::before{content:"－ "}
           <p class="hint" id="rn-client" style="text-align:center"></p>
           <div class="kv" id="rk-client"></div>
           <p class="hint" id="rloc-client" style="margin-top:10px;line-height:1.6"></p>
-          <div class="btns"><button class="beepBtn" onclick="rdBeepToggle()">🔊 Beep</button><button onclick="devDisconnect('client')">✖ Band karo</button></div>
+          <div class="btns"><button class="beepBtn" onclick="rdBeepToggle()">🔊 Beep</button><button onclick="devDisconnect('client')">✖ Band karo</button><button onclick="devForget('client')">🗑️ Login bhool jao</button></div>
         </div>
       </div>
     </div>
@@ -1103,6 +1105,7 @@ function showLock(msg){
 }
 function showApp(exp){
   $('lock').style.display='none'; $('app').style.display=''; $('nav').style.display='';
+  setTimeout(autoConnectRadios, 300);
   const left=exp-Date.now()/1000, dd=Math.floor(left/86400), hh=Math.floor(left%86400/3600);
   $('licBar').textContent='● '+(dd>0? dd+'d '+hh+'h' : hh+'h')+' baqi';
 }
@@ -1324,31 +1327,55 @@ function findLatLon(o){
     else if(lon===null && /(lon|lng)/i.test(k) && !isNaN(parseFloat(v))) lon=parseFloat(v); } })(o);
   return (lat!==null && lon!==null && !(lat===0 && lon===0)) ? {lat,lon} : null;
 }
-async function devConnect(role){
+function devStatus(role,txt,col){ const e=$('rst-'+role); e.textContent=txt; e.style.color=col||''; }
+function devShowLive(role){ $('rf-'+role).style.display='none'; $('rl-'+role).style.display=''; }
+// silent=true: app khulte waqt saved login se khud jodna
+async function devConnect(role, silent){
   const dev=RADIOS[role], e=$('rerr-'+role); e.textContent='';
-  if(!hasBridge()){ e.textContent='Yeh feature sirf Tower Finder app (APK) mein chalta hai.'; return; }
+  if(!hasBridge()){ if(!silent) e.textContent='Yeh feature sirf Tower Finder app (APK) mein chalta hai.'; return; }
   const ip=$('rip-'+role).value.trim(), u=$('ruser-'+role).value.trim(), pw=$('rpass-'+role).value;
   if(!ip||!u||!pw){ e.textContent='IP, username aur password likho.'; return; }
   dev.ip=ip; dev.auth=btoa(u+':'+pw);
   $('rst-'+role).innerHTML='<span class="spin"></span>';
   const r=await devReq(dev,'GET','/restconf/data/mimosa-wifi-network:statistics/client-statistics');
-  $('rst-'+role).textContent='';
-  if(r.status===200){
-    try{ localStorage.setItem('tdf_rd_'+role,JSON.stringify({ip,u})); }catch(_){}
-    dev.on=true; dev.tick=0; dev.d={};
-    $('rf-'+role).style.display='none'; $('rl-'+role).style.display='';
-    $('rst-'+role).textContent='● Juda hua'; $('rst-'+role).style.color='var(--lime)';
-    devLoop(dev); toast('✅ '+dev.label+' jud gaya');
-  } else if(r.status===401||r.status===403) e.textContent='Username ya password ghalat hai.';
-  else e.textContent='Radio nahi mila ('+r.status+'). IP check karo aur phone radio ke network par ho.';
+  if(r.status===401||r.status===403){ devStatus(role,''); e.textContent='Username ya password ghalat hai.'; return; }
+  if(r.status!==200 && !silent){ devStatus(role,''); e.textContent='Radio nahi mila ('+r.status+'). IP check karo aur phone radio ke network par ho.'; return; }
+  // Login yaad rakho (mehfooz, Android Keystore)
+  try{ localStorage.setItem('tdf_rd_'+role,JSON.stringify({ip,u})); }catch(_){}
+  try{ if(Android.saveSecret) Android.saveSecret('rd_'+role, JSON.stringify({ip,u,pw})); }catch(_){}
+  dev.on=true; dev.tick=0; dev.fails= r.status===200?0:3; dev.d={};
+  devShowLive(role);
+  if(r.status===200){ devStatus(role,'● Juda hua','var(--lime)'); if(!silent) toast('✅ '+dev.label+' jud gaya'); }
+  else devStatus(role,'● Offline — dobara jod raha hai','#fbbf24');
+  clearTimeout(dev.timer); devLoop(dev);
 }
-function devDisconnect(role){ const dev=RADIOS[role]; dev.on=false; clearTimeout(dev.timer); $('rl-'+role).style.display='none'; $('rf-'+role).style.display=''; $('rst-'+role).textContent=''; renderRadios(); }
+function devDisconnect(role){ const dev=RADIOS[role]; dev.on=false; clearTimeout(dev.timer); $('rl-'+role).style.display='none'; $('rf-'+role).style.display=''; devStatus(role,''); renderRadios(true); }
+function devForget(role){
+  devDisconnect(role);
+  try{ if(Android.delSecret) Android.delSecret('rd_'+role); }catch(_){}
+  try{ localStorage.removeItem('tdf_rd_'+role); }catch(_){}
+  $('rpass-'+role).value=''; toast('Login mita diya');
+}
 async function devLoop(dev){
   if(!dev.on) return;
   const t0=Date.now();
-  try{ await devPoll(dev); }catch(_){}
+  try{ await devPoll(dev); }catch(_){ dev.d.ok=false; }
+  const role=dev.role;
+  if(dev.d.ok){ if(dev.fails>=3) { devStatus(role,'● Juda hua','var(--lime)'); toast('✅ '+dev.label+' dobara jud gaya'); } dev.fails=0; }
+  else { dev.fails=(dev.fails||0)+1; if(dev.fails===3) devStatus(role,'● Offline — dobara jod raha hai','#fbbf24'); }
   renderRadios();
-  if(dev.on) dev.timer=setTimeout(()=>devLoop(dev), Math.max(100, 400-(Date.now()-t0)));
+  const wait = dev.fails>=3 ? 3000 : Math.max(100, 400-(Date.now()-t0));
+  if(dev.on) dev.timer=setTimeout(()=>devLoop(dev), wait);
+}
+// App khulte hi saved radios khud jodo
+function autoConnectRadios(){
+  if(!hasBridge() || !Android.getSecret) return;
+  ['isp','client'].forEach(role=>{
+    if(RADIOS[role].on) return;
+    let v=''; try{ v=Android.getSecret('rd_'+role); }catch(_){}
+    if(!v) return;
+    try{ const c=JSON.parse(v); $('rip-'+role).value=c.ip; $('ruser-'+role).value=c.u; $('rpass-'+role).value=c.pw; devConnect(role,true); }catch(_){}
+  });
 }
 async function devPoll(dev){
   const t=++dev.tick, D=dev.d;
@@ -1390,8 +1417,8 @@ function devPos(role){
   return null;
 }
 let rLastRender=0;
-function renderRadios(){
-  const now=Date.now(); if(now-rLastRender<250) return; rLastRender=now;
+function renderRadios(force){
+  const now=Date.now(); if(!force && now-rLastRender<250) return; rLastRender=now;
   ['isp','client'].forEach(role=>{
     const dev=RADIOS[role], D=dev.d; if(!dev.on) return;
     const v=D.node? rdRssi(D.node.rssi) : null;
@@ -1404,7 +1431,7 @@ function renderRadios(){
     let li='📍 '+(pos? pos.p.lat.toFixed(5)+', '+pos.p.lon.toFixed(5)+' <span style="color:var(--mut)">('+pos.src+')</span>' : 'Location nahi');
     if(pos&&other){ const br=bearing(pos.p,other.p); li+='<br>🎯 Dish ki direction: <b style="color:var(--lime)">'+br.toFixed(1)+'° '+dir16(br)+'</b> · '+fmtDist(distance(pos.p,other.p)); }
     $('rloc-'+role).innerHTML=li;
-    $('rn-'+role).textContent=(D.clients>1?D.clients+' clients · ':'')+'Signal: '+(v==null?'link nahi':'is radio par aa raha hai');
+    $('rn-'+role).textContent = dev.fails>=3 ? 'Radio se rabta nahi — khud dobara koshish ho rahi hai' : ((D.clients>1?D.clients+' clients · ':'')+'Signal: '+(v==null?'link nahi':'is radio par aa raha hai'));
   });
   renderLinkSummary(); renderStrip();
 }
