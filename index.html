@@ -164,6 +164,21 @@ details[open] summary::before{content:"－ "}
 .lite .tower .waves{display:none}
 .lite .page.on .hint,.lite .page.on label,.lite .pop .stat .k,.lite .pop .stat .s{animation:none}
 .lite .nav{box-shadow:none}
+
+/* ===== Map ===== */
+#lmap{height:320px;border-radius:18px;overflow:hidden;background:var(--card2);position:relative;z-index:0;contain:paint}
+.mapload{position:absolute;inset:0;display:grid;place-items:center;color:var(--mut);font-size:13px}
+.leaflet-container{background:#111;font-family:inherit}
+.leaflet-control-attribution{background:rgba(10,11,12,.7)!important;color:#777!important;font-size:9px!important}
+.leaflet-control-attribution a{color:#999!important}
+.flow{animation:flow 1s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-20}}
+.leaflet-container svg{width:initial;height:initial;display:initial}
+.leaflet-tooltip.tt{background:#0a0b0c;color:#f4f6f5;border:1px solid #c8f135;border-radius:999px;font-weight:800;font-size:11px;padding:2px 8px;box-shadow:none}
+.leaflet-tooltip.tt::before{display:none}
+.me .cone{position:absolute;left:0;top:0;width:70px;height:70px;border-radius:50%;background:conic-gradient(from -28deg,rgba(200,241,53,.6) 0deg 56deg,transparent 56deg);-webkit-mask:radial-gradient(circle,#000 25%,transparent 70%);mask:radial-gradient(circle,#000 25%,transparent 70%);transition:transform .15s linear;opacity:0}
+.me .cone.on{opacity:1}
+.me .medot{position:absolute;left:26px;top:26px;width:18px;height:18px;border-radius:50%;background:#3b82f6;border:3px solid #fff;box-shadow:0 0 0 7px rgba(59,130,246,.25)}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -413,6 +428,17 @@ details[open] summary::before{content:"－ "}
         <div class="btns" style="justify-content:center"><button id="flipBtn" onclick="toggleFlip()">↕️ Direction ulti hai? Theek karo</button></div>
       </div>
     </div>
+  <div class="card hasres">
+      <h2><span class="ic">🗺️</span> Map</h2>
+      <div id="lmap"><div class="mapload"><span class="spin"></span>Map load ho raha hai...</div></div>
+      <div class="btns">
+        <button id="layerBtn" onclick="toggleLayer()">🗺️ Street map</button>
+        <button onclick="centerMe()">📍 Meri jagah</button>
+        <button onclick="fitTowers()">↔️ Dono towers</button>
+      </div>
+      <p class="hint" id="meInfo">"Meri jagah" dabao — map par aap ki live location aur phone ki direction aayegi.</p>
+    </div>
+  
   </section>
 </div>
 
@@ -498,6 +524,7 @@ function calc(){
   countUp($('dist'), d<1000?d:d/1000, d<1000?0:2, d<1000?' m':' km');
   countUp($('brg'), br, 1, '°');
   guards(); toast('✅ Ho gaya — Height aur Signal tab bhi dekho');
+  if(LM){ drawTowers(); fitTowers(); }
 }
 
 function rose(rot){
@@ -796,7 +823,7 @@ function startLive(){
   if(!result){ return; }
   const e=$('liveErr'); e.textContent='';
   const go = () => {
-    liveOn=true; $('live').style.display='block';
+    liveOn=true; $('live').style.display='block'; startWatch();
     let got=false;
     const handler = ev => {
       let h = null;
@@ -817,6 +844,7 @@ function startLive(){
   }catch(_){ e.textContent='Compass yahan available nahi.'; }
 }
 function drawLive(h){
+  setCone(h);
   const br=result.br;
   let s = rose(h) + lineTo(br,result.d) + `</g>`;
   s += `<polygon points="160,8 150,30 170,30" fill="#e8eaed"/>`;
@@ -905,7 +933,73 @@ go=function(p){
   const pg=$('page-'+p); pg.classList.remove('fromR','fromL');
   if(to!==from) pg.classList.add(to>from?'fromR':'fromL');
   curTab=p;
+  if(p==='c') initMap();
 };
+
+
+// ===== Map (Leaflet, lazy load) =====
+let LM=null, LMl={}, curLayer='sat', meMk=null, meWatch=null, mePos=null;
+function loadLeaflet(){
+  return new Promise((res,rej)=>{
+    if(window.L) return res();
+    const c=document.createElement('link'); c.rel='stylesheet'; c.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'; document.head.appendChild(c);
+    const sc=document.createElement('script'); sc.src='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js'; sc.onload=res; sc.onerror=rej; document.head.appendChild(sc);
+  });
+}
+async function initMap(){
+  if(!result) return;
+  try{ await loadLeaflet(); }catch(_){ $('lmap').innerHTML='<div class="mapload">Map ke liye internet chahiye.</div>'; return; }
+  if(!LM){
+    $('lmap').innerHTML='';
+    LM=L.map('lmap',{zoomControl:false,attributionControl:true}); LM.attributionControl.setPrefix(false);
+    LMl.sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Esri'});
+    LMl.street=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'});
+    LMl.sat.addTo(LM);
+  }
+  drawTowers();
+  setTimeout(()=>{ LM.invalidateSize(); fitTowers(); },60);
+}
+function drawTowers(){
+  if(!LM||!result) return;
+  if(LMl.g) LM.removeLayer(LMl.g);
+  const a=[result.a.lat,result.a.lon], b=[result.b.lat,result.b.lon];
+  LMl.g=L.layerGroup([
+    L.polyline([a,b],{color:'#0a0b0c',weight:8,opacity:.5}),
+    L.polyline([a,b],{color:'#c8f135',weight:4,dashArray:'10 10',className:'flow'}),
+    L.circleMarker(a,{radius:9,color:'#0a0b0c',weight:3,fillColor:'#ffffff',fillOpacity:1}).bindTooltip('ISP',{permanent:true,direction:'top',offset:[0,-8],className:'tt'}),
+    L.circleMarker(b,{radius:9,color:'#0a0b0c',weight:3,fillColor:'#ff6b6b',fillOpacity:1}).bindTooltip('Client · '+fmtDist(result.d),{permanent:true,direction:'top',offset:[0,-8],className:'tt'})
+  ]).addTo(LM);
+}
+function fitTowers(){ if(!LM||!result) return; LM.fitBounds(L.latLngBounds([[result.a.lat,result.a.lon],[result.b.lat,result.b.lon]]).pad(0.3)); }
+function toggleLayer(){
+  if(!LM) return;
+  LM.removeLayer(LMl[curLayer]); curLayer = curLayer==='sat'?'street':'sat'; LMl[curLayer].addTo(LM);
+  $('layerBtn').textContent = curLayer==='sat' ? '🗺️ Street map' : '🛰️ Satellite';
+}
+function startWatch(){
+  if(meWatch!==null || !navigator.geolocation) return;
+  try{
+    meWatch=navigator.geolocation.watchPosition(p=>{
+      mePos={lat:p.coords.latitude, lon:p.coords.longitude};
+      if(LM){
+        const ll=[mePos.lat,mePos.lon];
+        if(!meMk) meMk=L.marker(ll,{icon:L.divIcon({className:'me',html:'<div class="cone" id="meCone"></div><div class="medot"></div>',iconSize:[70,70],iconAnchor:[35,35]}),interactive:false}).addTo(LM);
+        else meMk.setLatLng(ll);
+      }
+      if(result){
+        const dB=distance(mePos,result.b), bB=bearing(mePos,result.b), dA=distance(mePos,result.a);
+        $('meInfo').innerHTML='Client tower aap se <b>'+fmtDist(dB)+'</b> door, <b>'+bB.toFixed(0)+'°</b> par · ISP tower <b>'+fmtDist(dA)+'</b> · GPS ±'+Math.round(p.coords.accuracy)+' m';
+      }
+    }, ()=>{ $('meInfo').textContent='GPS nahi mila — location permission Allow karo.'; meWatch=null; },
+    {enableHighAccuracy:true, maximumAge:2000, timeout:20000});
+  }catch(_){ $('meInfo').textContent='GPS yahan available nahi.'; }
+}
+function centerMe(){
+  startWatch();
+  if(LM && mePos) LM.setView([mePos.lat,mePos.lon],17);
+  else { $('meInfo').textContent='Location dhoond raha hai...'; const t=setInterval(()=>{ if(mePos&&LM){ clearInterval(t); LM.setView([mePos.lat,mePos.lon],17); } },500); setTimeout(()=>clearInterval(t),20000); }
+}
+function setCone(h){ const c=document.getElementById('meCone'); if(c){ c.classList.add('on'); c.style.transform='rotate('+h+'deg)'; } }
 
 // ===== UI helpers =====
 const TITLES={dir:'Direction',h:'Tower height',s:'Expected signal',f:'Frequency planner',c:'Live compass'};
