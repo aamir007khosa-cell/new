@@ -117,17 +117,95 @@ details[open] summary::before{content:"－ "}
 .code{font-size:30px;font-weight:900;letter-spacing:7px;text-align:center;padding:16px;border-radius:18px;background:var(--card2);color:var(--lime);font-family:ui-monospace,Consolas,monospace}
 
 .card,.stat,.nav{contain:paint}
+
+/* ===== Tower draw + waves ===== */
+.tower path[pathLength]{stroke-dasharray:1;stroke-dashoffset:1;animation:draw .55s cubic-bezier(.6,.1,.2,1) forwards;animation-delay:var(--d)}
+.tower .waves path{opacity:0;transform-origin:50px 22px;animation:wave 1.6s ease-out infinite;animation-delay:calc(.8s + var(--w))}
+@keyframes wave{0%{opacity:0;transform:scale(.7)}30%{opacity:1}100%{opacity:0;transform:scale(1.35)}}
+
+/* ===== Splash ===== */
+#splash{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;transition:opacity .35s ease,transform .35s ease}
+#splash .tower{width:120px;height:132px}
+#splash h1{margin:0;font-size:30px;font-weight:900;letter-spacing:-.5px;display:flex;overflow:hidden}
+#splash h1 span{display:inline-block;opacity:0;transform:translate3d(-26px,0,0);animation:letterIn .42s cubic-bezier(.2,.9,.3,1.2) forwards}
+#splash h1 span.l{color:var(--lime)}
+#splash p{margin:0;color:var(--mut);font-size:13px;opacity:0;animation:fadeUp .4s ease 1.05s forwards}
+#splash.out{opacity:0;transform:scale(1.04);pointer-events:none}
+@keyframes letterIn{to{opacity:1;transform:none}}
+@keyframes fadeUp{from{opacity:0;transform:translate3d(0,8px,0)}to{opacity:1;transform:none}}
+
+/* ===== Side slide text ===== */
+@keyframes slideL{from{opacity:0;transform:translate3d(-28px,0,0)}to{opacity:1;transform:none}}
+@keyframes slideR{from{opacity:0;transform:translate3d(28px,0,0)}to{opacity:1;transform:none}}
+.page.on .card h2{animation:slideL .42s cubic-bezier(.2,.9,.3,1) both;animation-delay:.08s}
+.page.on .hint,.page.on label{animation:slideL .42s cubic-bezier(.2,.9,.3,1) both;animation-delay:.12s}
+.pop .stat .v{animation:slideR .5s cubic-bezier(.2,.9,.3,1.1) both;animation-delay:.1s}
+.pop .stat .k,.pop .stat .s{animation:slideL .45s cubic-bezier(.2,.9,.3,1) both;animation-delay:.05s}
+.pop .list li{animation:slideL .4s cubic-bezier(.2,.9,.3,1) both}
+.pop .list li:nth-child(1){animation-delay:.15s}.pop .list li:nth-child(2){animation-delay:.2s}.pop .list li:nth-child(3){animation-delay:.25s}
+.pop .list li:nth-child(4){animation-delay:.3s}.pop .list li:nth-child(5){animation-delay:.35s}.pop .list li:nth-child(6){animation-delay:.4s}
+.pop .list li:nth-child(7){animation-delay:.45s}.pop .list li:nth-child(8){animation-delay:.5s}.pop .list li:nth-child(n+9){animation-delay:.55s}
+.top h1{animation:slideL .5s cubic-bezier(.2,.9,.3,1) both}
+.top .sub{animation:slideL .5s cubic-bezier(.2,.9,.3,1) .06s both}
+.chip{animation:slideR .5s cubic-bezier(.2,.9,.3,1) .1s both}
+/* Tabs slide from the side they come from */
+.page.on.fromR{animation:slideR .28s cubic-bezier(.2,.9,.3,1) both}
+.page.on.fromL{animation:slideL .28s cubic-bezier(.2,.9,.3,1) both}
+.needres .tower{width:84px;height:92px;margin:0 auto}
+.hero .tower{width:96px;height:106px;margin:0 auto 10px;display:block}
+.hero h1{animation:slideL .5s cubic-bezier(.2,.9,.3,1) .5s both}
+.hero .hint{animation:slideR .5s cubic-bezier(.2,.9,.3,1) .6s both}
+/* Height chart reveals left to right */
+#prof .reveal{transform-origin:0 0;transform:scaleX(0);animation:revealX .9s cubic-bezier(.6,.1,.2,1) .1s forwards}
+@keyframes revealX{to{transform:scaleX(1)}}
+
+/* ===== Lite mode (sasti phones) ===== */
+.lite .aurora{display:none}
+.lite .tower .waves{display:none}
+.lite .page.on .hint,.lite .page.on label,.lite .pop .stat .k,.lite .pop .stat .s{animation:none}
+.lite .nav{box-shadow:none}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
 <div class="aurora"><i></i><i></i><i></i></div>
 <div id="toast"></div>
+<div id="splash" onclick="hideSplash()">
+  <svg viewBox="0 0 100 110" class="tower" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <g stroke="#c8f135" stroke-width="3.2">
+    <path pathLength="1" style="--d:0s" d="M50 22 L28 104"/>
+    <path pathLength="1" style="--d:.08s" d="M50 22 L72 104"/>
+    <path pathLength="1" style="--d:.25s" d="M44 44 L56 44 M41 58 L59 58 M37 74 L63 74 M33 90 L67 90"/>
+    <path pathLength="1" style="--d:.4s" d="M44 44 L59 58 L37 74 L67 90 M56 44 L41 58 L63 74 L33 90"/>
+    <path pathLength="1" style="--d:.55s" d="M50 22 L50 10"/>
+  </g>
+  <g stroke="#c8f135" stroke-width="3" class="waves">
+    <path d="M38 14 Q34 22 38 30" style="--w:0s"/><path d="M62 14 Q66 22 62 30" style="--w:0s"/>
+    <path d="M30 8 Q22 22 30 36" style="--w:.25s"/><path d="M70 8 Q78 22 70 36" style="--w:.25s"/>
+  </g>
+</svg>
+  <h1 id="spTitle"></h1>
+  <p>WISP survey ka sab kuch — ek app mein</p>
+</div>
+
 
 <!-- ===== LOCK ===== -->
 <div id="lock" class="wrap" style="display:none">
   <div class="hero">
-    <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 3 7 21M12 3l5 18M8.5 15h7M10 9h4"/><path d="M5 6a9 9 0 0 1 3-3M19 6a9 9 0 0 0-3-3"/></svg></div>
+    <svg viewBox="0 0 100 110" class="tower" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <g stroke="#c8f135" stroke-width="3.2">
+    <path pathLength="1" style="--d:0s" d="M50 22 L28 104"/>
+    <path pathLength="1" style="--d:.08s" d="M50 22 L72 104"/>
+    <path pathLength="1" style="--d:.25s" d="M44 44 L56 44 M41 58 L59 58 M37 74 L63 74 M33 90 L67 90"/>
+    <path pathLength="1" style="--d:.4s" d="M44 44 L59 58 L37 74 L67 90 M56 44 L41 58 L63 74 L33 90"/>
+    <path pathLength="1" style="--d:.55s" d="M50 22 L50 10"/>
+  </g>
+  <g stroke="#c8f135" stroke-width="3" class="waves">
+    <path d="M38 14 Q34 22 38 30" style="--w:0s"/><path d="M62 14 Q66 22 62 30" style="--w:0s"/>
+    <path d="M30 8 Q22 22 30 36" style="--w:.25s"/><path d="M70 8 Q78 22 70 36" style="--w:.25s"/>
+  </g>
+</svg>
+    <div class="logo" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 3 7 21M12 3l5 18M8.5 15h7M10 9h4"/><path d="M5 6a9 9 0 0 1 3-3M19 6a9 9 0 0 0-3-3"/></svg></div>
     <h1>Tower Direction Finder</h1>
     <p class="hint">WISP survey ka sab kuch — ek app mein</p>
   </div>
@@ -198,7 +276,19 @@ details[open] summary::before{content:"－ "}
 
   <!-- PAGE 2: Tower height -->
   <section class="page" id="page-h">
-    <div class="card needres"><div class="em">🗼</div><p>Pehle <b>Direction</b> tab mein dono towers ke coordinates daalo.</p><button class="main" onclick="go('dir')">Direction kholo</button></div>
+    <div class="card needres"><svg viewBox="0 0 100 110" class="tower" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <g stroke="#c8f135" stroke-width="3.2">
+    <path pathLength="1" style="--d:0s" d="M50 22 L28 104"/>
+    <path pathLength="1" style="--d:.08s" d="M50 22 L72 104"/>
+    <path pathLength="1" style="--d:.25s" d="M44 44 L56 44 M41 58 L59 58 M37 74 L63 74 M33 90 L67 90"/>
+    <path pathLength="1" style="--d:.4s" d="M44 44 L59 58 L37 74 L67 90 M56 44 L41 58 L63 74 L33 90"/>
+    <path pathLength="1" style="--d:.55s" d="M50 22 L50 10"/>
+  </g>
+  <g stroke="#c8f135" stroke-width="3" class="waves">
+    <path d="M38 14 Q34 22 38 30" style="--w:0s"/><path d="M62 14 Q66 22 62 30" style="--w:0s"/>
+    <path d="M30 8 Q22 22 30 36" style="--w:.25s"/><path d="M70 8 Q78 22 70 36" style="--w:.25s"/>
+  </g>
+</svg><p>Pehle <b>Direction</b> tab mein dono towers ke coordinates daalo.</p><button class="main" onclick="go('dir')">Direction kholo</button></div>
     <div class="card hasres">
       <h2><span class="ic">🗼</span> Tower height design</h2>
       <p class="hint" style="margin-top:-6px">Rastay ki zameen satellite data se — bataye ga kitne feet ka tower chahiye.</p>
@@ -248,7 +338,19 @@ details[open] summary::before{content:"－ "}
 
   <!-- PAGE 3: Signal -->
   <section class="page" id="page-s">
-    <div class="card needres"><div class="em">📡</div><p>Pehle <b>Direction</b> tab mein dono towers ke coordinates daalo.</p><button class="main" onclick="go('dir')">Direction kholo</button></div>
+    <div class="card needres"><svg viewBox="0 0 100 110" class="tower" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <g stroke="#c8f135" stroke-width="3.2">
+    <path pathLength="1" style="--d:0s" d="M50 22 L28 104"/>
+    <path pathLength="1" style="--d:.08s" d="M50 22 L72 104"/>
+    <path pathLength="1" style="--d:.25s" d="M44 44 L56 44 M41 58 L59 58 M37 74 L63 74 M33 90 L67 90"/>
+    <path pathLength="1" style="--d:.4s" d="M44 44 L59 58 L37 74 L67 90 M56 44 L41 58 L63 74 L33 90"/>
+    <path pathLength="1" style="--d:.55s" d="M50 22 L50 10"/>
+  </g>
+  <g stroke="#c8f135" stroke-width="3" class="waves">
+    <path d="M38 14 Q34 22 38 30" style="--w:0s"/><path d="M62 14 Q66 22 62 30" style="--w:0s"/>
+    <path d="M30 8 Q22 22 30 36" style="--w:.25s"/><path d="M70 8 Q78 22 70 36" style="--w:.25s"/>
+  </g>
+</svg><p>Pehle <b>Direction</b> tab mein dono towers ke coordinates daalo.</p><button class="main" onclick="go('dir')">Direction kholo</button></div>
     <div class="card hasres">
       <h2><span class="ic">📡</span> Expected signal</h2>
       <div class="row">
@@ -286,7 +388,19 @@ details[open] summary::before{content:"－ "}
 
   <!-- PAGE 5: Compass -->
   <section class="page" id="page-c">
-    <div class="card needres"><div class="em">🧭</div><p>Pehle <b>Direction</b> tab mein dono towers ke coordinates daalo.</p><button class="main" onclick="go('dir')">Direction kholo</button></div>
+    <div class="card needres"><svg viewBox="0 0 100 110" class="tower" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <g stroke="#c8f135" stroke-width="3.2">
+    <path pathLength="1" style="--d:0s" d="M50 22 L28 104"/>
+    <path pathLength="1" style="--d:.08s" d="M50 22 L72 104"/>
+    <path pathLength="1" style="--d:.25s" d="M44 44 L56 44 M41 58 L59 58 M37 74 L63 74 M33 90 L67 90"/>
+    <path pathLength="1" style="--d:.4s" d="M44 44 L59 58 L37 74 L67 90 M56 44 L41 58 L63 74 L33 90"/>
+    <path pathLength="1" style="--d:.55s" d="M50 22 L50 10"/>
+  </g>
+  <g stroke="#c8f135" stroke-width="3" class="waves">
+    <path d="M38 14 Q34 22 38 30" style="--w:0s"/><path d="M62 14 Q66 22 62 30" style="--w:0s"/>
+    <path d="M30 8 Q22 22 30 36" style="--w:.25s"/><path d="M70 8 Q78 22 70 36" style="--w:.25s"/>
+  </g>
+</svg><p>Pehle <b>Direction</b> tab mein dono towers ke coordinates daalo.</p><button class="main" onclick="go('dir')">Direction kholo</button></div>
     <div class="card hasres">
       <h2><span class="ic">🧭</span> Live compass</h2>
       <p class="hint" style="margin-top:-6px">Phone flat pakdo ya camera ki tarah khara karo. Tower ke steel se 5–10 qadam door raho.</p>
@@ -557,8 +671,9 @@ function drawProfile(elev,pts,HA,HB,clutM,D){
   const y=m=>pt+(H-pt-pb)*(1-(m-lo)/(hi-lo));
   // zameen (curvature ke saath)
   const bul=i=>{ if(i===0||i===N-1) return 0; return pts[i-1].bulge; };
-  let g=`<polygon fill="#8b6b3d" points="${x(0)},${y(lo)} ${elev.map((e,i)=>x(i)+','+y(e+bul(i))).join(' ')} ${x(N-1)},${y(lo)}"/>`;
+  let g=`<g class="reveal"><polygon fill="#8b6b3d" points="${x(0)},${y(lo)} ${elev.map((e,i)=>x(i)+','+y(e+bul(i))).join(' ')} ${x(N-1)},${y(lo)}"/>`;
   g+=`<polyline fill="none" stroke="#2f7d3a" stroke-width="3" points="${elev.map((e,i)=>x(i)+','+y(e+bul(i)+((i===0||i===N-1)?0:clutM))).join(' ')}"/>`;
+  g+='</g>';
   // Fresnel
   const top=[],bot=[];
   for(let i=1;i<N-1;i++){ const t=i/(N-1), L=HA+(HB-HA)*t, f=0.6*pts[i-1].F1; top.push(x(i)+','+y(L+f)); bot.push(x(i)+','+y(L-f)); }
@@ -771,6 +886,26 @@ setInterval(async()=>{ const k=store('tdf_lic'); if(!k) return; const r=await ch
 // Pichli values yaad rakho (sirf isi phone par)
 function save(){ try{ ['a','b','ga','ha','gb','hb','clut','ispH','freq','bw','busy','fmin','fmax','gA','gB','txp','loss'].forEach(k=>localStorage.setItem('tdf_'+k,$(k).value)); }catch(_){} }
 try{ ['a','b','ga','ha','gb','hb','clut','ispH','freq','bw','busy','fmin','fmax','gA','gB','txp','loss'].forEach(k=>{ const v=localStorage.getItem('tdf_'+k); if(v) $(k).value=v; }); }catch(_){}
+
+
+// ===== Lite mode + splash + tab direction =====
+(function(){
+  const mem=navigator.deviceMemory||8, cores=navigator.hardwareConcurrency||8;
+  if(mem<=4 || cores<=4) document.documentElement.classList.add('lite');
+  const t='Tower Finder', h=$('spTitle'); let i=0;
+  h.innerHTML=[...t].map((c,k)=>'<span class="'+(k>=6?'l':'')+'" style="animation-delay:'+(0.45+k*0.035).toFixed(3)+'s">'+(c===' '?'&nbsp;':c)+'</span>').join('');
+  setTimeout(hideSplash, document.documentElement.classList.contains('lite')?1100:1500);
+})();
+function hideSplash(){ const s=$('splash'); if(!s||s.classList.contains('out')) return; s.classList.add('out'); setTimeout(()=>s.remove(),400); }
+const TAB_ORDER=['dir','h','s','f','c']; let curTab='dir';
+const _go=go;
+go=function(p){
+  const from=TAB_ORDER.indexOf(curTab), to=TAB_ORDER.indexOf(p);
+  _go(p);
+  const pg=$('page-'+p); pg.classList.remove('fromR','fromL');
+  if(to!==from) pg.classList.add(to>from?'fromR':'fromL');
+  curTab=p;
+};
 
 // ===== UI helpers =====
 const TITLES={dir:'Direction',h:'Tower height',s:'Expected signal',f:'Frequency planner',c:'Live compass'};
