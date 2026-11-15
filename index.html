@@ -43,7 +43,29 @@
 </style>
 </head>
 <body>
-<div class="wrap">
+<div id="lock" class="wrap" style="display:none">
+  <h1>📡 Tower Direction Finder</h1>
+  <p class="sub">Yeh app istemal karne ke liye license chahiye.</p>
+  <div class="card">
+    <h2>Packages</h2>
+    <ul class="list" id="pkgList"></ul>
+    <p class="hint" style="margin-top:8px" id="payInfo"></p>
+  </div>
+  <div class="card">
+    <h2>Aap ka Device Code</h2>
+    <div class="stat"><div class="v" id="devCode" style="font-size:26px;letter-spacing:3px">–</div></div>
+    <div class="btns"><button onclick="copyCode()">📋 Code copy karo</button></div>
+    <p class="hint">Payment ke baad yeh code bhejo — aap ko license key mil jayegi.</p>
+  </div>
+  <div class="card">
+    <h2>License key daalo</h2>
+    <input id="licKey" placeholder="Yahan key paste karo" autocomplete="off">
+    <div class="btns"><button class="main" onclick="activate()">Activate karo</button></div>
+    <div class="err" id="licErr"></div>
+  </div>
+</div>
+<div class="wrap" id="app" style="display:none">
+  <div id="licBar" class="hint" style="text-align:right;margin-bottom:6px"></div>
   <h1>📡 Tower Direction Finder</h1>
   <p class="sub">Dono jagah ke coordinates daalo. Yeh distance, degree aur seedhi line bata dega.</p>
 
@@ -574,6 +596,59 @@ function drawLive(h){
   else if(diff>0){ t.textContent='➡️ '+diff.toFixed(0)+'° right ghumao'; t.style.color='var(--acc)'; }
   else { t.textContent='⬅️ '+(-diff).toFixed(0)+'° left ghumao'; t.style.color='var(--acc)'; }
 }
+
+// ===== License =====
+const SELLER = { whatsapp: '03XX-XXXXXXX', pay: 'JazzCash / Easypaisa: 03XX-XXXXXXX' };
+const PACKAGES = [ {days:1, price:1000}, {days:30, price:20000} ];
+const PUBKEY = {"kty":"EC","crv":"P-256","x":"X3qDab0PFkISO3Yoit0w6ZG8Q3KnZGqjXTv6O_GKWGw","y":"AZV-b78UK56MEwmqjovZwu1JWuOnuV-HhfTER5WOgtY"};
+function b64u(s){ s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4) s+='='; return Uint8Array.from(atob(s),c=>c.charCodeAt(0)); }
+function store(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); }catch(_){ return null; } }
+function deviceCode(){
+  let c=store('tdf_dev');
+  if(!c){ const a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; c=''; const r=crypto.getRandomValues(new Uint8Array(8)); r.forEach(x=>c+=a[x%a.length]); store('tdf_dev',c); }
+  return c;
+}
+async function checkKey(key){
+  try{
+    const [p,sg]=key.trim().split('.');
+    const pk=await crypto.subtle.importKey('jwk',PUBKEY,{name:'ECDSA',namedCurve:'P-256'},false,['verify']);
+    const ok=await crypto.subtle.verify({name:'ECDSA',hash:'SHA-256'},pk,b64u(sg),new TextEncoder().encode(p));
+    if(!ok) return {err:'Key ghalat hai.'};
+    const d=JSON.parse(new TextDecoder().decode(b64u(p)));
+    if(d.d!==deviceCode()) return {err:'Yeh key kisi aur phone ki hai.'};
+    const now=Date.now()/1000, last=+(store('tdf_last')||0);
+    if(now < last-3600) return {err:'Phone ka time/date ghalat hai. Theek karo.'};
+    if(now > d.e) return {err:'License khatam ho gaya. Naya package lo.', exp:true};
+    store('tdf_last', String(Math.max(now,last)));
+    return {ok:true, exp:d.e};
+  }catch(_){ return {err:'Key ghalat hai.'}; }
+}
+function showLock(msg){
+  $('app').style.display='none'; $('lock').style.display='';
+  $('devCode').textContent=deviceCode();
+  $('pkgList').innerHTML=PACKAGES.map(p=>'<li><span>'+p.days+' din</span><b>Rs '+p.price.toLocaleString('en-PK')+'</b></li>').join('');
+  $('payInfo').innerHTML='Payment: <b>'+SELLER.pay+'</b><br>WhatsApp: <b>'+SELLER.whatsapp+'</b>';
+  if(msg) $('licErr').textContent=msg;
+}
+function showApp(exp){
+  $('lock').style.display='none'; $('app').style.display='';
+  const left=exp-Date.now()/1000, dd=Math.floor(left/86400), hh=Math.floor(left%86400/3600);
+  $('licBar').textContent='✅ License: '+(dd>0? dd+' din '+hh+' ghante' : hh+' ghante')+' baqi';
+}
+async function activate(){
+  const k=$('licKey').value; if(!k.trim()){ $('licErr').textContent='Key paste karo.'; return; }
+  const r=await checkKey(k);
+  if(r.ok){ store('tdf_lic',k.trim()); showApp(r.exp); } else $('licErr').textContent=r.err;
+}
+function copyCode(){ try{ navigator.clipboard.writeText(deviceCode()).then(()=>$('licErr').textContent='Code copy ho gaya ✅').catch(()=>{}); }catch(_){} }
+async function boot(){
+  const k=store('tdf_lic');
+  if(!k){ showLock(); return; }
+  const r=await checkKey(k);
+  if(r.ok) showApp(r.exp); else showLock(r.err);
+}
+boot();
+setInterval(async()=>{ const k=store('tdf_lic'); if(!k) return; const r=await checkKey(k); if(!r.ok) showLock(r.err); }, 60000);
 
 // Pichli values yaad rakho (sirf isi phone par)
 function save(){ try{ ['a','b','ga','ha','gb','hb','clut','ispH','freq','bw','busy','fmin','fmax','gA','gB','txp','loss'].forEach(k=>localStorage.setItem('tdf_'+k,$(k).value)); }catch(_){} }
