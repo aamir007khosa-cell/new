@@ -113,6 +113,7 @@
             <option value="20">20</option>
             <option value="40">40</option>
             <option value="80" selected>80</option>
+            <option value="160">160 (C6x)</option>
           </select></div>
       </div>
       <div class="row">
@@ -139,6 +140,7 @@
       <p class="hint">Mimosa ke <b>Spectrum Analyzer</b> mein <b>Combined</b> dabao. Jahan oonchi lines (−80 dBm se oopar) hon, woh ranges yahan likho.</p>
       <label>Busy ranges (MHz)</label>
       <input id="busy" placeholder="5490-5530, 5660-5700, 6080-6150">
+      <p class="hint">160 MHz sirf C6x jaise 6 GHz devices mein hota hai — Allowed range device ke hisaab se likho.</p>
       <div class="row">
         <div><label>Allowed se (MHz)</label><input id="fmin" type="number" inputmode="decimal" value="5150"></div>
         <div><label>Allowed tak (MHz)</label><input id="fmax" type="number" inputmode="decimal" value="6425"></div>
@@ -333,9 +335,10 @@ function equalHeight(pts,gA,gB){
   return null;
 }
 function bwNote(bw,d){
-  const need={20:-75,40:-70,80:-65}[bw];
+  const need={20:-75,40:-70,80:-65,160:-60}[bw];
   let t='<br>Channel '+bw+' MHz: achhi speed ke liye signal kam se kam <b>'+need+' dBm</b> ya behtar chahiye.';
   if(bw===80 && d>10000) t+=' Link lamba hai, signal kamzor ho to 40 MHz par aa jao.';
+  if(bw===160 && d>3000) t+=' 160 MHz lambe link par mushkil hai — signal kamzor ho to 80 MHz chalao.';
   return t;
 }
 const ceil5 = ft => Math.ceil(ft/5)*5;
@@ -432,7 +435,8 @@ function planFreq(){
   // Distance ke hisaab se bandwidth
   let rec=80, why='';
   if(d===null){ why='(Distance nahi pata, upar Calculate karo.)'; }
-  else if(d<=6000){ rec=80; why='Link '+fmtDist(d)+' ka hai — 80 MHz se full speed milegi.'; }
+  else if(d<=3000){ rec=160; why='Link '+fmtDist(d)+' ka chhota hai — C6x par 160 MHz se sab se ziada speed (signal −60 dBm ya behtar ho). Doosre device par 80 MHz.'; }
+  else if(d<=6000){ rec=80; why='Link '+fmtDist(d)+' ka hai — 80 MHz se full speed milegi. C6x par signal −60 dBm se behtar ho to 160 MHz try kar sakte ho.'; }
   else if(d<=15000){ rec=80; why='Link '+fmtDist(d)+' ka hai — 80 MHz chalao; signal −65 dBm se kamzor ho to 40 MHz.'; }
   else { rec=40; why='Link '+fmtDist(d)+' lamba hai — 40 MHz zyada stable rahega.'; }
   const best=bw=>{
@@ -450,7 +454,7 @@ function planFreq(){
   };
   let h='<ul class="list">';
   h+='<li><span>Mashwara</span><b style="color:var(--ok)">'+rec+' MHz bandwidth</b></li></ul><p class="hint">'+why+'</p>';
-  [80,40,20].forEach(bw=>{
+  [160,80,40,20].forEach(bw=>{
     const p=best(bw);
     h+='<h2 style="margin-top:12px">'+bw+' MHz ke liye'+(bw===rec?' ⭐':'')+'</h2><ul class="list">';
     if(!p.length) h+='<li><span>Koi saaf jagah nahi</span><b>–</b></li>';
