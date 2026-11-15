@@ -245,6 +245,8 @@ details[open] summary::before{content:"－ "}
 .pick button.isp{background:#fff;color:#0a0b0c;border:none}
 .pick button.cli{background:#ff6b6b;color:#0a0b0c;border:none}
 .leaflet-container a.leaflet-popup-close-button{color:var(--mut)!important}
+.rdev{border:1px solid var(--line);border-radius:20px;padding:14px;margin-bottom:12px;background:rgba(255,255,255,.02);transition:border-color .2s}
+.rdev.sel{border-color:var(--lime);box-shadow:0 0 0 1px var(--lime) inset}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -355,7 +357,7 @@ details[open] summary::before{content:"－ "}
       </div>
       <div class="card">
         <h2><span class="ic">📍</span> Coordinates Mimosa mein bhejo</h2>
-        <p class="hint" style="margin-top:-6px">Pehle <b>Radios</b> tab mein radio jodo. Phir:</p>
+        <p class="hint" style="margin-top:-6px">Pehle <b>Radios</b> tab mein radio add karo. Phir:</p>
         <div class="btns"><button onclick="rdSendLoc('isp')">ISP radio mein bhejo</button><button onclick="rdSendLoc('client')">Client radio mein bhejo</button></div>
         <div class="err" id="locErr"></div>
       </div>
@@ -531,43 +533,15 @@ details[open] summary::before{content:"－ "}
   <section class="page" id="page-r">
     <div class="card">
       <h2><span class="ic">📡</span> Mimosa radios</h2>
-      <p class="hint" style="margin-top:-6px">Dono radio ek saath jodo. Phone radio wale network (Wi-Fi/LAN) par ho. Sirf app (APK) mein chalta hai.</p>
-      <div class="rdev">
-        <h2 style="margin-bottom:10px"><span class="dot" style="background:#ffffff"></span> ISP radio (AP) <span class="hint" id="rst-isp" style="margin:0 0 0 auto"></span></h2>
-        <div id="rf-isp">
-          <div class="row"><div><label>IP</label><input id="rip-isp" placeholder="192.168.1.20" inputmode="decimal"></div><div><label>Username</label><input id="ruser-isp" placeholder="admin" autocomplete="off"></div></div>
-          <label>Password</label><input id="rpass-isp" type="password" placeholder="Radio ka password" autocomplete="off">
-          <div class="btns" style="margin-top:10px"><button class="main" onclick="devConnect('isp')">Jodo</button></div>
-          <div class="err" id="rerr-isp"></div>
-          <p class="hint">🔒 Login phone mein mehfooz save hoga — agli dafa app khud jod degi.</p>
-        </div>
-        <div id="rl-isp" style="display:none">
-          <div class="rssi" style="margin:0"><div class="rv" id="rr-isp" style="font-size:44px">--</div><div class="ru">dBm</div></div>
-          <div class="rbar"><i id="rb-isp"></i></div>
-          <p class="hint" id="rn-isp" style="text-align:center"></p>
-          <div class="kv" id="rk-isp"></div>
-          <p class="hint" id="rloc-isp" style="margin-top:10px;line-height:1.6"></p>
-          <div class="btns"><button class="beepBtn" onclick="rdBeepToggle()">🔊 Beep</button><button onclick="devDisconnect('isp')">✖ Band karo</button><button onclick="devForget('isp')">🗑️ Login bhool jao</button></div>
-        </div>
-      </div>
-      <div style="height:1px;background:var(--line);margin:16px 0"></div>
-      <div class="rdev">
-        <h2 style="margin-bottom:10px"><span class="dot" style="background:#ff6b6b"></span> Client radio (STA) <span class="hint" id="rst-client" style="margin:0 0 0 auto"></span></h2>
-        <div id="rf-client">
-          <div class="row"><div><label>IP</label><input id="rip-client" placeholder="192.168.1.21" inputmode="decimal"></div><div><label>Username</label><input id="ruser-client" placeholder="admin" autocomplete="off"></div></div>
-          <label>Password</label><input id="rpass-client" type="password" placeholder="Radio ka password" autocomplete="off">
-          <div class="btns" style="margin-top:10px"><button class="main" onclick="devConnect('client')">Jodo</button></div>
-          <div class="err" id="rerr-client"></div>
-          <p class="hint">🔒 Login phone mein mehfooz save hoga — agli dafa app khud jod degi.</p>
-        </div>
-        <div id="rl-client" style="display:none">
-          <div class="rssi" style="margin:0"><div class="rv" id="rr-client" style="font-size:44px">--</div><div class="ru">dBm</div></div>
-          <div class="rbar"><i id="rb-client"></i></div>
-          <p class="hint" id="rn-client" style="text-align:center"></p>
-          <div class="kv" id="rk-client"></div>
-          <p class="hint" id="rloc-client" style="margin-top:10px;line-height:1.6"></p>
-          <div class="btns"><button class="beepBtn" onclick="rdBeepToggle()">🔊 Beep</button><button onclick="devDisconnect('client')">✖ Band karo</button><button onclick="devForget('client')">🗑️ Login bhool jao</button></div>
-        </div>
+      <p class="hint" style="margin-top:-6px">Jitne chaho radio add karo. Jis card ko dabao, us ka signal sab se tez (⚡) update hoga. Login phone mein mehfooz save hota hai.</p>
+      <div id="devList"></div>
+      <div class="btns" id="addBtn"><button class="main" onclick="openAdd()">➕ Naya radio add karo</button></div>
+      <div id="addForm" style="display:none;margin-top:12px">
+        <div class="row"><div><label>Naam</label><input id="aLabel" placeholder="Client 2"></div><div><label>Qism</label><select id="aType"><option value="client">Client (STA)</option><option value="isp">ISP (AP)</option></select></div></div>
+        <div class="row"><div><label>IP</label><input id="aIp" placeholder="192.168.1.21" inputmode="decimal"></div><div><label>Username</label><input id="aUser" placeholder="admin" autocomplete="off"></div></div>
+        <label>Password</label><input id="aPass" type="password" placeholder="Radio ka password" autocomplete="off">
+        <div class="btns" style="margin-top:10px"><button class="main" onclick="addDevice()" style="flex:2">Jodo</button><button onclick="closeAdd()" style="flex:1">Cancel</button></div>
+        <div class="err" id="aErr"></div>
       </div>
     </div>
     <div class="card" id="rSum" style="display:none">
@@ -1155,7 +1129,7 @@ go=function(p){
   const pg=$('page-'+p); pg.classList.remove('fromR','fromL');
   if(to!==from) pg.classList.add(to>from?'fromR':'fromL');
   curTab=p;
-  if(p==='r' && RM) setTimeout(()=>{ RM.invalidateSize(); RM._key=null; drawRadioMap(); },60);
+  if(p==='r') setTimeout(()=>{ if(RM){ RM.invalidateSize(); RM._key=null; } renderAll(true); },60);
 };
 
 
@@ -1283,7 +1257,7 @@ function startWatch(){
   }catch(_){}
 }
 
-// ===== Mimosa radios: ISP (AP) + Client (STA) ek saath =====
+// ===== Mimosa radios: jitne chaho (ISP/AP + kai Clients) =====
 function hasBridge(){ return !!(window.Android && Android.radio); }
 let rdSeq=0; const rdPend={}; let rdBeep=false, rdAudio=null;
 window.rdCb=function(id,json){ const f=rdPend[id]; delete rdPend[id]; if(f){ try{ f(JSON.parse(json)); }catch(_){ f({status:-1,body:''}); } } };
@@ -1322,10 +1296,6 @@ function rdSnr(e){ if(!e||!e.length) return null; const t=(e[0]+e[1])/2; return 
 const f1=(v,d)=> v==null||isNaN(v) ? '--' : Number(v).toFixed(d==null?1:d);
 const fPhy=v=> v==null||v<6.5 ? '--' : v;
 
-const RADIOS={
-  isp:{role:'isp',label:'ISP radio',on:false,tick:0,d:{}},
-  client:{role:'client',label:'Client radio',on:false,tick:0,d:{}}
-};
 // GPS ya location ka JSON jo bhi shakal ka ho, us mein lat/lon dhoondo
 function findLatLon(o){
   let lat=null, lon=null;
@@ -1335,168 +1305,184 @@ function findLatLon(o){
     else if(lon===null && /(lon|lng)/i.test(k) && !isNaN(parseFloat(v))) lon=parseFloat(v); } })(o);
   return (lat!==null && lon!==null && !(lat===0 && lon===0)) ? {lat,lon} : null;
 }
-function devStatus(role,txt,col){ const e=$('rst-'+role); e.textContent=txt; e.style.color=col||''; }
-function devShowLive(role){ $('rf-'+role).style.display='none'; $('rl-'+role).style.display=''; }
-// silent=true: app khulte waqt saved login se khud jodna
-async function devConnect(role, silent){
-  const dev=RADIOS[role], e=$('rerr-'+role); e.textContent='';
-  if(!hasBridge()){ if(!silent) e.textContent='Yeh feature sirf Tower Finder app (APK) mein chalta hai.'; return; }
-  const ip=$('rip-'+role).value.trim(), u=$('ruser-'+role).value.trim(), pw=$('rpass-'+role).value;
+
+// DEVS: {id,label,type:'isp'|'client'|'auto',ip,u,pw,auth,on,d,...}
+const DEVS=[]; let SEL=null;
+function devRole(dev){ const m=dev.d&&dev.d.cfg&&dev.d.cfg.mode; if(m==='AP') return 'isp'; if(m==='STA') return 'client'; return dev.type==='isp'?'isp':'client'; }
+function devById(id){ return DEVS.find(d=>d.id===id); }
+function firstOf(role){ return DEVS.find(d=>d.on && devRole(d)===role) || null; }
+function saveDevList(){
+  const list=DEVS.map(d=>({id:d.id,label:d.label,type:d.type,ip:d.ip,u:d.u,pw:d.pw}));
+  try{ if(Android.saveSecret) Android.saveSecret('rd_list', JSON.stringify(list)); }catch(_){}
+  try{ localStorage.setItem('tdf_devs', JSON.stringify(list.map(x=>({id:x.id,label:x.label,type:x.type,ip:x.ip,u:x.u})))); }catch(_){}
+}
+function devCardHTML(dev){
+  const id=dev.id;
+  return '<div class="rdev" id="dc-'+id+'" onclick="selectDev(\''+id+'\')">'+
+    '<h2 style="margin-bottom:8px"><span class="dot" id="dd-'+id+'"></span> <span id="dl-'+id+'"></span> <span class="hint" id="rst-'+id+'" style="margin:0 0 0 auto"></span></h2>'+
+    '<div class="rssi" style="margin:0"><div class="rv" id="rr-'+id+'" style="font-size:42px">--</div><div class="ru">dBm</div></div>'+
+    '<div class="rbar"><i id="rb-'+id+'"></i></div>'+
+    '<p class="hint" id="rn-'+id+'" style="text-align:center"></p>'+
+    '<div class="kv" id="rk-'+id+'"></div>'+
+    '<p class="hint" id="rloc-'+id+'" style="margin-top:10px;line-height:1.6"></p>'+
+    '<div class="btns"><button class="beepBtn" onclick="event.stopPropagation();rdBeepToggle()">🔊 Beep</button><button onclick="event.stopPropagation();removeDev(\''+id+'\')">🗑️ Hatao</button></div>'+
+  '</div>';
+}
+function mountDev(dev){
+  if(!$('dc-'+dev.id)){ $('devList').insertAdjacentHTML('beforeend', devCardHTML(dev)); }
+  paintHeader(dev);
+}
+function paintHeader(dev){
+  const role=devRole(dev);
+  $('dl-'+dev.id).textContent=(dev.label||dev.ip)+' · '+(role==='isp'?'ISP (AP)':'Client (STA)');
+  $('dd-'+dev.id).style.background= role==='isp'?'#ffffff':'#ff6b6b';
+  $('dc-'+dev.id).classList.toggle('sel', SEL===dev.id);
+}
+function selectDev(id){ SEL=id; DEVS.forEach(d=>{ if($('dc-'+d.id)) $('dc-'+d.id).classList.toggle('sel', d.id===id); }); const d=devById(id); if(d){ d.beaconOff=0; startBeacon(d); } renderAll(true); }
+function devStatus(dev,txt,col){ const e=$('rst-'+dev.id); if(e){ e.textContent=txt; e.style.color=col||''; } }
+
+// ---- Add form ----
+function openAdd(){ $('addForm').style.display=''; $('addBtn').style.display='none'; $('aLabel').value='Radio '+(DEVS.length+1); $('aErr').textContent=''; }
+function closeAdd(){ $('addForm').style.display='none'; $('addBtn').style.display=''; }
+async function addDevice(){
+  const e=$('aErr'); e.textContent='';
+  if(!hasBridge()){ e.textContent='Yeh feature sirf Tower Finder app (APK) mein chalta hai.'; return; }
+  const ip=$('aIp').value.trim(), u=$('aUser').value.trim(), pw=$('aPass').value;
   if(!ip||!u||!pw){ e.textContent='IP, username aur password likho.'; return; }
-  dev.ip=ip; dev.auth=btoa(u+':'+pw);
-  $('rst-'+role).innerHTML='<span class="spin"></span>';
+  if(DEVS.some(d=>d.ip===ip)){ e.textContent='Yeh IP pehle se add hai.'; return; }
+  const dev={id:'d'+Date.now().toString(36), label:$('aLabel').value.trim()||ip, type:$('aType').value, ip, u, pw, auth:btoa(u+':'+pw), d:{}};
+  e.innerHTML='<span class="spin"></span> Jod raha hai...';
   const r=await devReq(dev,'GET','/restconf/data/mimosa-wifi-network:statistics/client-statistics');
-  if(r.status===401||r.status===403){ devStatus(role,''); e.textContent='Username ya password ghalat hai.'; return; }
-  if(r.status!==200 && !silent){ devStatus(role,''); e.textContent='Radio nahi mila ('+r.status+'). IP check karo aur phone radio ke network par ho.'; return; }
-  // Login yaad rakho (mehfooz, Android Keystore)
-  try{ localStorage.setItem('tdf_rd_'+role,JSON.stringify({ip,u})); }catch(_){}
-  try{ if(Android.saveSecret) Android.saveSecret('rd_'+role, JSON.stringify({ip,u,pw})); }catch(_){}
-  dev.on=true; dev.tick=0; dev.fails= r.status===200?0:3; dev.d={};
-  devShowLive(role);
-  if(r.status===200){ devStatus(role,'● Juda hua','var(--lime)'); if(!silent) toast('✅ '+dev.label+' jud gaya'); }
-  else devStatus(role,'● Offline — dobara jod raha hai','#fbbf24');
+  if(r.status===401||r.status===403){ e.textContent='Username ya password ghalat hai.'; return; }
+  if(r.status!==200){ e.textContent='Radio nahi mila ('+r.status+'). IP check karo aur phone radio ke network par ho.'; return; }
+  DEVS.push(dev); saveDevList(); $('aPass').value=''; closeAdd();
+  startDev(dev, true); if(!SEL) selectDev(dev.id);
+  toast('✅ '+dev.label+' jud gaya');
+}
+function removeDev(id){
+  const dev=devById(id); if(!dev) return;
+  if(dev._rmArm!==true){ dev._rmArm=true; toast('Hatane ke liye 🗑️ dobara dabao'); setTimeout(()=>dev._rmArm=false,3000); return; }
+  dev.on=false; clearTimeout(dev.timer); clearTimeout(dev.btimer);
+  DEVS.splice(DEVS.indexOf(dev),1); const c=$('dc-'+id); if(c) c.remove();
+  if(SEL===id) SEL=DEVS[0]?DEVS[0].id:null; saveDevList(); renderAll(true); toast('Radio hata diya');
+}
+function startDev(dev, ok){
+  dev.on=true; dev.tick=0; dev.fails= ok?0:3; dev.d=dev.d||{};
+  mountDev(dev);
+  if(ok) devStatus(dev,'● Juda hua','var(--lime)'); else devStatus(dev,'● Offline — dobara jod raha hai','#fbbf24');
   clearTimeout(dev.timer); devLoop(dev);
-  clearTimeout(dev.btimer); dev.beaconOff=0; beaconLoop(dev);
+  if(SEL===dev.id) startBeacon(dev);
 }
-function devDisconnect(role){ const dev=RADIOS[role]; dev.on=false; clearTimeout(dev.timer); clearTimeout(dev.btimer); $('rl-'+role).style.display='none'; $('rf-'+role).style.display=''; devStatus(role,''); renderRadios(true); }
-function devForget(role){
-  devDisconnect(role);
-  try{ if(Android.delSecret) Android.delSecret('rd_'+role); }catch(_){}
-  try{ localStorage.removeItem('tdf_rd_'+role); }catch(_){}
-  $('rpass-'+role).value=''; toast('Login mita diya');
-}
+// ---- Stats loop: har ~1 second (radio bhi itna hi naya karta hai) ----
 async function devLoop(dev){
   if(!dev.on) return;
   const t0=Date.now();
   try{ await devPoll(dev); }catch(_){ dev.d.ok=false; }
-  const role=dev.role;
-  if(dev.d.ok){ if(dev.fails>=3) { devStatus(role,'● Juda hua','var(--lime)'); toast('✅ '+dev.label+' dobara jud gaya'); } dev.fails=0; }
-  else { dev.fails=(dev.fails||0)+1; if(dev.fails===3) devStatus(role,'● Offline — dobara jod raha hai','#fbbf24'); }
-  renderRadios();
-  const wait = dev.fails>=3 ? 3000 : Math.max(100, 500-(Date.now()-t0));
+  if(dev.d.ok){ if(dev.fails>=3){ devStatus(dev,'● Juda hua','var(--lime)'); toast('✅ '+dev.label+' dobara jud gaya'); } dev.fails=0; }
+  else { dev.fails=(dev.fails||0)+1; if(dev.fails===3) devStatus(dev,'● Offline — dobara jod raha hai','#fbbf24'); }
+  paintDev(dev); renderAll();
+  const wait = dev.fails>=3 ? 3000 : Math.max(150, 1000-(Date.now()-t0));
   if(dev.on) dev.timer=setTimeout(()=>devLoop(dev), wait);
-}
-// App khulte hi saved radios khud jodo
-function autoConnectRadios(){
-  if(!hasBridge() || !Android.getSecret) return;
-  ['isp','client'].forEach(role=>{
-    if(RADIOS[role].on) return;
-    let v=''; try{ v=Android.getSecret('rd_'+role); }catch(_){}
-    if(!v) return;
-    try{ const c=JSON.parse(v); $('rip-'+role).value=c.ip; $('ruser-'+role).value=c.u; $('rpass-'+role).value=c.pw; devConnect(role,true); }catch(_){}
-  });
 }
 async function devPoll(dev){
   const t=++dev.tick, D=dev.d;
-  const [cs, rs, ap, ifs, loc, gps, sys] = await Promise.all([
-    devGet(dev,'/restconf/data/mimosa-wifi-network:statistics/client-statistics'),
-    devGet(dev,'/restconf/data/mimosa-wifi-radio:statistics/radio-statistics'),
-    t%3===1 ? devGet(dev,'/restconf/data/mimosa-ap-info:ap-info/status') : undefined,
-    t%30===1 ? devGet(dev,'/restconf/data/ietf-interfaces:interfaces') : undefined,
-    t%50===1 ? devGet(dev,'/restconf/data/mimosa-device:device/config/location') : undefined,
-    t%20===1 ? devGet(dev,'/restconf/data/mimosa-gps:gps') : undefined,
-    t%50===1 ? devGet(dev,'/restconf/data/ietf-system:system-state') : undefined
-  ]);
-  D.ok=!!cs; D.at=Date.now();
-  if(cs){ let best=null, n=0; try{ const L=cs['mimosa-wifi-network:statistics']['client-statistics']||[]; n=L.length;
-      L.forEach(c=>{ const x=rdNode(c['raw-statistics']); if(x && (!best || (rdRssi(x.rssi)||-200)>(rdRssi(best.rssi)||-200))){ best=x; D.staMac=c.name; } }); }catch(_){}
-    D.node=best; D.clients=n;
-    // Beacon (ek antenna) ko Mimosa ke jore hue signal (dono antenna) ke barabar karo
-    const sv = best? rdRssi(best.rssi) : null;
-    if(sv!=null && D.bema!=null && D.beacon && Date.now()-D.beacon.t<2000){ const off=sv-D.bema; D.boff = D.boff==null ? off : D.boff*0.7 + off*0.3; }
-    // Doosre radio ka tez beacon (link dono taraf barabar hota hai)
-    const O=RADIOS[dev.role==='isp'?'client':'isp'].d;
-    if(sv!=null && O && O.bema!=null && O.beacon && Date.now()-O.beacon.t<2000){ const xo=sv-O.bema; D.xoff = D.xoff==null ? xo : D.xoff*0.7 + xo*0.3; }
-  }
-  if(rs){ try{ D.self=rdSelf(rs['mimosa-wifi-radio:statistics']['radio-statistics'][0]['raw-statistics']); }catch(_){} }
-  if(ap!==undefined && ap){ try{ const st=ap['mimosa-ap-info:ap-info'].status;
+  // Pehle sirf zaroori request; baqi kabhi kabhi (radio par bojh kam)
+  const cs=await devGet(dev,'/restconf/data/mimosa-wifi-network:statistics/client-statistics');
+  D.ok=!!cs; if(!cs) return;
+  let best=null, n=0; try{ const L=cs['mimosa-wifi-network:statistics']['client-statistics']||[]; n=L.length;
+    L.forEach(c=>{ const x=rdNode(c['raw-statistics']); if(x && (!best || (rdRssi(x.rssi)||-200)>(rdRssi(best.rssi)||-200))){ best=x; D.staMac=c.name; } }); }catch(_){}
+  D.node=best; D.clients=n;
+  const sv = best? rdRssi(best.rssi) : null;
+  if(sv!=null && D.bema!=null && D.beacon && Date.now()-D.beacon.t<2500){ const off=sv-D.bema; D.boff = D.boff==null ? off : D.boff*0.7 + off*0.3; }
+  const peer=peerOf(dev);
+  if(sv!=null && peer && peer.d.bema!=null && peer.d.beacon && Date.now()-peer.d.beacon.t<2500){ const xo=sv-peer.d.bema; D.xoff = D.xoff==null ? xo : D.xoff*0.7 + xo*0.3; }
+  const heavy=[];
+  if(t%2===1) heavy.push(devGet(dev,'/restconf/data/mimosa-wifi-radio:statistics/radio-statistics').then(rs=>{ if(rs){ try{ D.self=rdSelf(rs['mimosa-wifi-radio:statistics']['radio-statistics'][0]['raw-statistics']); }catch(_){} } }));
+  if(t%3===1 && devRole(dev)==='client') heavy.push(devGet(dev,'/restconf/data/mimosa-ap-info:ap-info/status').then(ap=>{ if(!ap) return; try{ const st=ap['mimosa-ap-info:ap-info'].status;
       D.rem=rdNode(JSON.parse(st.cli_stats)['mimosa-wifi-network:statistics']['client-statistics'][0]['raw-statistics']);
       D.remSelf=rdSelf(JSON.parse(st.radio_stats)['mimosa-wifi-radio:statistics']['radio-statistics'][0]['raw-statistics']);
-      D.remName=st.device_name; D.remTemp=st.temp;
-      const rl=findLatLon({latitude:st.latitude,longitude:st.longitude}); if(rl) D.remLoc=rl;
-    }catch(_){} }
-  if(ifs){ try{ const w=ifs['ietf-interfaces:interfaces'].interface.find(i=>i.name==='wifi0'); const st=w['mimosa-wifi-radio:state']||{};
+      D.remName=st.device_name; D.remTemp=st.temp; const rl=findLatLon({latitude:st.latitude,longitude:st.longitude}); if(rl) D.remLoc=rl; }catch(_){} }));
+  if(t%30===1) heavy.push(devGet(dev,'/restconf/data/ietf-interfaces:interfaces').then(ifs=>{ if(!ifs) return; try{ const w=ifs['ietf-interfaces:interfaces'].interface.find(i=>i.name==='wifi0'); const st=w['mimosa-wifi-radio:state']||{};
       const cc=st['current-channel-configuration']||{}, cp=st['current-power-configuration']||{};
-      D.cfg={freq:cc.frequency, bw:cc.bandwidth, tx:cp['transmit-power'], mode: w['mimosa-wifi-radio:access-point-configuration']?'AP':(w['mimosa-wifi-radio:client-configuration']?'STA':'')};
-    }catch(_){} }
-  if(sys){ try{ const pl=sys['ietf-system:system-state'].platform; D.model=pl.machine; D.temp=pl['mimosa-device:temperature']; D.fw=pl['os-release']; }catch(_){} }
-  if(gps){ const g=findLatLon(gps); if(g){ D.loc=g; D.locSrc='GPS'; } }
-  if(loc && D.locSrc!=='GPS'){ try{ const l=loc['mimosa-device:location']||loc; const g=findLatLon(l.local||l); if(g){ D.loc=g; D.locSrc='Radio setting'; } else if(!D.loc){ D.locSrc=null; } }catch(_){} }
+      D.cfg={freq:cc.frequency, bw:cc.bandwidth, tx:cp['transmit-power'], mode: w['mimosa-wifi-radio:access-point-configuration']?'AP':(w['mimosa-wifi-radio:client-configuration']?'STA':'')}; paintHeader(dev); }catch(_){} }));
+  if(t%60===1) heavy.push(devGet(dev,'/restconf/data/ietf-system:system-state').then(sys=>{ if(!sys) return; try{ const pl=sys['ietf-system:system-state'].platform; D.model=pl.machine; D.temp=pl['mimosa-device:temperature']; }catch(_){} }));
+  if(t%60===2) heavy.push(devGet(dev,'/restconf/data/mimosa-gps:gps').then(g=>{ const x=g&&findLatLon(g); if(x){ D.loc=x; D.locSrc='GPS'; } }));
+  if(t%60===3) heavy.push(devGet(dev,'/restconf/data/mimosa-device:device/config/location').then(l=>{ if(!l||D.locSrc==='GPS') return; try{ const o=l['mimosa-device:location']||l; const x=findLatLon(o.local||o); if(x){ D.loc=x; D.locSrc='Radio setting'; } }catch(_){} }));
+  if(heavy.length) await Promise.all(heavy);
 }
-
-// ===== Tez signal: Mimosa Aiming Mode wala /beacon-rssi (har request par naya) =====
+function peerOf(dev){ const r=devRole(dev); return DEVS.find(d=>d!==dev && d.on && devRole(d)!==r) || null; }
+// ---- Tez beacon: sirf chune hue radio par ----
+function startBeacon(dev){ DEVS.forEach(d=>{ if(d!==dev){ clearTimeout(d.btimer); d.bOn=false; } }); if(!dev.bOn){ dev.bOn=true; beaconLoop(dev); } }
 async function beaconLoop(dev){
-  if(!dev.on) return;
-  if(dev.beaconOff && Date.now()<dev.beaconOff) { dev.btimer=setTimeout(()=>beaconLoop(dev),5000); return; }
-  const t0=Date.now();
-  const isAP = dev.d.cfg && dev.d.cfg.mode==='AP';
+  if(!dev.on || !dev.bOn || SEL!==dev.id){ dev.bOn=false; return; }
+  if(dev.beaconOff && Date.now()<dev.beaconOff){ dev.btimer=setTimeout(()=>beaconLoop(dev),5000); return; }
+  const t0=Date.now(), isAP=devRole(dev)==='isp';
   const path = isAP ? (dev.d.staMac ? '/client/'+dev.d.staMac+'/beacon-rssi' : null) : '/beacon-rssi';
   if(!path){ dev.btimer=setTimeout(()=>beaconLoop(dev),1000); return; }
-  const r=await devReq(dev,'GET',path);
-  let ok=false;
-  if(r.status===200){ try{ const j=JSON.parse(r.body); if(j.status==='success' && typeof j.rssi==='number' && j.rssi<0){ ok=true; const B=dev.d; B.bema = B.bema==null ? j.rssi : B.bema*0.85 + j.rssi*0.15; B.bfast = B.bfast==null ? j.rssi : B.bfast*0.55 + j.rssi*0.45; B.beacon={v:B.bfast,t:Date.now()}; fastPaint(dev); } }catch(_){} }
-  if(ok){ dev.bfail=0; } else { dev.bfail=(dev.bfail||0)+1; if(dev.bfail>=3){ dev.beaconOff=Date.now()+30000; dev.bfail=0; } }
-  if(dev.on) dev.btimer=setTimeout(()=>beaconLoop(dev), Math.max(60, 120-(Date.now()-t0)));
+  const r=await devReq(dev,'GET',path); let ok=false;
+  if(r.status===200){ try{ const j=JSON.parse(r.body); if(j.status==='success' && typeof j.rssi==='number' && j.rssi<0){ ok=true; const B=dev.d;
+      B.bema = B.bema==null ? j.rssi : B.bema*0.85 + j.rssi*0.15; B.bfast = B.bfast==null ? j.rssi : B.bfast*0.55 + j.rssi*0.45; B.beacon={v:B.bfast,t:Date.now()}; fastPaint(dev); } }catch(_){} }
+  if(ok) dev.bfail=0; else { dev.bfail=(dev.bfail||0)+1; if(dev.bfail>=3){ dev.beaconOff=Date.now()+30000; dev.bfail=0; } }
+  dev.btimer=setTimeout(()=>beaconLoop(dev), Math.max(80, 150-(Date.now()-t0)));
 }
-// Signal number: tez beacon ho to woh, warna stats wala
 function devSignal(dev){
-  const D=dev.d;
+  const D=dev.d, sv=D.node? rdRssi(D.node.rssi) : null;
   if(D.beacon && Date.now()-D.beacon.t<2000){
     if(D.boff!=null) return {v:Math.round((D.beacon.v + D.boff)*10)/10, fast:true};
-    const sv=D.node? rdRssi(D.node.rssi) : null; if(sv!=null) return {v:sv, fast:false};
+    if(sv!=null) return {v:sv, fast:false};
     return {v:D.beacon.v, fast:true};
   }
-  const other=RADIOS[dev.role==='isp'?'client':'isp'];
-  if(other.on && D.xoff!=null && other.d.beacon && Date.now()-other.d.beacon.t<2000)
-    return {v:Math.round((other.d.beacon.v + D.xoff)*10)/10, fast:true, via:other.label};
-  const v=D.node? rdRssi(D.node.rssi) : null; return {v, fast:false};
+  const peer=peerOf(dev);
+  if(peer && D.xoff!=null && peer.d.beacon && Date.now()-peer.d.beacon.t<2000) return {v:Math.round((peer.d.beacon.v + D.xoff)*10)/10, fast:true, via:peer.label};
+  return {v:sv, fast:false};
 }
 function paintRssi(el,bar,v){
+  if(!el) return;
   el.textContent = v==null?'--':Number(v).toFixed(1);
   el.style.color = v==null?'var(--mut)':(v>=-60?'var(--lime)':(v>=-70?'#fbbf24':'#ff6b6b'));
-  bar.style.width = v==null?'0':Math.max(0,Math.min(100,(v+90)/50*100))+'%';
+  if(bar) bar.style.width = v==null?'0':Math.max(0,Math.min(100,(v+90)/50*100))+'%';
 }
 function fastPaint(dev){
-  const s=devSignal(dev); paintRssi($('rr-'+dev.role),$('rb-'+dev.role),s.v);
-  const od=RADIOS[dev.role==='isp'?'client':'isp']; if(od.on){ const so=devSignal(od); if(so.via) paintRssi($('rr-'+od.role),$('rb-'+od.role),so.v); }
-  const top = RADIOS.client.on?RADIOS.client:(RADIOS.isp.on?RADIOS.isp:null);
-  if(top===dev){ paintRssi($('stRssi'),$('stBar'),s.v); $('stName').textContent=dev.label+(s.fast?' ⚡':''); if(rdBeep && s.v!=null && Date.now()-(window._lastBeep||0)>200){ window._lastBeep=Date.now(); rdTone(s.v); } }
+  const s=devSignal(dev); paintRssi($('rr-'+dev.id),$('rb-'+dev.id),s.v);
+  const peer=peerOf(dev); if(peer){ const so=devSignal(peer); if(so.via) paintRssi($('rr-'+peer.id),$('rb-'+peer.id),so.v); }
+  renderStrip();
 }
-
-// Har radio ki location: GPS > radio setting > app coordinates
-function devPos(role){
-  const dev=RADIOS[role];
-  if(dev.on && dev.d.loc) return {p:dev.d.loc, src:dev.d.locSrc};
-  const other=RADIOS[role==='isp'?'client':'isp'];
-  if(other.on && other.d.remLoc) return {p:other.d.remLoc, src:'Doosre radio se'};
-  if(result) return {p: role==='isp'?result.a:result.b, src:'App coordinates'};
+// ---- Location / direction ----
+function devPos(dev){
+  if(dev.d.loc) return {p:dev.d.loc, src:dev.d.locSrc};
+  const role=devRole(dev);
+  if(role==='client'){ const ap=firstOf('isp'); if(ap && ap.d.remLoc) {} }
+  if(role==='isp'){ const c=DEVS.find(d=>d.on&&devRole(d)==='client'&&d.d.remLoc); if(c) return {p:c.d.remLoc, src:'Client radio se'}; }
+  if(result){ if(role==='isp') return {p:result.a, src:'App coordinates'}; if(dev===DEVS.find(d=>devRole(d)==='client')) return {p:result.b, src:'App coordinates'}; }
   return null;
 }
+function paintDev(dev){
+  if(!$('dc-'+dev.id)) return;
+  const D=dev.d, sg=devSignal(dev), v=sg.v;
+  paintRssi($('rr-'+dev.id),$('rb-'+dev.id),v);
+  $('rn-'+dev.id).textContent = dev.fails>=3 ? 'Radio se rabta nahi — khud dobara koshish ho rahi hai' :
+    ((D.clients>1?D.clients+' clients · ':'')+(v==null?'Link nahi':(sg.via?'⚡ Live ('+sg.via+' ke beacon se)':(sg.fast?'⚡ Live signal':(SEL===dev.id?'Signal (har second)':'Signal (har second) — tez ke liye card dabao')))));
+  const c=D.cfg||{};
+  $('rk-'+dev.id).innerHTML='<div><b>'+(D.model||'--')+'</b><span>Model</span></div><div><b>'+(c.freq||'--')+'</b><span>MHz / '+(c.bw||'--')+'</span></div><div><b>'+(c.tx!=null?c.tx:'--')+'</b><span>Tx dBm</span></div><div><b>'+(D.temp!=null?D.temp+'°':'--')+'</b><span>Temp</span></div>';
+  const pos=devPos(dev); let li='📍 '+(pos? pos.p.lat.toFixed(5)+', '+pos.p.lon.toFixed(5)+' <span style="color:var(--mut)">('+pos.src+')</span>' : 'Location nahi — radio mein save karo');
+  if(pos){
+    const targets = devRole(dev)==='isp' ? DEVS.filter(d=>d.on&&devRole(d)==='client') : DEVS.filter(d=>d.on&&devRole(d)==='isp');
+    targets.forEach(t=>{ const tp=devPos(t); if(tp){ const br=bearing(pos.p,tp.p); li+='<br>🎯 '+(t.label)+' ki taraf: <b style="color:var(--lime)">'+br.toFixed(1)+'° '+dir16(br)+'</b> · '+fmtDist(distance(pos.p,tp.p)); } });
+  }
+  $('rloc-'+dev.id).innerHTML=li;
+}
 let rLastRender=0;
-function renderRadios(force){
-  const now=Date.now(); if(!force && now-rLastRender<250) return; rLastRender=now;
-  ['isp','client'].forEach(role=>{
-    const dev=RADIOS[role], D=dev.d; if(!dev.on) return;
-    const sg=devSignal(dev), v=sg.v;
-    paintRssi($('rr-'+role),$('rb-'+role),v);
-    const c=D.cfg||{};
-    $('rk-'+role).innerHTML='<div><b>'+(D.model||'--')+'</b><span>'+(c.mode||'Model')+'</span></div><div><b>'+(c.freq||'--')+'</b><span>MHz / '+(c.bw||'--')+'</span></div><div><b>'+(c.tx!=null?c.tx:'--')+'</b><span>Tx dBm</span></div><div><b>'+(D.temp!=null?D.temp+'°':'--')+'</b><span>Temp</span></div>';
-    const pos=devPos(role), other=devPos(role==='isp'?'client':'isp');
-    let li='📍 '+(pos? pos.p.lat.toFixed(5)+', '+pos.p.lon.toFixed(5)+' <span style="color:var(--mut)">('+pos.src+')</span>' : 'Location nahi');
-    if(pos&&other){ const br=bearing(pos.p,other.p); li+='<br>🎯 Dish ki direction: <b style="color:var(--lime)">'+br.toFixed(1)+'° '+dir16(br)+'</b> · '+fmtDist(distance(pos.p,other.p)); }
-    $('rloc-'+role).innerHTML=li;
-    $('rn-'+role).textContent = dev.fails>=3 ? 'Radio se rabta nahi — khud dobara koshish ho rahi hai' : ((D.clients>1?D.clients+' clients · ':'')+(v==null?'Link nahi':(sg.via?'⚡ Live ('+sg.via+' ke beacon se)':(sg.fast?'⚡ Live signal (Aiming)':'Signal (har second)'))));
-  });
-  renderLinkSummary(); renderStrip();
+function renderAll(force){
+  renderStrip();
+  if(curTab!=='r' && !force) return;            // Radios tab band ho to bhaari kaam nahi
+  const now=Date.now(); if(!force && now-rLastRender<1000) return; rLastRender=now;
+  renderLinkSummary();
 }
 function renderLinkSummary(){
-  const any=RADIOS.isp.on||RADIOS.client.on; $('rSum').style.display=any?'':'none'; if(!any) return;
-  const A=devPos('isp'), B=devPos('client');
+  const on=DEVS.filter(d=>d.on); $('rSum').style.display=on.length?'':'none'; if(!on.length) return;
+  const sel=devById(SEL)||on[0];
+  const src = devRole(sel)==='client' ? sel : (DEVS.find(d=>d.on&&devRole(d)==='client')||sel);
   let h='';
-  if(A&&B){ const d=distance(A.p,B.p), ab=bearing(A.p,B.p), ba=bearing(B.p,A.p);
-    h+='<div class="kv kv3"><div><b>'+fmtDist(d)+'</b><span>Distance</span></div><div><b>'+ab.toFixed(1)+'°</b><span>ISP → Client</span></div><div><b>'+ba.toFixed(1)+'°</b><span>Client → ISP</span></div></div>'; }
-  // Link stats: Client (STA) ka data behtar hai kyunke us mein remote bhi hota hai
-  const src = RADIOS.client.on&&RADIOS.client.d.node ? RADIOS.client : (RADIOS.isp.on ? RADIOS.isp : null);
   if(src && src.d.node){
     const loc=src.d.node, R=src.d.rem||{}, ls=src.d.self, rsf=src.d.remSelf;
     const dl=rdRssi(loc.rssi), ul=src.d.rem?rdRssi(src.d.rem.rssi):null;
@@ -1513,39 +1499,42 @@ function renderLinkSummary(){
     h+='<div class="tblw"><h3>Streams</h3><table class="tbl"><tr><th>#</th><th>Tx MCS</th><th>Tx W</th><th>Tx PHY</th><th>Rx MCS</th><th>Rx W</th><th>Rx PHY</th><th>Rx SNR</th></tr>'+
       [0,1].map(i=>'<tr><td>'+(i+1)+'</td><td>'+loc.txMcs+'</td><td>'+loc.txBw+'</td><td>'+fPhy(loc.txPhy)+'</td><td>'+loc.rxMcs+'</td><td>'+loc.rxBw+'</td><td>'+fPhy(loc.rxPhy)+'</td><td>'+f1(cinr(i))+'</td></tr>').join('')+'</table></div>';
   }
-  $('rSumBody').innerHTML=h;
+  if($('rSumBody').innerHTML!==h) $('rSumBody').innerHTML=h;
   drawRadioMap();
 }
-// Radios ka map
 let RM=null, RMg=null;
 async function drawRadioMap(){
-  const A=devPos('isp'), B=devPos('client'); if(!A||!B) return;
+  const pts=DEVS.filter(d=>d.on).map(d=>({d, pos:devPos(d)})).filter(x=>x.pos);
+  if(!pts.length) return;
   if(!RM){
     try{ await loadLeaflet(); }catch(_){ return; }
     $('rmap').innerHTML='';
     RM=L.map('rmap',{zoomControl:false,attributionControl:true,tap:false}); RM.attributionControl.setPrefix(false);
     cachedLayer('https://clarity.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:17,maxZoom:20,attribution:'Esri Clarity'}).addTo(RM);
-    RM._fit=false;
   }
-  const key=[A.p.lat,A.p.lon,B.p.lat,B.p.lon].map(x=>x.toFixed(5)).join(',');
+  const key=pts.map(x=>x.d.id+x.pos.p.lat.toFixed(5)+x.pos.p.lon.toFixed(5)).join('|');
   if(RM._key===key) return; RM._key=key;
   if(RMg) RM.removeLayer(RMg);
-  const a=[A.p.lat,A.p.lon], b=[B.p.lat,B.p.lon], ab=bearing(A.p,B.p), ba=bearing(B.p,A.p);
-  RMg=L.layerGroup([
-    L.polyline([a,b],{color:'#0a0b0c',weight:8,opacity:.5,interactive:false}),
-    L.polyline([a,b],{color:'#c8f135',weight:4,dashArray:'10 10',className:'flow',interactive:false}),
-    L.circleMarker(a,{radius:10,color:'#0a0b0c',weight:3,fillColor:'#ffffff',fillOpacity:1}).bindTooltip('ISP radio → '+ab.toFixed(0)+'°',{permanent:true,direction:'top',offset:[0,-10],className:'tt'}),
-    L.circleMarker(b,{radius:10,color:'#0a0b0c',weight:3,fillColor:'#ff6b6b',fillOpacity:1}).bindTooltip('Client radio → '+ba.toFixed(0)+'°',{permanent:true,direction:'top',offset:[0,-10],className:'tt'})
-  ]).addTo(RM);
-  RM.invalidateSize(); RM.fitBounds(L.latLngBounds([a,b]).pad(0.25),{animate:false,maxZoom:17});
+  const layers=[]; const isp=pts.find(x=>devRole(x.d)==='isp');
+  pts.forEach(x=>{
+    const ll=[x.pos.p.lat,x.pos.p.lon], role=devRole(x.d);
+    if(isp && role==='client'){ const a=[isp.pos.p.lat,isp.pos.p.lon]; layers.push(L.polyline([a,ll],{color:'#c8f135',weight:4,dashArray:'10 10',className:'flow',interactive:false})); }
+    let lbl=x.d.label;
+    if(isp && role==='client') lbl+=' → '+bearing(x.pos.p,isp.pos.p).toFixed(0)+'°';
+    if(role==='isp'){ const c=pts.filter(y=>devRole(y.d)==='client'); if(c.length===1) lbl+=' → '+bearing(x.pos.p,c[0].pos.p).toFixed(0)+'°'; }
+    layers.push(L.circleMarker(ll,{radius:10,color:'#0a0b0c',weight:3,fillColor:role==='isp'?'#ffffff':'#ff6b6b',fillOpacity:1}).bindTooltip(lbl,{permanent:true,direction:'top',offset:[0,-10],className:'tt'}));
+  });
+  RMg=L.layerGroup(layers).addTo(RM);
+  RM.invalidateSize();
+  if(pts.length===1) RM.setView([pts[0].pos.p.lat,pts[0].pos.p.lon],15,{animate:false});
+  else RM.fitBounds(L.latLngBounds(pts.map(x=>[x.pos.p.lat,x.pos.p.lon])).pad(0.25),{animate:false,maxZoom:17});
 }
-// Compass tab ki chhoti signal patti
 function renderStrip(){
-  const dev = RADIOS.client.on?RADIOS.client:(RADIOS.isp.on?RADIOS.isp:null);
+  const dev = devById(SEL) && devById(SEL).on ? devById(SEL) : DEVS.find(d=>d.on);
   $('rStrip').style.display = dev ? '' : 'none'; if(!dev) return;
   const sg=devSignal(dev), v=sg.v;
-  paintRssi($('stRssi'),$('stBar'),v); $('stName').textContent=dev.label+(sg.fast?' ⚡':'');
-  if(rdBeep && v!=null && Date.now()-(window._lastBeep||0)>350){ window._lastBeep=Date.now(); rdTone(v); }
+  paintRssi($('stRssi'),$('stBar'),v); const nm=dev.label+(sg.fast?' ⚡':''); if($('stName').textContent!==nm) $('stName').textContent=nm;
+  if(rdBeep && v!=null && Date.now()-(window._lastBeep||0)>(sg.fast?200:600)){ window._lastBeep=Date.now(); rdTone(v); }
 }
 function rdBeepToggle(){
   rdBeep=!rdBeep; document.querySelectorAll('.beepBtn').forEach(b=>b.textContent=rdBeep?'🔇 Beep band':'🔊 Beep');
@@ -1561,21 +1550,34 @@ function rdTone(v){
   }catch(_){}
 }
 
+
 let rdLocArm=null;
 async function rdSendLoc(role){
   const e=$('locErr'); e.style.color=''; e.textContent='';
-  const dev=RADIOS[role];
-  if(!dev.on){ e.textContent='Pehle Radios tab mein '+dev.label+' jodo.'; return; }
+  const dev=firstOf(role==='isp'?'isp':'client');
+  if(!dev){ e.textContent='Pehle Radios tab mein '+(role==='isp'?'ISP':'Client')+' radio add karo.'; return; }
   if(!result) return;
   if(rdLocArm!==role){ rdLocArm=role; e.style.color='var(--acc)'; e.textContent=dev.label+' ki location badal jayegi. Pakka? Dobara wahi button dabao.'; return; }
   rdLocArm=null;
   const me = role==='isp'?result.a:result.b, other = role==='isp'?result.b:result.a;
   const body=JSON.stringify({"mimosa-device:location":{"local":{"latitude":+me.lat.toFixed(6),"longitude":+me.lon.toFixed(6)},"remote":{"latitude":+other.lat.toFixed(6),"longitude":+other.lon.toFixed(6)}}});
   const r=await devReq(dev,'PATCH','/restconf/data/mimosa-device:device/config/location',body);
-  if(r.status>=200 && r.status<300){ e.style.color='var(--lime)'; e.textContent='✅ '+dev.label+' mein coordinates save ho gaye.'; dev.tick=24; }
+  if(r.status>=200 && r.status<300){ e.style.color='var(--lime)'; e.textContent='✅ '+dev.label+' mein coordinates save ho gaye.'; dev.tick=59; }
   else { e.textContent='Save nahi hua ('+r.status+'): '+String(r.body||'').slice(0,160); }
 }
-['isp','client'].forEach(role=>{ try{ const sv=JSON.parse(localStorage.getItem('tdf_rd_'+role)||'null'); if(sv){ $('rip-'+role).value=sv.ip; $('ruser-'+role).value=sv.u; } }catch(_){} });
+// App khulte hi saved radios khud jodo (purane 2-radio login bhi le aao)
+function autoConnectRadios(){
+  if(!hasBridge() || !Android.getSecret || DEVS.length) return;
+  let list=[]; try{ list=JSON.parse(Android.getSecret('rd_list')||'[]'); }catch(_){}
+  if(!list.length){ ['isp','client'].forEach(role=>{ try{ const v=Android.getSecret('rd_'+role); if(v){ const c=JSON.parse(v); list.push({id:'d'+role, label:role==='isp'?'ISP radio':'Client radio', type:role, ip:c.ip, u:c.u, pw:c.pw}); } }catch(_){} }); }
+  list.forEach(x=>{ const dev=Object.assign({auth:btoa(x.u+':'+x.pw), d:{}}, x); DEVS.push(dev); });
+  if(list.length) saveDevList();
+  if(!SEL && DEVS.length) SEL=(DEVS.find(d=>d.type==='client')||DEVS[0]).id;
+  DEVS.forEach(async dev=>{ mountDev(dev); devStatus(dev,'',''); $('rst-'+dev.id).innerHTML='<span class="spin"></span>';
+    const r=await devReq(dev,'GET','/restconf/data/mimosa-wifi-network:statistics/client-statistics');
+    if(r.status===401||r.status===403){ devStatus(dev,'Password ghalat — hata kar dobara add karo','#ff6b6b'); return; }
+    startDev(dev, r.status===200); });
+}
 
 // ===== Fullscreen map + tap se tower set karo =====
 let fsHome=null;
