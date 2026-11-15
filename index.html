@@ -1392,7 +1392,11 @@ async function devPoll(dev){
   D.ok=!!cs; D.at=Date.now();
   if(cs){ let best=null, n=0; try{ const L=cs['mimosa-wifi-network:statistics']['client-statistics']||[]; n=L.length;
       L.forEach(c=>{ const x=rdNode(c['raw-statistics']); if(x && (!best || (rdRssi(x.rssi)||-200)>(rdRssi(best.rssi)||-200))) best=x; }); }catch(_){}
-    D.node=best; D.clients=n; }
+    D.node=best; D.clients=n;
+    // Beacon (ek antenna) ko Mimosa ke jore hue signal (dono antenna) ke barabar karo
+    const sv = best? rdRssi(best.rssi) : null;
+    if(sv!=null && D.bema!=null && D.beacon && Date.now()-D.beacon.t<2000){ const off=sv-D.bema; D.boff = D.boff==null ? off : D.boff*0.7 + off*0.3; }
+  }
   if(rs){ try{ D.self=rdSelf(rs['mimosa-wifi-radio:statistics']['radio-statistics'][0]['raw-statistics']); }catch(_){} }
   if(ap!==undefined && ap){ try{ const st=ap['mimosa-ap-info:ap-info'].status;
       D.rem=rdNode(JSON.parse(st.cli_stats)['mimosa-wifi-network:statistics']['client-statistics'][0]['raw-statistics']);
@@ -1416,18 +1420,22 @@ async function beaconLoop(dev){
   const t0=Date.now();
   const r=await devReq(dev,'GET','/beacon-rssi');
   let ok=false;
-  if(r.status===200){ try{ const j=JSON.parse(r.body); if(j.status==='success' && typeof j.rssi==='number'){ ok=true; dev.d.beacon={v:j.rssi,t:Date.now()}; fastPaint(dev); } }catch(_){} }
+  if(r.status===200){ try{ const j=JSON.parse(r.body); if(j.status==='success' && typeof j.rssi==='number'){ ok=true; const B=dev.d; B.bema = B.bema==null ? j.rssi : B.bema*0.85 + j.rssi*0.15; B.bfast = B.bfast==null ? j.rssi : B.bfast*0.55 + j.rssi*0.45; B.beacon={v:B.bfast,t:Date.now()}; fastPaint(dev); } }catch(_){} }
   if(ok){ dev.bfail=0; } else { dev.bfail=(dev.bfail||0)+1; if(dev.bfail>=3){ dev.beaconOff=Date.now()+30000; dev.bfail=0; } }
   if(dev.on) dev.btimer=setTimeout(()=>beaconLoop(dev), Math.max(60, 120-(Date.now()-t0)));
 }
 // Signal number: tez beacon ho to woh, warna stats wala
 function devSignal(dev){
   const D=dev.d;
-  if(D.beacon && Date.now()-D.beacon.t<2000) return {v:D.beacon.v, fast:true};
+  if(D.beacon && Date.now()-D.beacon.t<2000){
+    if(D.boff!=null) return {v:Math.round((D.beacon.v + D.boff)*10)/10, fast:true};
+    const sv=D.node? rdRssi(D.node.rssi) : null; if(sv!=null) return {v:sv, fast:false};
+    return {v:D.beacon.v, fast:true};
+  }
   const v=D.node? rdRssi(D.node.rssi) : null; return {v, fast:false};
 }
 function paintRssi(el,bar,v){
-  el.textContent = v==null?'--':(Number.isInteger(v)?v:v.toFixed(1));
+  el.textContent = v==null?'--':Number(v).toFixed(1);
   el.style.color = v==null?'var(--mut)':(v>=-60?'var(--lime)':(v>=-70?'#fbbf24':'#ff6b6b'));
   bar.style.width = v==null?'0':Math.max(0,Math.min(100,(v+90)/50*100))+'%';
 }
