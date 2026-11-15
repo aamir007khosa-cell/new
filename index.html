@@ -135,6 +135,20 @@
     </div>
 
     <div class="card">
+      <h2>📶 Frequency planner</h2>
+      <p class="hint">Mimosa ke <b>Spectrum Analyzer</b> mein <b>Combined</b> dabao. Jahan oonchi lines (−80 dBm se oopar) hon, woh ranges yahan likho.</p>
+      <label>Busy ranges (MHz)</label>
+      <input id="busy" placeholder="5490-5530, 5660-5700, 6080-6150">
+      <div class="row">
+        <div><label>Allowed se (MHz)</label><input id="fmin" type="number" inputmode="decimal" value="5150"></div>
+        <div><label>Allowed tak (MHz)</label><input id="fmax" type="number" inputmode="decimal" value="6425"></div>
+      </div>
+      <div class="btns"><button class="main" style="background:#2e9d5b;color:#fff" onclick="planFreq()">Best frequency batao</button></div>
+      <div class="err" id="pErr"></div>
+      <div id="pOut"></div>
+    </div>
+
+    <div class="card">
       <h2>🧭 Live compass</h2>
       <p class="hint">Yeh tab chalega jab yeh page phone ke <b>Chrome</b> mein khula ho. Phone flat pakdo aur tower se 5–10 qadam door raho.</p>
       <div class="btns"><button onclick="startLive()">Live compass chalao</button></div>
@@ -402,6 +416,51 @@ function drawProfile(elev,pts,HA,HB,clutM,D){
   $('prof').innerHTML=g;
 }
 
+// ===== Frequency planner =====
+function parseBusy(t){
+  const out=[]; (t||'').split(/[,;\n]+/).forEach(x=>{
+    const m=x.match(/(\d{4,5})\s*[-–to ]+\s*(\d{4,5})/i) || x.match(/^\s*(\d{4,5})\s*$/);
+    if(!m) return; let a=+m[1], b=m[2]?+m[2]:a+10; if(!m[2]) a-=10;
+    out.push([Math.min(a,b),Math.max(a,b)]);
+  }); return out;
+}
+function planFreq(){
+  const e=$('pErr'); e.textContent='';
+  const busy=parseBusy($('busy').value), lo=num('fmin')??5150, hi=num('fmax')??6425;
+  if(hi-lo<20){ e.textContent='Allowed range theek likho.'; return; }
+  const d = result ? result.d : null;
+  // Distance ke hisaab se bandwidth
+  let rec=80, why='';
+  if(d===null){ why='(Distance nahi pata, upar Calculate karo.)'; }
+  else if(d<=6000){ rec=80; why='Link '+fmtDist(d)+' ka hai — 80 MHz se full speed milegi.'; }
+  else if(d<=15000){ rec=80; why='Link '+fmtDist(d)+' ka hai — 80 MHz chalao; signal −65 dBm se kamzor ho to 40 MHz.'; }
+  else { rec=40; why='Link '+fmtDist(d)+' lamba hai — 40 MHz zyada stable rahega.'; }
+  const best=bw=>{
+    const c=[];
+    for(let f=Math.ceil((lo+bw/2)/5)*5; f+bw/2<=hi; f+=5){
+      const a=f-bw/2, b=f+bw/2; let gap=Infinity;
+      for(const [x,y] of busy){ if(b>x && a<y){gap=-1;break;} gap=Math.min(gap, x>=b? x-b : a-y); }
+      if(gap<0) continue;
+      const edge=Math.min(a-lo, hi-b);
+      c.push({f,gap: busy.length?gap:edge, edge});
+    }
+    c.sort((p,q)=> (Math.min(q.gap,60)-Math.min(p.gap,60)) || (q.edge-p.edge));
+    const pick=[]; for(const x of c){ if(pick.every(y=>Math.abs(y.f-x.f)>=bw)) pick.push(x); if(pick.length===3) break; }
+    return pick;
+  };
+  let h='<ul class="list">';
+  h+='<li><span>Mashwara</span><b style="color:var(--ok)">'+rec+' MHz bandwidth</b></li></ul><p class="hint">'+why+'</p>';
+  [80,40,20].forEach(bw=>{
+    const p=best(bw);
+    h+='<h2 style="margin-top:12px">'+bw+' MHz ke liye'+(bw===rec?' ⭐':'')+'</h2><ul class="list">';
+    if(!p.length) h+='<li><span>Koi saaf jagah nahi</span><b>–</b></li>';
+    p.forEach((x,i)=>{ h+='<li><span>'+(i===0?'Best: ':'')+'Center Frequency</span><b>'+x.f+' MHz <span style="color:var(--mut);font-weight:400">('+(x.f-bw/2)+'–'+(x.f+bw/2)+(busy.length?', '+(x.gap>=60?'60+':x.gap)+' MHz door':'')+')</span></b></li>'; });
+    h+='</ul>';
+  });
+  h+='<p class="hint" style="margin-top:8px">Dono taraf (ISP aur Client) ka spectrum dekho — Mimosa mein <b>Combined</b> view. Frequency badalne ke baad 1–2 din signal aur speed check karo.</p>';
+  $('pOut').innerHTML=h; save();
+}
+
 // GPS
 function useGPS(which){
   const e = $(which+'Err');
@@ -473,8 +532,8 @@ function drawLive(h){
 }
 
 // Pichli values yaad rakho (sirf isi phone par)
-function save(){ try{ ['a','b','ga','ha','gb','hb','clut','ispH','freq','bw'].forEach(k=>localStorage.setItem('tdf_'+k,$(k).value)); }catch(_){} }
-try{ ['a','b','ga','ha','gb','hb','clut','ispH','freq','bw'].forEach(k=>{ const v=localStorage.getItem('tdf_'+k); if(v) $(k).value=v; }); }catch(_){}
+function save(){ try{ ['a','b','ga','ha','gb','hb','clut','ispH','freq','bw','busy','fmin','fmax'].forEach(k=>localStorage.setItem('tdf_'+k,$(k).value)); }catch(_){} }
+try{ ['a','b','ga','ha','gb','hb','clut','ispH','freq','bw','busy','fmin','fmax'].forEach(k=>{ const v=localStorage.getItem('tdf_'+k); if(v) $(k).value=v; }); }catch(_){}
 </script>
 </body>
 </html>
