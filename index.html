@@ -2,7 +2,7 @@
 <html lang="ur">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0a0d1a">
 <title>Tower Direction Finder</title>
 <style>
@@ -13,7 +13,7 @@
   --r:24px;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.5 "Segoe UI",Roboto,system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+html,body{touch-action:pan-x pan-y;margin:0;background:var(--bg);color:var(--txt);font:15px/1.5 "Segoe UI",Roboto,system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
 body{min-height:100vh;overflow-x:hidden;overscroll-behavior-y:none}
 .aurora{position:fixed;inset:0;z-index:0;pointer-events:none;transform:translateZ(0);contain:strict;
   background:radial-gradient(60vmax 35vmax at 50% -12%,rgba(200,241,53,.10),transparent 70%)}
@@ -168,7 +168,8 @@ details[open] summary::before{content:"－ "}
 /* ===== Map inside compass ===== */
 .cmp{position:relative;width:100%;aspect-ratio:1/1}
 .cmp svg{position:absolute;inset:0;z-index:2;pointer-events:none}
-.cmpmap{position:absolute;left:9.4%;top:9.4%;width:81.2%;height:81.2%;border-radius:50%;overflow:hidden;background:var(--card2);z-index:1;transform:translateZ(0);box-shadow:inset 0 0 0 2px #0a0b0c}
+.cmp{touch-action:none}
+.cmpmap{touch-action:none;position:absolute;left:9.4%;top:9.4%;width:81.2%;height:81.2%;border-radius:50%;overflow:hidden;background:var(--card2);z-index:1;transform:translateZ(0);box-shadow:inset 0 0 0 2px #0a0b0c}
 #lmap{position:absolute;left:-21%;top:-21%;width:142%;height:142%;will-change:transform}
 .cmpmap::after{content:"";position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,transparent 55%,rgba(10,11,12,.55) 100%);pointer-events:none;z-index:500}
 .cmpmap .medot{position:absolute;left:50%;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:#3b82f6;border:3px solid #fff;box-shadow:0 0 0 6px rgba(59,130,246,.3);z-index:600}
@@ -1093,7 +1094,7 @@ function centerMap(){
   const c = mePos || result.a;
   LM.setView([c.lat,c.lon], mapFit? fitZoom(c) : (LM.getZoom()||16), {animate:false});
 }
-function fitLine(){ mapFit=true; centerMap(); toast('↔️ Poori line'); }
+function fitLine(){ mapFit=true; mapFollow=true; centerMap(); toast('↔️ Poori line'); }
 // Is jagah satellite tasveer kitne zoom tak hai — Esri se pooch kar wahi tak asli tiles lo, aage bara kar ke dikhao
 let satChecked=null;
 async function satDepth(){
@@ -1124,7 +1125,7 @@ function startWatch(){
     meWatch=navigator.geolocation.watchPosition(p=>{
       const first=!mePos;
       mePos={lat:p.coords.latitude, lon:p.coords.longitude};
-      if(LM) LM.setView([mePos.lat,mePos.lon], (first&&mapFit)? fitZoom(mePos) : LM.getZoom(), {animate:false});
+      if(LM && mapFollow) LM.setView([mePos.lat,mePos.lon], (first&&mapFit)? fitZoom(mePos) : LM.getZoom(), {animate:false});
       if(result){
         const dB=distance(mePos,result.b), bB=bearing(mePos,result.b);
         $('meInfo').innerHTML='Client tower aap se <b>'+fmtDist(dB)+'</b>, <b>'+bB.toFixed(0)+'°</b> par · GPS ±'+Math.round(p.coords.accuracy)+' m';
@@ -1286,6 +1287,41 @@ async function rdSendLoc(side){
   else { e.textContent='Save nahi hua ('+r.status+'): '+String(r.body||'').slice(0,160); }
 }
 try{ const sv=JSON.parse(localStorage.getItem('tdf_rd')||'null'); if(sv){ $('rdIp').value=sv.ip; $('rdUser').value=sv.u; } }catch(_){}
+
+
+// ===== Map touch: ek ungli = map hilao, do ungli = zoom (ghoomte map ke hisaab se) =====
+let mapFollow=true;
+(function(){
+  let last=null, pinch=null;
+  const pts=e=>[...e.touches].map(t=>({x:t.clientX,y:t.clientY}));
+  const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+  function onStart(e){
+    if(!LM) return; e.preventDefault();
+    const p=pts(e); last=p;
+    pinch = p.length>=2 ? {d:dist(p[0],p[1]), z:LM.getZoom()} : null;
+  }
+  function onMove(e){
+    if(!LM||!last) return; e.preventDefault();
+    const p=pts(e);
+    if(p.length>=2 && pinch){
+      const r=dist(p[0],p[1])/pinch.d;
+      LM.setZoom(Math.max(6,Math.min(19,pinch.z+Math.log2(r))),{animate:false});
+      mapFit=false;
+    } else if(p.length===1 && last.length===1){
+      const dx=p[0].x-last[0].x, dy=p[0].y-last[0].y, h=toRad(hShow||0);
+      // screen ki harkat ko ghoome hue map ki harkat mein badlo
+      const mx=Math.cos(h)*dx-Math.sin(h)*dy, my=Math.sin(h)*dx+Math.cos(h)*dy;
+      LM.panBy([-mx,-my],{animate:false});
+      mapFit=false; mapFollow=false;
+    }
+    last=p;
+    if(p.length<2) pinch=null; else if(!pinch) pinch={d:dist(p[0],p[1]), z:LM.getZoom()};
+  }
+  function onEnd(e){ const p=pts(e); last=p.length?p:null; if(p.length<2) pinch=null; }
+  document.addEventListener('DOMContentLoaded',()=>{});
+  const el=document.getElementById('cmpmap');
+  if(el){ el.addEventListener('touchstart',onStart,{passive:false}); el.addEventListener('touchmove',onMove,{passive:false}); el.addEventListener('touchend',onEnd); el.addEventListener('touchcancel',onEnd); }
+})();
 
 // ===== UI helpers =====
 const TITLES={dir:'Direction',h:'Tower height',s:'Expected signal',f:'Frequency planner',c:'Live compass'};
