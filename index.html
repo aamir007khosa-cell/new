@@ -165,14 +165,27 @@ details[open] summary::before{content:"－ "}
 .lite .page.on .hint,.lite .page.on label,.lite .pop .stat .k,.lite .pop .stat .s{animation:none}
 .lite .nav{box-shadow:none}
 
-/* ===== Map inside compass ===== */
-.cmp{position:relative;width:100%;aspect-ratio:1/1}
-.cmp svg{position:absolute;inset:0;z-index:2;pointer-events:none}
-.cmp{touch-action:none}
-.cmpmap{touch-action:none;position:absolute;left:9.4%;top:9.4%;width:81.2%;height:81.2%;border-radius:50%;overflow:hidden;background:var(--card2);z-index:1;transform:translateZ(0);box-shadow:inset 0 0 0 2px #0a0b0c}
-#lmap{position:absolute;left:-21%;top:-21%;width:142%;height:142%;will-change:transform}
-.cmpmap::after{content:"";position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,transparent 55%,rgba(10,11,12,.55) 100%);pointer-events:none;z-index:500}
-.cmpmap .medot{position:absolute;left:50%;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:#3b82f6;border:3px solid #fff;box-shadow:0 0 0 6px rgba(59,130,246,.3);z-index:600}
+/* ===== Pointer + map ===== */
+.seg{display:flex;background:var(--card2);border-radius:999px;padding:4px;gap:4px;margin:4px 0 8px}
+.seg button{flex:1;border:none;background:none;padding:10px 6px;font-size:13px;color:var(--mut)}
+.seg button.on{background:var(--lime);color:var(--ink)}
+.ptr{width:min(78%,300px);margin:6px auto 0;aspect-ratio:1/1}
+.ptr svg{width:100%;height:100%}
+#ptrRing{transition:stroke .2s}
+.ptr.ok #ptrRing{stroke-dasharray:704 0}
+.ptr.ok path{filter:drop-shadow(0 0 10px rgba(200,241,53,.6))}
+.kv.kv3{grid-template-columns:repeat(3,1fr)}
+.leaflet-tooltip.tt{background:#0a0b0c;color:#f4f6f5;border:1px solid #c8f135;border-radius:999px;font-weight:800;font-size:11px;padding:2px 8px;box-shadow:none}
+.leaflet-tooltip.tt::before{display:none}
+#lmap.leaflet-container{background:#1c1f21;font-family:inherit}
+.leaflet-container svg{width:initial;height:initial;display:initial}
+.leaflet-control-attribution{background:rgba(10,11,12,.7)!important;color:#777!important;font-size:8px!important}
+.flow{animation:flow 1s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-20}}
+#mapBox{height:300px;border-radius:18px;overflow:hidden;margin-top:12px;position:relative;background:var(--card2)}
+#lmap{position:absolute;inset:0}
+.me .cone{position:absolute;left:0;top:0;width:80px;height:80px;border-radius:50%;background:conic-gradient(from -25deg,rgba(200,241,53,.65) 0deg 50deg,transparent 50deg);-webkit-mask:radial-gradient(circle,#000 20%,transparent 70%);mask:radial-gradient(circle,#000 20%,transparent 70%);will-change:transform}
+.me .dot{position:absolute;left:31px;top:31px;width:18px;height:18px;border-radius:50%;background:#3b82f6;border:3px solid #fff;box-shadow:0 0 0 6px rgba(59,130,246,.3)}
 .mapload{position:absolute;inset:0;display:grid;place-items:center;color:var(--mut);font-size:13px}
 #lmap.leaflet-container{background:#1c1f21;font-family:inherit}
 .leaflet-container svg{width:initial;height:initial;display:initial}
@@ -467,17 +480,28 @@ details[open] summary::before{content:"－ "}
     </div>
     <div class="card hasres">
       <h2><span class="ic">🧭</span> Live compass</h2>
-      <p class="hint" style="margin-top:-6px">Phone flat pakdo ya camera ki tarah khara karo. Tower ke steel se 5–10 qadam door raho.</p>
-      <div class="btns"><button class="main" onclick="startLive()">Live compass chalao</button></div>
+      <p class="hint" style="margin-top:-6px">Phone flat pakdo (ya camera ki tarah khara). Tower ke steel se 5–10 qadam door raho.</p>
+      <div class="btns" id="liveStart"><button class="main" onclick="startLive()">Live compass chalao</button></div>
       <div class="err" id="liveErr"></div>
       <div id="live">
-        <div class="cmp">
-          <div class="cmpmap" id="cmpmap"><div id="lmap"><div class="mapload"><span class="spin"></span>Map...</div></div><div class="medot"></div></div>
-          <svg id="liveSvg" viewBox="0 0 320 320"></svg>
+        <div class="seg"><button id="tgB" class="on" onclick="setTarget('b',true)">🎯 Client tower</button><button id="tgA" onclick="setTarget('a',true)">🎯 ISP tower</button></div>
+        <div class="ptr" id="ptr">
+          <svg viewBox="0 0 240 240">
+            <circle cx="120" cy="120" r="112" fill="none" stroke="#24282b" stroke-width="10"/>
+            <circle id="ptrRing" cx="120" cy="120" r="112" fill="none" stroke="#c8f135" stroke-width="10" stroke-dasharray="20 684" stroke-dashoffset="10" transform="rotate(-90 120 120)"/>
+            <g id="arrowG" style="transform-origin:120px 120px;will-change:transform">
+              <path d="M120 22 L168 132 L132 118 L132 196 L108 196 L108 118 L72 132 Z" fill="#c8f135" stroke="#0a0b0c" stroke-width="4" stroke-linejoin="round"/>
+            </g>
+            <circle cx="120" cy="120" r="6" fill="#0a0b0c"/>
+          </svg>
         </div>
-        <div class="turn" id="turn"></div>
+        <div class="turn" id="turn">Phone ghumao...</div>
+        <div class="kv kv3"><div><b id="hNow">--</b><span>Phone</span></div><div><b id="hTgt">--</b><span>Tower</span></div><div><b id="dTgt">--</b><span>Door</span></div></div>
         <p class="hint" id="mode" style="text-align:center"></p>
-        <div class="btns" style="justify-content:center"><button onclick="zoomMap(-1)" style="width:44px">－</button><button onclick="zoomMap(1)" style="width:44px">＋</button><button onclick="fitLine()">↔️ Poori line</button><button id="layerBtn" onclick="toggleLayer()">🗺️ Street</button><button onclick="downloadArea()">⬇️ Area save</button><button id="flipBtn" onclick="toggleFlip()">↕️ Direction ulti hai?</button></div>
+        <div id="mapBox"><div id="lmap"><div class="mapload"><span class="spin"></span>Map...</div></div></div>
+        <div class="btns" style="justify-content:center">
+          <button onclick="fitLine()">↔️ Sab dikhao</button><button onclick="followMe()">📍 Meri jagah</button><button id="layerBtn" onclick="toggleLayer()">🗺️ Street</button><button onclick="downloadArea()">⬇️ Area save</button><button id="flipBtn" onclick="toggleFlip()">↕️ Ulti?</button>
+        </div>
         <p class="hint" id="meInfo" style="text-align:center"></p>
         <p class="hint" id="dlInfo" style="text-align:center"></p>
       </div>
@@ -862,18 +886,17 @@ function phoneHeading(a,b,g){
   return (toDeg(Math.atan2(vx,vy))+360)%360;
 }
 function toggleFlip(){ flip=!flip; $('flipBtn').textContent = flip ? '↕️ Direction ulti (ON)' : '↕️ Direction ulti hai? Theek karo'; }
-let liveOn=false, hTarget=null, hShow=null, liveRaf=0, liveGot=false, lastTurn='';
+let liveOn=false, hTarget=null, hShow=null, liveRaf=0, liveGot=false, lastTurn='', tgt='b', tgtManual=false;
 function wrap180(d){ return ((d+540)%360)-180; }
-function buildLive(){
-  const br=result.br, tx=160+130*Math.sin(toRad(br)), ty=160-130*Math.cos(toRad(br));
-  let g=rose(0).replace(/^<g transform="rotate\(-?0 160 160\)">/,'<g id="roseG" style="transform-origin:160px 160px;will-change:transform">');
-  g=g.replace(/<text /g,'<text class="lbl" ');
-  g+=`<circle cx="${tx}" cy="${ty}" r="11" fill="#ff6b6b" stroke="#0a0b0c" stroke-width="3"/><text x="${tx}" y="${ty+4}" font-size="10" font-weight="900" fill="#0a0b0c" text-anchor="middle" class="lblc">C</text></g>`;
-  g+=`<polygon points="160,8 150,30 170,30" fill="#c8f135"/>`;
-  $('liveSvg').innerHTML=g;
-  $('liveSvg').querySelectorAll('text.lbl,text.lblc').forEach(t=>{ t.dataset.x=t.getAttribute('x'); t.dataset.y=t.getAttribute('y'); t.removeAttribute('transform'); });
+function tgtPoint(){ return tgt==='b'?result.b:result.a; }
+function fromPoint(){ return mePos || (tgt==='b'?result.a:result.b); }
+function tgtBearing(){ return bearing(fromPoint(), tgtPoint()); }
+function setTarget(k,manual){
+  tgt=k; if(manual) tgtManual=true;
+  $('tgB').classList.toggle('on',k==='b'); $('tgA').classList.toggle('on',k==='a');
+  $('hTgt').textContent=tgtBearing().toFixed(0)+'°'; $('dTgt').textContent=fmtDist(distance(fromPoint(),tgtPoint()));
+  if(hShow!==null) applyHeading(hShow);
 }
-// Sensor se heading aaye to sirf target badlo; screen rAF se smooth update hoti hai
 function setHeading(h){
   if(flip) h=(h+180)%360;
   hTarget=h; if(hShow===null) hShow=h; liveGot=true;
@@ -882,30 +905,27 @@ function setHeading(h){
 function liveFrame(){
   liveRaf=0; if(hTarget===null) return;
   const d=wrap180(hTarget-hShow);
-  hShow=(hShow+d*0.25+360)%360;
+  hShow=(hShow+d*0.3+360)%360;
   applyHeading(hShow);
-  if(Math.abs(d)>0.15) liveRaf=requestAnimationFrame(liveFrame);
+  if(Math.abs(d)>0.2) liveRaf=requestAnimationFrame(liveFrame);
 }
 function applyHeading(h){
-  const g=$('roseG'); if(g) g.style.transform='rotate('+(-h)+'deg)';
-  $('liveSvg').querySelectorAll('text.lbl,text.lblc').forEach(t=>t.setAttribute('transform','rotate('+h+' '+t.dataset.x+' '+(t.dataset.y-4)+')'));
-  rotateMap(h);
-  const diff=wrap180(result.br-h); const t=$('turn'); let txt, col;
-  if(Math.abs(diff)<=3){ txt='✅ Seedha tower ki taraf'; col='var(--ok)'; }
-  else if(diff>0){ txt='➡️ '+diff.toFixed(0)+'° right ghumao'; col='var(--acc)'; }
-  else { txt='⬅️ '+(-diff).toFixed(0)+'° left ghumao'; col='var(--acc)'; }
-  if(txt!==lastTurn){ lastTurn=txt; t.textContent=txt; t.style.color=col; }
+  const tb=tgtBearing(), rel=wrap180(tb-h);
+  $('arrowG').style.transform='rotate('+rel+'deg)';
+  const ok=Math.abs(rel)<=3; $('ptr').classList.toggle('ok',ok);
+  const cone=document.getElementById('meCone'); if(cone) cone.style.transform='rotate('+h+'deg)';
+  let txt; if(ok) txt='✅ Seedha tower ki taraf'; else if(rel>0) txt='➡️ '+rel.toFixed(0)+'° right ghumao'; else txt='⬅️ '+(-rel).toFixed(0)+'° left ghumao';
+  if(txt!==lastTurn){ lastTurn=txt; const t=$('turn'); t.textContent=txt; t.style.color=ok?'var(--lime)':'var(--txt)'; }
+  const hn=h.toFixed(0)+'°'; if($('hNow').textContent!==hn) $('hNow').textContent=hn;
 }
-window.nativeHeading=function(h,up){ setHeading(h); const m=$('mode'); const tx=up?'📷 Phone khara: peeche wala camera tower ki taraf':'📱 Phone flat: upar wala kinara tower ki taraf'; if(m.textContent!==tx) m.textContent=tx; };
+window.nativeHeading=function(h,up){ setHeading(h); const m=$('mode'); const tx=up?'📷 Phone khara — peeche wala camera tower ki taraf':'📱 Phone flat — upar wala kinara tower ki taraf'; if(m.textContent!==tx) m.textContent=tx; };
 window.nativeAcc=function(a){ const e=$('liveErr'); e.style.color='var(--acc)'; e.textContent = a<=1 ? 'Compass ki accuracy kam hai — phone ko hawa mein 8 ki shape mein 3–4 baar ghumao.' : ''; };
 function startLive(){
   if(!result) return;
   const e=$('liveErr'); e.textContent=''; e.style.color='';
-  liveOn=true; liveGot=false; hShow=null; $('live').style.display='block';
-  buildLive(); startWatch(); initMap();
-  // 1) App (APK) ka asli compass sensor
+  liveOn=true; liveGot=false; hShow=null; $('live').style.display='block'; $('liveStart').style.display='none';
+  setTarget(tgt); startWatch(); initMap();
   if(window.Android && Android.startCompass){ if(Android.startCompass()) return; }
-  // 2) Browser compass
   const handler = ev => {
     let h=null;
     if(typeof ev.webkitCompassHeading==='number') h=ev.webkitCompassHeading;
@@ -923,7 +943,7 @@ function startLive(){
     else go();
   }catch(_){ e.textContent='Compass yahan available nahi.'; }
 }
-function drawLive(h){ if(!$('roseG')) buildLive(); setHeading(h); }
+function drawLive(h){ setHeading(h); }
 
 // ===== License =====
 const SELLER = { whatsapp: '03XX-XXXXXXX', pay: 'JazzCash / Easypaisa: 03XX-XXXXXXX' };
@@ -1053,22 +1073,34 @@ function loadLeaflet(){
     const sc=document.createElement('script'); sc.src='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js'; sc.onload=res; sc.onerror=rej; document.head.appendChild(sc);
   });
 }
+// Is jagah satellite tasveer kitne zoom tak hai — wahan tak asli tiles, aage bara kar ke
+let satChecked=null;
+async function satDepth(){
+  if(!result) return;
+  const lat=result.a.lat, lon=result.a.lon, key=lat.toFixed(3)+','+lon.toFixed(3);
+  if(satChecked===key) return; satChecked=key;
+  let best=15;
+  for(const z of [19,18,17,16]){
+    const [x,y]=tileXY(lat,lon,z);
+    try{ const j=await (await fetch('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tilemap/'+z+'/'+y+'/'+x+'/1/1')).json(); if(j&&j.data&&j.data[0]===1){ best=z; break; } }catch(_){}
+  }
+  LMl.sat.options.maxNativeZoom=best;
+  if(curLayer==='sat' && LM){ LM.removeLayer(LMl.sat); LMl.sat.addTo(LM); }
+}
+let mapFollow=false, meMk=null;
 async function initMap(){
   if(!result) return;
   try{ await loadLeaflet(); }catch(_){ $('lmap').innerHTML='<div class="mapload">Map ke liye internet chahiye</div>'; return; }
   if(!LM){
     $('lmap').innerHTML='';
-    LM=L.map('lmap',{zoomSnap:0.25,minZoom:6,maxZoom:19,zoomControl:false,attributionControl:true,dragging:false,touchZoom:false,doubleClickZoom:false,scrollWheelZoom:false,boxZoom:false,keyboard:false,fadeAnimation:false,zoomAnimation:false});
+    LM=L.map('lmap',{zoomControl:false,attributionControl:true,zoomSnap:0.25,minZoom:5,maxZoom:19});
     LM.attributionControl.setPrefix(false);
-    // Satellite: is area mein zoom 17 tak tasveer hai, us se upar bara kar ke dikhao
     LMl.sat=cachedLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:15,maxZoom:19,attribution:'Esri'});
     LMl.street=cachedLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxNativeZoom:19,maxZoom:19,attribution:'© OSM'});
     LMl[curLayer].addTo(LM);
+    LM.on('dragstart',()=>{ mapFollow=false; });
   }
-  drawTowers();
-  LM.invalidateSize();
-  centerMap();
-  satDepth();
+  drawTowers(); LM.invalidateSize(); fitLine(true); satDepth();
 }
 function drawTowers(){
   if(!LM||!result) return;
@@ -1077,43 +1109,17 @@ function drawTowers(){
   LMl.g=L.layerGroup([
     L.polyline([a,b],{color:'#0a0b0c',weight:8,opacity:.5,interactive:false}),
     L.polyline([a,b],{color:'#c8f135',weight:4,dashArray:'10 10',className:'flow',interactive:false}),
-    L.circleMarker(a,{radius:8,color:'#0a0b0c',weight:3,fillColor:'#ffffff',fillOpacity:1,interactive:false}),
-    L.circleMarker(b,{radius:8,color:'#0a0b0c',weight:3,fillColor:'#ff6b6b',fillOpacity:1,interactive:false})
+    L.circleMarker(a,{radius:9,color:'#0a0b0c',weight:3,fillColor:'#ffffff',fillOpacity:1}).bindTooltip('ISP',{permanent:true,direction:'top',offset:[0,-8],className:'tt'}),
+    L.circleMarker(b,{radius:9,color:'#0a0b0c',weight:3,fillColor:'#ff6b6b',fillOpacity:1}).bindTooltip('Client',{permanent:true,direction:'top',offset:[0,-8],className:'tt'})
   ]).addTo(LM);
 }
-let mapFit=true;
-// Aap ko beech mein rakh kar itna zoom karo ke ISP aur Client dono daire mein aa jayein
-function fitZoom(c){
-  const far=Math.max(distance(c,result.a), distance(c,result.b), 50);
-  const rPx=$('cmpmap')? $('cmpmap').offsetWidth*0.46 : 140;
-  const mpp0=156543.03*Math.cos(toRad(c.lat));
-  return Math.max(6, Math.min(17, Math.log2(mpp0*rPx/far)));
+function fitLine(silent){
+  if(!LM||!result) return; mapFollow=false;
+  const pts=[[result.a.lat,result.a.lon],[result.b.lat,result.b.lon]]; if(mePos) pts.push([mePos.lat,mePos.lon]);
+  LM.fitBounds(L.latLngBounds(pts).pad(0.15),{animate:false,maxZoom:17});
 }
-function centerMap(){
-  if(!LM||!result) return;
-  const c = mePos || result.a;
-  LM.setView([c.lat,c.lon], mapFit? fitZoom(c) : (LM.getZoom()||16), {animate:false});
-}
-function fitLine(){ mapFit=true; mapFollow=true; centerMap(); toast('↔️ Poori line'); }
-// Is jagah satellite tasveer kitne zoom tak hai — Esri se pooch kar wahi tak asli tiles lo, aage bara kar ke dikhao
-let satChecked=null;
-async function satDepth(){
-  if(!result) return;
-  const lat=result.a.lat, lon=result.a.lon, key=lat.toFixed(3)+','+lon.toFixed(3);
-  if(satChecked===key) return; satChecked=key;
-  let best=15;
-  for(const z of [19,18,17,16]){
-    const n=2**z, x=Math.floor((lon+180)/360*n), y=Math.floor((1-Math.log(Math.tan(toRad(lat))+1/Math.cos(toRad(lat)))/Math.PI)/2*n);
-    try{
-      const r=await fetch('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tilemap/'+z+'/'+y+'/'+x+'/1/1');
-      const j=await r.json();
-      if(j && j.data && j.data[0]===1){ best=z; break; }
-    }catch(_){}
-  }
-  LMl.sat.options.maxNativeZoom=best;
-  if(curLayer==='sat' && LM){ LM.removeLayer(LMl.sat); LMl.sat.addTo(LM); }
-}
-function zoomMap(d){ if(!LM) return; mapFit=false; const z=Math.max(6,Math.min(19,Math.round(LM.getZoom())+d)); LM.setZoom(z,{animate:false}); }
+function followMe(){ if(!LM) return; if(!mePos){ $('meInfo').textContent='GPS dhoond raha hai...'; startWatch(); return; } mapFollow=true; LM.setView([mePos.lat,mePos.lon],Math.max(LM.getZoom(),16),{animate:false}); }
+function centerMap(){ fitLine(true); }
 function toggleLayer(){
   if(!LM) return;
   LM.removeLayer(LMl[curLayer]); curLayer = curLayer==='sat'?'street':'sat'; LMl[curLayer].addTo(LM);
@@ -1125,17 +1131,19 @@ function startWatch(){
     meWatch=navigator.geolocation.watchPosition(p=>{
       const first=!mePos;
       mePos={lat:p.coords.latitude, lon:p.coords.longitude};
-      if(LM && mapFollow) LM.setView([mePos.lat,mePos.lon], (first&&mapFit)? fitZoom(mePos) : LM.getZoom(), {animate:false});
-      if(result){
-        const dB=distance(mePos,result.b), bB=bearing(mePos,result.b);
-        $('meInfo').innerHTML='Client tower aap se <b>'+fmtDist(dB)+'</b>, <b>'+bB.toFixed(0)+'°</b> par · GPS ±'+Math.round(p.coords.accuracy)+' m';
+      if(result && !tgtManual) setTarget(distance(mePos,result.a)<=distance(mePos,result.b)?'b':'a');
+      else if(result) setTarget(tgt);
+      if(LM){
+        const ll=[mePos.lat,mePos.lon];
+        if(!meMk) meMk=L.marker(ll,{icon:L.divIcon({className:'me',html:'<div class="cone" id="meCone"></div><div class="dot"></div>',iconSize:[80,80],iconAnchor:[40,40]}),interactive:false,zIndexOffset:1000}).addTo(LM);
+        else meMk.setLatLng(ll);
+        if(first) fitLine(true); else if(mapFollow) LM.panTo(ll,{animate:false});
       }
+      $('meInfo').textContent='GPS ±'+Math.round(p.coords.accuracy)+' m';
     }, ()=>{ $('meInfo').textContent='GPS nahi mila — location permission Allow karo.'; meWatch=null; },
     {enableHighAccuracy:true, maximumAge:2000, timeout:20000});
   }catch(_){}
 }
-function rotateMap(h){ const m=$('lmap'); if(m) m.style.transform='rotate('+(-h)+'deg)'; }
-
 
 // ===== Mimosa radio (APK bridge) =====
 let RD=null, rdTimer=null, rdBeep=false, rdAudio=null, rdLocArm=null;
@@ -1288,40 +1296,6 @@ async function rdSendLoc(side){
 }
 try{ const sv=JSON.parse(localStorage.getItem('tdf_rd')||'null'); if(sv){ $('rdIp').value=sv.ip; $('rdUser').value=sv.u; } }catch(_){}
 
-
-// ===== Map touch: ek ungli = map hilao, do ungli = zoom (ghoomte map ke hisaab se) =====
-let mapFollow=true;
-(function(){
-  let last=null, pinch=null;
-  const pts=e=>[...e.touches].map(t=>({x:t.clientX,y:t.clientY}));
-  const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
-  function onStart(e){
-    if(!LM) return; e.preventDefault();
-    const p=pts(e); last=p;
-    pinch = p.length>=2 ? {d:dist(p[0],p[1]), z:LM.getZoom()} : null;
-  }
-  function onMove(e){
-    if(!LM||!last) return; e.preventDefault();
-    const p=pts(e);
-    if(p.length>=2 && pinch){
-      const r=dist(p[0],p[1])/pinch.d;
-      LM.setZoom(Math.max(6,Math.min(19,pinch.z+Math.log2(r))),{animate:false});
-      mapFit=false;
-    } else if(p.length===1 && last.length===1){
-      const dx=p[0].x-last[0].x, dy=p[0].y-last[0].y, h=toRad(hShow||0);
-      // screen ki harkat ko ghoome hue map ki harkat mein badlo
-      const mx=Math.cos(h)*dx-Math.sin(h)*dy, my=Math.sin(h)*dx+Math.cos(h)*dy;
-      LM.panBy([-mx,-my],{animate:false});
-      mapFit=false; mapFollow=false;
-    }
-    last=p;
-    if(p.length<2) pinch=null; else if(!pinch) pinch={d:dist(p[0],p[1]), z:LM.getZoom()};
-  }
-  function onEnd(e){ const p=pts(e); last=p.length?p:null; if(p.length<2) pinch=null; }
-  document.addEventListener('DOMContentLoaded',()=>{});
-  const el=document.getElementById('cmpmap');
-  if(el){ el.addEventListener('touchstart',onStart,{passive:false}); el.addEventListener('touchmove',onMove,{passive:false}); el.addEventListener('touchend',onEnd); el.addEventListener('touchcancel',onEnd); }
-})();
 
 // ===== UI helpers =====
 const TITLES={dir:'Direction',h:'Tower height',s:'Expected signal',f:'Frequency planner',c:'Live compass'};
