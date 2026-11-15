@@ -128,7 +128,7 @@ footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--mut);fon
   <h2>Pricing</h2>
   <p class="sub">Simple daily pricing. Pick any package from 1 to 30 days.</p>
   <div class="card">
-    <div class="price-top"><span class="big">Rs 1,000</span><span class="note">per day · 1 to 30 days · paid in USDT (crypto)</span></div>
+    <div class="price-top"><span class="big">Rs 1,000</span><span class="note">per day · 1 to 30 days · pay by crypto or card</span></div>
     <label>Package: <b id="daysLbl" style="color:var(--txt)">7 days</b></label>
     <input type="range" id="days" min="1" max="30" value="7">
     <div class="quick" id="quick"></div>
@@ -141,8 +141,8 @@ footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--mut);fon
 </section>
 
 <section id="buy" class="wrap">
-  <h2>Buy with crypto</h2>
-  <p class="sub">Pay with USDT, send the proof, get your license key.</p>
+  <h2>Buy a license</h2>
+  <p class="sub">Pay with USDT or your bank card, send the proof, get your license key.</p>
   <div class="card steps">
     <div class="step">
       <h3>Your Device Code</h3>
@@ -150,7 +150,23 @@ footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--mut);fon
       <input type="text" id="dev" placeholder="e.g. 7K2QX9MD" maxlength="12" autocomplete="off" style="text-transform:uppercase;font-family:ui-monospace,Consolas,monospace;letter-spacing:2px">
     </div>
     <div class="step">
-      <h3>Send <span id="payAmt" class="ok">–</span></h3>
+      <h3>Pay <span id="payAmt" class="ok">–</span></h3>
+      <div class="tabs" id="methods" style="margin-bottom:10px">
+        <button class="on" onclick="setMethod('crypto')">🪙 Crypto wallet</button>
+        <button onclick="setMethod('card')">💳 Debit / Credit card</button>
+      </div>
+      <div id="cardBox" class="card" style="display:none;background:var(--card2);margin-bottom:12px">
+        <b>Pay with your Visa / Mastercard</b>
+        <p class="note" style="margin:6px 0 10px">Your card buys USDT, which is sent straight to our address below. Takes about 5 minutes.</p>
+        <ol class="note" style="margin:0 0 12px;padding-left:20px">
+          <li>Open <b>Binance</b> (app or website) and sign in / sign up.</li>
+          <li>Tap <b>Buy Crypto → Debit/Credit Card</b>, choose <b>USDT</b> and buy at least <b class="ok" id="cardAmt">–</b> (a little extra covers the withdrawal fee).</li>
+          <li>Go to <b>Wallet → Withdraw → USDT</b>, paste our address below, network <b>TRC20 (TRON)</b>, amount <b class="ok" id="cardAmt2">–</b>.</li>
+          <li>Copy the <b>TxID</b> from the withdrawal history and paste it in step 3.</li>
+        </ol>
+        <a class="btn sm main" href="https://www.binance.com/en/buy-sell-crypto" target="_blank" rel="noopener">Open Binance — Buy with card</a>
+        <p class="note" style="margin:10px 0 0">No card? On Binance <b>P2P</b> you can buy USDT with JazzCash / Easypaisa / bank transfer, then withdraw the same way.</p>
+      </div>
       <div class="tabs" id="nets"></div>
       <div class="addr">
         <div id="qr"></div>
@@ -232,12 +248,12 @@ footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--mut);fon
 // ===================== SETTINGS — edit these =====================
 const SHOP = {
   pricePerDay: 1000,                 // Rs per day
-  whatsapp: '92XXXXXXXXXX',          // international format, no + or spaces (e.g. 923001234567)
-  telegram: 'your_telegram_username',// without @
-  email:    'support@example.com',
+  whatsapp: '923493942102',          // international format, no + or spaces
+  telegram: 'Toweralignment',        // without @
+  email:    '',                       // empty = email buttons hidden
   wallets: [                         // remove a line to hide that network
-    { id:'trc20', name:'USDT · TRON (TRC20)', short:'TRC20', addr:'T_YOUR_TRC20_ADDRESS_HERE', explorer:'https://tronscan.org/#/transaction/' },
-    { id:'bep20', name:'USDT · BNB Smart Chain (BEP20)', short:'BEP20', addr:'0x_YOUR_BEP20_ADDRESS_HERE', explorer:'https://bscscan.com/tx/' }
+    { id:'trc20', name:'USDT · TRON (TRC20)', short:'TRC20', addr:'TARezKnmnzeaWewvap9EEpuhnZMMHVbbru', explorer:'https://tronscan.org/#/transaction/' },
+    { id:'bep20', name:'USDT · BNB Smart Chain (BEP20)', short:'BEP20', addr:'0xF2F9C8586E2D9180e75B825Bed53f1F2fF6E31E8', explorer:'https://bscscan.com/tx/' }
   ],
   fallbackRate: 282,                 // PKR per 1 USDT if live rate fails
   rateMargin: 0                      // extra % added on top of the live rate (e.g. 1 = +1%)
@@ -271,6 +287,7 @@ function upd(){
   const u=curUsdt();
   $('usdt').textContent=u.toFixed(2)+' USDT';
   $('payAmt').textContent=u.toFixed(2)+' USDT ('+d+(d>1?' days':' day')+')';
+  $('cardAmt').textContent=(u+1.5).toFixed(2)+' USDT'; $('cardAmt2').textContent=u.toFixed(2)+' USDT';
   document.querySelectorAll('#quick button').forEach(b=>b.classList.toggle('on',+b.dataset.d===d));
   try{ localStorage.setItem('shop_days',d); }catch(_){}
 }
@@ -278,6 +295,11 @@ days.oninput=upd;
 
 // networks
 SHOP.wallets.forEach((w,i)=>{ const b=document.createElement('button'); b.textContent=w.short; b.onclick=()=>setNet(i); $('nets').appendChild(b); });
+function setMethod(m){
+  [...$('methods').children].forEach((b,j)=>b.classList.toggle('on',(m==='card')===(j===1)));
+  $('cardBox').style.display=m==='card'?'block':'none';
+  if(m==='card') setNet(Math.max(0,SHOP.wallets.findIndex(w=>w.id==='trc20')));
+}
 function setNet(i){
   net=SHOP.wallets[i];
   [...$('nets').children].forEach((b,j)=>b.classList.toggle('on',i===j));
@@ -331,6 +353,7 @@ function ticket(kind){
   openChat(kind,text,'Support '+id+' — '+$('tTopic').value);
 }
 
+if(!SHOP.email) document.querySelectorAll('[onclick*="mail"]').forEach(b=>b.style.display='none');
 setNet(0); upd(); loadRate();
 </script>
 </body>
