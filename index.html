@@ -165,20 +165,19 @@ details[open] summary::before{content:"－ "}
 .lite .page.on .hint,.lite .page.on label,.lite .pop .stat .k,.lite .pop .stat .s{animation:none}
 .lite .nav{box-shadow:none}
 
-/* ===== Map ===== */
-#lmap{height:320px;border-radius:18px;overflow:hidden;background:var(--card2);position:relative;z-index:0;contain:paint}
+/* ===== Map inside compass ===== */
+.cmp{position:relative;width:100%;aspect-ratio:1/1}
+.cmp svg{position:absolute;inset:0;z-index:2;pointer-events:none}
+.cmpmap{position:absolute;left:9.4%;top:9.4%;width:81.2%;height:81.2%;border-radius:50%;overflow:hidden;background:var(--card2);z-index:1;transform:translateZ(0);box-shadow:inset 0 0 0 2px #0a0b0c}
+#lmap{position:absolute;left:-21%;top:-21%;width:142%;height:142%;will-change:transform}
+.cmpmap::after{content:"";position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,transparent 55%,rgba(10,11,12,.55) 100%);pointer-events:none;z-index:500}
+.cmpmap .medot{position:absolute;left:50%;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:#3b82f6;border:3px solid #fff;box-shadow:0 0 0 6px rgba(59,130,246,.3);z-index:600}
 .mapload{position:absolute;inset:0;display:grid;place-items:center;color:var(--mut);font-size:13px}
-.leaflet-container{background:#111;font-family:inherit}
-.leaflet-control-attribution{background:rgba(10,11,12,.7)!important;color:#777!important;font-size:9px!important}
-.leaflet-control-attribution a{color:#999!important}
+#lmap.leaflet-container{background:#1c1f21;font-family:inherit}
+.leaflet-container svg{width:initial;height:initial;display:initial}
+.leaflet-control-attribution{background:rgba(10,11,12,.7)!important;color:#777!important;font-size:8px!important}
 .flow{animation:flow 1s linear infinite}
 @keyframes flow{to{stroke-dashoffset:-20}}
-.leaflet-container svg{width:initial;height:initial;display:initial}
-.leaflet-tooltip.tt{background:#0a0b0c;color:#f4f6f5;border:1px solid #c8f135;border-radius:999px;font-weight:800;font-size:11px;padding:2px 8px;box-shadow:none}
-.leaflet-tooltip.tt::before{display:none}
-.me .cone{position:absolute;left:0;top:0;width:70px;height:70px;border-radius:50%;background:conic-gradient(from -28deg,rgba(200,241,53,.6) 0deg 56deg,transparent 56deg);-webkit-mask:radial-gradient(circle,#000 25%,transparent 70%);mask:radial-gradient(circle,#000 25%,transparent 70%);transition:transform .15s linear;opacity:0}
-.me .cone.on{opacity:1}
-.me .medot{position:absolute;left:26px;top:26px;width:18px;height:18px;border-radius:50%;background:#3b82f6;border:3px solid #fff;box-shadow:0 0 0 7px rgba(59,130,246,.25)}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -422,23 +421,17 @@ details[open] summary::before{content:"－ "}
       <div class="btns"><button class="main" onclick="startLive()">Live compass chalao</button></div>
       <div class="err" id="liveErr"></div>
       <div id="live">
-        <svg id="liveSvg" viewBox="0 0 320 320"></svg>
+        <div class="cmp">
+          <div class="cmpmap"><div id="lmap"><div class="mapload"><span class="spin"></span>Map...</div></div><div class="medot"></div></div>
+          <svg id="liveSvg" viewBox="0 0 320 320"></svg>
+        </div>
         <div class="turn" id="turn"></div>
         <p class="hint" id="mode" style="text-align:center"></p>
-        <div class="btns" style="justify-content:center"><button id="flipBtn" onclick="toggleFlip()">↕️ Direction ulti hai? Theek karo</button></div>
+        <div class="btns" style="justify-content:center"><button id="layerBtn" onclick="toggleLayer()">🗺️ Street</button><button id="flipBtn" onclick="toggleFlip()">↕️ Direction ulti hai?</button></div>
+        <p class="hint" id="meInfo" style="text-align:center"></p>
       </div>
     </div>
-  <div class="card hasres">
-      <h2><span class="ic">🗺️</span> Map</h2>
-      <div id="lmap"><div class="mapload"><span class="spin"></span>Map load ho raha hai...</div></div>
-      <div class="btns">
-        <button id="layerBtn" onclick="toggleLayer()">🗺️ Street map</button>
-        <button onclick="centerMe()">📍 Meri jagah</button>
-        <button onclick="fitTowers()">↔️ Dono towers</button>
-      </div>
-      <p class="hint" id="meInfo">"Meri jagah" dabao — map par aap ki live location aur phone ki direction aayegi.</p>
-    </div>
-  
+    
   </section>
 </div>
 
@@ -524,19 +517,19 @@ function calc(){
   countUp($('dist'), d<1000?d:d/1000, d<1000?0:2, d<1000?' m':' km');
   countUp($('brg'), br, 1, '°');
   guards(); toast('✅ Ho gaya — Height aur Signal tab bhi dekho');
-  if(LM){ drawTowers(); fitTowers(); }
+  if(LM){ drawTowers(); centerMap(); }
 }
 
 function rose(rot){
   // rot: kitna ghumana hai (live compass ke liye)
   let g = `<g transform="rotate(${-rot} 160 160)">`;
-  g += `<circle cx="160" cy="160" r="130" fill="none" stroke="#2a303a" stroke-width="2"/>`;
-  g += `<circle cx="160" cy="160" r="85" fill="none" stroke="#20252d"/>`;
+  g += `<circle cx="160" cy="160" r="130" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="2"/>`;
+  g += `<circle cx="160" cy="160" r="85" fill="none" stroke="rgba(255,255,255,.18)"/>`;
   for(let i=0;i<360;i+=15){
     const L = i%90===0?14:(i%45===0?9:5), r1=130, r2=130-L;
     const x1=160+r1*Math.sin(toRad(i)), y1=160-r1*Math.cos(toRad(i));
     const x2=160+r2*Math.sin(toRad(i)), y2=160-r2*Math.cos(toRad(i));
-    g += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#4a525e" stroke-width="2"/>`;
+    g += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="rgba(255,255,255,.6)" stroke-width="2"/>`;
   }
   const lab=[['N',0,'#ff6b6b'],['E',90,'#9aa3ae'],['S',180,'#9aa3ae'],['W',270,'#9aa3ae']];
   lab.forEach(([t,a,c])=>{
@@ -823,7 +816,7 @@ function startLive(){
   if(!result){ return; }
   const e=$('liveErr'); e.textContent='';
   const go = () => {
-    liveOn=true; $('live').style.display='block'; startWatch();
+    liveOn=true; $('live').style.display='block'; startWatch(); initMap();
     let got=false;
     const handler = ev => {
       let h = null;
@@ -844,10 +837,11 @@ function startLive(){
   }catch(_){ e.textContent='Compass yahan available nahi.'; }
 }
 function drawLive(h){
-  setCone(h);
+  rotateMap(h);
   const br=result.br;
-  let s = rose(h) + lineTo(br,result.d) + `</g>`;
-  s += `<polygon points="160,8 150,30 170,30" fill="#e8eaed"/>`;
+  const tx=160+130*Math.sin(toRad(br)), ty=160-130*Math.cos(toRad(br));
+  let s = rose(h) + `<circle cx="${tx}" cy="${ty}" r="11" fill="#ff6b6b" stroke="#0a0b0c" stroke-width="3"/><text x="${tx}" y="${ty+4}" font-size="10" font-weight="900" fill="#0a0b0c" text-anchor="middle">C</text></g>`;
+  s += `<polygon points="160,8 150,30 170,30" fill="#c8f135"/>`;
   $('liveSvg').innerHTML = s;
   let diff = ((br - h + 540) % 360) - 180;
   const t=$('turn');
@@ -933,12 +927,11 @@ go=function(p){
   const pg=$('page-'+p); pg.classList.remove('fromR','fromL');
   if(to!==from) pg.classList.add(to>from?'fromR':'fromL');
   curTab=p;
-  if(p==='c') initMap();
 };
 
 
-// ===== Map (Leaflet, lazy load) =====
-let LM=null, LMl={}, curLayer='sat', meMk=null, meWatch=null, mePos=null;
+// ===== Map inside compass (Leaflet, lazy load) =====
+let LM=null, LMl={}, curLayer='sat', meWatch=null, mePos=null;
 function loadLeaflet(){
   return new Promise((res,rej)=>{
     if(window.L) return res();
@@ -948,58 +941,57 @@ function loadLeaflet(){
 }
 async function initMap(){
   if(!result) return;
-  try{ await loadLeaflet(); }catch(_){ $('lmap').innerHTML='<div class="mapload">Map ke liye internet chahiye.</div>'; return; }
+  try{ await loadLeaflet(); }catch(_){ $('lmap').innerHTML='<div class="mapload">Map ke liye internet chahiye</div>'; return; }
   if(!LM){
     $('lmap').innerHTML='';
-    LM=L.map('lmap',{zoomControl:false,attributionControl:true}); LM.attributionControl.setPrefix(false);
-    LMl.sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Esri'});
-    LMl.street=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'});
-    LMl.sat.addTo(LM);
+    LM=L.map('lmap',{zoomControl:false,attributionControl:true,dragging:false,touchZoom:false,doubleClickZoom:false,scrollWheelZoom:false,boxZoom:false,keyboard:false,fadeAnimation:false,zoomAnimation:false});
+    LM.attributionControl.setPrefix(false);
+    // Satellite: is area mein zoom 17 tak tasveer hai, us se upar bara kar ke dikhao
+    LMl.sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:17,maxZoom:19,attribution:'Esri'});
+    LMl.street=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxNativeZoom:19,maxZoom:19,attribution:'© OSM'});
+    LMl[curLayer].addTo(LM);
   }
   drawTowers();
-  setTimeout(()=>{ LM.invalidateSize(); fitTowers(); },60);
+  LM.invalidateSize();
+  centerMap();
 }
 function drawTowers(){
   if(!LM||!result) return;
   if(LMl.g) LM.removeLayer(LMl.g);
   const a=[result.a.lat,result.a.lon], b=[result.b.lat,result.b.lon];
   LMl.g=L.layerGroup([
-    L.polyline([a,b],{color:'#0a0b0c',weight:8,opacity:.5}),
-    L.polyline([a,b],{color:'#c8f135',weight:4,dashArray:'10 10',className:'flow'}),
-    L.circleMarker(a,{radius:9,color:'#0a0b0c',weight:3,fillColor:'#ffffff',fillOpacity:1}).bindTooltip('ISP',{permanent:true,direction:'top',offset:[0,-8],className:'tt'}),
-    L.circleMarker(b,{radius:9,color:'#0a0b0c',weight:3,fillColor:'#ff6b6b',fillOpacity:1}).bindTooltip('Client · '+fmtDist(result.d),{permanent:true,direction:'top',offset:[0,-8],className:'tt'})
+    L.polyline([a,b],{color:'#0a0b0c',weight:8,opacity:.5,interactive:false}),
+    L.polyline([a,b],{color:'#c8f135',weight:4,dashArray:'10 10',className:'flow',interactive:false}),
+    L.circleMarker(a,{radius:8,color:'#0a0b0c',weight:3,fillColor:'#ffffff',fillOpacity:1,interactive:false}),
+    L.circleMarker(b,{radius:8,color:'#0a0b0c',weight:3,fillColor:'#ff6b6b',fillOpacity:1,interactive:false})
   ]).addTo(LM);
 }
-function fitTowers(){ if(!LM||!result) return; LM.fitBounds(L.latLngBounds([[result.a.lat,result.a.lon],[result.b.lat,result.b.lon]]).pad(0.3)); }
+function centerMap(){
+  if(!LM||!result) return;
+  const c = mePos ? [mePos.lat,mePos.lon] : [result.a.lat,result.a.lon];
+  LM.setView(c,17,{animate:false});
+}
 function toggleLayer(){
   if(!LM) return;
   LM.removeLayer(LMl[curLayer]); curLayer = curLayer==='sat'?'street':'sat'; LMl[curLayer].addTo(LM);
-  $('layerBtn').textContent = curLayer==='sat' ? '🗺️ Street map' : '🛰️ Satellite';
+  $('layerBtn').textContent = curLayer==='sat' ? '🗺️ Street' : '🛰️ Satellite';
 }
 function startWatch(){
   if(meWatch!==null || !navigator.geolocation) return;
   try{
     meWatch=navigator.geolocation.watchPosition(p=>{
+      const first=!mePos;
       mePos={lat:p.coords.latitude, lon:p.coords.longitude};
-      if(LM){
-        const ll=[mePos.lat,mePos.lon];
-        if(!meMk) meMk=L.marker(ll,{icon:L.divIcon({className:'me',html:'<div class="cone" id="meCone"></div><div class="medot"></div>',iconSize:[70,70],iconAnchor:[35,35]}),interactive:false}).addTo(LM);
-        else meMk.setLatLng(ll);
-      }
+      if(LM) LM.setView([mePos.lat,mePos.lon], LM.getZoom()||17, {animate:!first});
       if(result){
-        const dB=distance(mePos,result.b), bB=bearing(mePos,result.b), dA=distance(mePos,result.a);
-        $('meInfo').innerHTML='Client tower aap se <b>'+fmtDist(dB)+'</b> door, <b>'+bB.toFixed(0)+'°</b> par · ISP tower <b>'+fmtDist(dA)+'</b> · GPS ±'+Math.round(p.coords.accuracy)+' m';
+        const dB=distance(mePos,result.b), bB=bearing(mePos,result.b);
+        $('meInfo').innerHTML='Client tower aap se <b>'+fmtDist(dB)+'</b>, <b>'+bB.toFixed(0)+'°</b> par · GPS ±'+Math.round(p.coords.accuracy)+' m';
       }
     }, ()=>{ $('meInfo').textContent='GPS nahi mila — location permission Allow karo.'; meWatch=null; },
     {enableHighAccuracy:true, maximumAge:2000, timeout:20000});
-  }catch(_){ $('meInfo').textContent='GPS yahan available nahi.'; }
+  }catch(_){}
 }
-function centerMe(){
-  startWatch();
-  if(LM && mePos) LM.setView([mePos.lat,mePos.lon],17);
-  else { $('meInfo').textContent='Location dhoond raha hai...'; const t=setInterval(()=>{ if(mePos&&LM){ clearInterval(t); LM.setView([mePos.lat,mePos.lon],17); } },500); setTimeout(()=>clearInterval(t),20000); }
-}
-function setCone(h){ const c=document.getElementById('meCone'); if(c){ c.classList.add('on'); c.style.transform='rotate('+h+'deg)'; } }
+function rotateMap(h){ const m=$('lmap'); if(m) m.style.transform='rotate('+(-h)+'deg)'; }
 
 // ===== UI helpers =====
 const TITLES={dir:'Direction',h:'Tower height',s:'Expected signal',f:'Frequency planner',c:'Live compass'};
