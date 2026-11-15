@@ -427,7 +427,7 @@ details[open] summary::before{content:"－ "}
         </div>
         <div class="turn" id="turn"></div>
         <p class="hint" id="mode" style="text-align:center"></p>
-        <div class="btns" style="justify-content:center"><button id="layerBtn" onclick="toggleLayer()">🗺️ Street</button><button id="flipBtn" onclick="toggleFlip()">↕️ Direction ulti hai?</button></div>
+        <div class="btns" style="justify-content:center"><button onclick="zoomMap(-1)" style="width:44px">－</button><button onclick="zoomMap(1)" style="width:44px">＋</button><button id="layerBtn" onclick="toggleLayer()">🗺️ Street</button><button id="flipBtn" onclick="toggleFlip()">↕️ Direction ulti hai?</button></div>
         <p class="hint" id="meInfo" style="text-align:center"></p>
       </div>
     </div>
@@ -947,13 +947,14 @@ async function initMap(){
     LM=L.map('lmap',{zoomControl:false,attributionControl:true,dragging:false,touchZoom:false,doubleClickZoom:false,scrollWheelZoom:false,boxZoom:false,keyboard:false,fadeAnimation:false,zoomAnimation:false});
     LM.attributionControl.setPrefix(false);
     // Satellite: is area mein zoom 17 tak tasveer hai, us se upar bara kar ke dikhao
-    LMl.sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:17,maxZoom:19,attribution:'Esri'});
+    LMl.sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:15,maxZoom:19,attribution:'Esri'});
     LMl.street=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxNativeZoom:19,maxZoom:19,attribution:'© OSM'});
     LMl[curLayer].addTo(LM);
   }
   drawTowers();
   LM.invalidateSize();
   centerMap();
+  satDepth();
 }
 function drawTowers(){
   if(!LM||!result) return;
@@ -969,8 +970,27 @@ function drawTowers(){
 function centerMap(){
   if(!LM||!result) return;
   const c = mePos ? [mePos.lat,mePos.lon] : [result.a.lat,result.a.lon];
-  LM.setView(c,17,{animate:false});
+  LM.setView(c,LM._zoom||16,{animate:false});
 }
+// Is jagah satellite tasveer kitne zoom tak hai — Esri se pooch kar wahi tak asli tiles lo, aage bara kar ke dikhao
+let satChecked=null;
+async function satDepth(){
+  if(!result) return;
+  const lat=result.a.lat, lon=result.a.lon, key=lat.toFixed(3)+','+lon.toFixed(3);
+  if(satChecked===key) return; satChecked=key;
+  let best=15;
+  for(const z of [19,18,17,16]){
+    const n=2**z, x=Math.floor((lon+180)/360*n), y=Math.floor((1-Math.log(Math.tan(toRad(lat))+1/Math.cos(toRad(lat)))/Math.PI)/2*n);
+    try{
+      const r=await fetch('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tilemap/'+z+'/'+y+'/'+x+'/1/1');
+      const j=await r.json();
+      if(j && j.data && j.data[0]===1){ best=z; break; }
+    }catch(_){}
+  }
+  LMl.sat.options.maxNativeZoom=best;
+  if(curLayer==='sat' && LM){ LM.removeLayer(LMl.sat); LMl.sat.addTo(LM); }
+}
+function zoomMap(d){ if(!LM) return; const z=Math.max(12,Math.min(19,LM.getZoom()+d)); LM.setZoom(z,{animate:false}); }
 function toggleLayer(){
   if(!LM) return;
   LM.removeLayer(LMl[curLayer]); curLayer = curLayer==='sat'?'street':'sat'; LMl[curLayer].addTo(LM);
@@ -982,7 +1002,7 @@ function startWatch(){
     meWatch=navigator.geolocation.watchPosition(p=>{
       const first=!mePos;
       mePos={lat:p.coords.latitude, lon:p.coords.longitude};
-      if(LM) LM.setView([mePos.lat,mePos.lon], LM.getZoom()||17, {animate:!first});
+      if(LM) LM.setView([mePos.lat,mePos.lon], LM.getZoom()||16, {animate:!first});
       if(result){
         const dB=distance(mePos,result.b), bB=bearing(mePos,result.b);
         $('meInfo').innerHTML='Client tower aap se <b>'+fmtDist(dB)+'</b>, <b>'+bB.toFixed(0)+'°</b> par · GPS ±'+Math.round(p.coords.accuracy)+' m';
