@@ -13,7 +13,7 @@
   --r:24px;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{touch-action:pan-x pan-y;margin:0;background:var(--bg);color:var(--txt);font:15px/1.5 "Segoe UI",Roboto,system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+html,body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.5 "Segoe UI",Roboto,system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
 body{min-height:100vh;overflow-x:hidden;overscroll-behavior-y:none}
 .aurora{position:fixed;inset:0;z-index:0;pointer-events:none;transform:translateZ(0);contain:strict;
   background:radial-gradient(60vmax 35vmax at 50% -12%,rgba(200,241,53,.10),transparent 70%)}
@@ -212,6 +212,16 @@ details[open] summary::before{content:"－ "}
 .kv div{background:var(--card2);border-radius:14px;padding:8px 6px;text-align:center}
 .kv b{display:block;font-size:15px;font-weight:900}
 .kv span{font-size:10.5px;color:var(--mut);font-weight:700}
+
+.aim{display:flex;align-items:center;gap:14px;margin-top:6px}
+.aim .ptr{width:118px;flex:0 0 118px;margin:0}
+.aimtxt{flex:1;min-width:0}
+.aim .turn{font-size:20px;text-align:left;margin:0;line-height:1.2}
+.aimsub{color:var(--mut);font-size:12px;margin-top:4px}
+.aimkv{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:8px;font-size:12px;color:var(--mut)}
+.aimkv b{color:var(--txt);font-weight:800}
+#mapBox{height:400px!important}
+#mapBox,#mapBox .leaflet-container{touch-action:none!important}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -485,22 +495,26 @@ details[open] summary::before{content:"－ "}
       <div class="err" id="liveErr"></div>
       <div id="live">
         <div class="seg"><button id="tgB" class="on" onclick="setTarget('b',true)">🎯 Client tower</button><button id="tgA" onclick="setTarget('a',true)">🎯 ISP tower</button></div>
-        <div class="ptr" id="ptr">
-          <svg viewBox="0 0 240 240">
-            <circle cx="120" cy="120" r="112" fill="none" stroke="#24282b" stroke-width="10"/>
-            <circle id="ptrRing" cx="120" cy="120" r="112" fill="none" stroke="#c8f135" stroke-width="10" stroke-dasharray="20 684" stroke-dashoffset="10" transform="rotate(-90 120 120)"/>
-            <g id="arrowG" style="transform-origin:120px 120px;will-change:transform">
-              <path d="M120 22 L168 132 L132 118 L132 196 L108 196 L108 118 L72 132 Z" fill="#c8f135" stroke="#0a0b0c" stroke-width="4" stroke-linejoin="round"/>
-            </g>
-            <circle cx="120" cy="120" r="6" fill="#0a0b0c"/>
-          </svg>
+        <div class="aim">
+          <div class="ptr" id="ptr">
+            <svg viewBox="0 0 240 240">
+              <circle cx="120" cy="120" r="108" fill="#1c1f21" stroke="#24282b" stroke-width="14"/>
+              <circle id="ptrRing" cx="120" cy="120" r="108" fill="none" stroke="#c8f135" stroke-width="14" stroke-dasharray="24 680" stroke-dashoffset="12" transform="rotate(-90 120 120)"/>
+              <g id="arrowG" style="transform-origin:120px 120px;will-change:transform">
+                <path d="M120 30 L165 135 L131 121 L131 190 L109 190 L109 121 L75 135 Z" fill="#c8f135" stroke="#0a0b0c" stroke-width="5" stroke-linejoin="round"/>
+              </g>
+            </svg>
+          </div>
+          <div class="aimtxt">
+            <div class="turn" id="turn">Phone ghumao...</div>
+            <div class="aimsub">Teer jidhar hai, tower udhar hai</div>
+            <div class="aimkv"><span>Phone <b id="hNow">--</b></span><span>Tower <b id="hTgt">--</b></span><span>Door <b id="dTgt">--</b></span></div>
+          </div>
         </div>
-        <div class="turn" id="turn">Phone ghumao...</div>
-        <div class="kv kv3"><div><b id="hNow">--</b><span>Phone</span></div><div><b id="hTgt">--</b><span>Tower</span></div><div><b id="dTgt">--</b><span>Door</span></div></div>
         <p class="hint" id="mode" style="text-align:center"></p>
         <div id="mapBox"><div id="lmap"><div class="mapload"><span class="spin"></span>Map...</div></div></div>
         <div class="btns" style="justify-content:center">
-          <button onclick="fitLine()">↔️ Sab dikhao</button><button onclick="followMe()">📍 Meri jagah</button><button id="layerBtn" onclick="toggleLayer()">🗺️ Street</button><button onclick="downloadArea()">⬇️ Area save</button><button id="flipBtn" onclick="toggleFlip()">↕️ Ulti?</button>
+          <button onclick="fitLine()">↔️ Sab dikhao</button><button onclick="followMe()">📍 Meri jagah</button><button id="layerBtn" onclick="toggleLayer()">🛰️ Clarity</button><button onclick="downloadArea()">⬇️ Area save</button><button id="flipBtn" onclick="toggleFlip()">↕️ Ulti?</button>
         </div>
         <p class="hint" id="meInfo" style="text-align:center"></p>
         <p class="hint" id="dlInfo" style="text-align:center"></p>
@@ -1079,13 +1093,15 @@ async function satDepth(){
   if(!result) return;
   const lat=result.a.lat, lon=result.a.lon, key=lat.toFixed(3)+','+lon.toFixed(3);
   if(satChecked===key) return; satChecked=key;
-  let best=15;
-  for(const z of [19,18,17,16]){
-    const [x,y]=tileXY(lat,lon,z);
-    try{ const j=await (await fetch('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tilemap/'+z+'/'+y+'/'+x+'/1/1')).json(); if(j&&j.data&&j.data[0]===1){ best=z; break; } }catch(_){}
+  const bases={sat:'https://clarity.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer', sat2:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer'};
+  for(const k of ['sat','sat2']){
+    let best=null;
+    for(const z of [19,18,17,16,15]){
+      const [x,y]=tileXY(lat,lon,z);
+      try{ const j=await (await fetch(bases[k]+'/tilemap/'+z+'/'+y+'/'+x+'/1/1')).json(); if(j&&j.data&&j.data[0]===1){ best=z; break; } }catch(_){}
+    }
+    if(best){ LMl[k].options.maxNativeZoom=best; if(curLayer===k && LM){ LM.removeLayer(LMl[k]); LMl[k].addTo(LM); } }
   }
-  LMl.sat.options.maxNativeZoom=best;
-  if(curLayer==='sat' && LM){ LM.removeLayer(LMl.sat); LMl.sat.addTo(LM); }
 }
 let mapFollow=false, meMk=null;
 async function initMap(){
@@ -1093,9 +1109,10 @@ async function initMap(){
   try{ await loadLeaflet(); }catch(_){ $('lmap').innerHTML='<div class="mapload">Map ke liye internet chahiye</div>'; return; }
   if(!LM){
     $('lmap').innerHTML='';
-    LM=L.map('lmap',{zoomControl:false,attributionControl:true,zoomSnap:0.25,minZoom:5,maxZoom:19});
+    LM=L.map('lmap',{zoomControl:false,attributionControl:true,zoomSnap:0.25,minZoom:5,maxZoom:20,tap:false,bounceAtZoomLimits:false});
     LM.attributionControl.setPrefix(false);
-    LMl.sat=cachedLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:15,maxZoom:19,attribution:'Esri'});
+    LMl.sat=cachedLayer('https://clarity.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:17,maxZoom:20,attribution:'Esri Clarity'});
+    LMl.sat2=cachedLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:15,maxZoom:20,attribution:'Esri'});
     LMl.street=cachedLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxNativeZoom:19,maxZoom:19,attribution:'© OSM'});
     LMl[curLayer].addTo(LM);
     LM.on('dragstart',()=>{ mapFollow=false; });
@@ -1120,10 +1137,11 @@ function fitLine(silent){
 }
 function followMe(){ if(!LM) return; if(!mePos){ $('meInfo').textContent='GPS dhoond raha hai...'; startWatch(); return; } mapFollow=true; LM.setView([mePos.lat,mePos.lon],Math.max(LM.getZoom(),16),{animate:false}); }
 function centerMap(){ fitLine(true); }
+const LAYER_ORDER=['sat','sat2','street'], LAYER_NAME={sat:'🛰️ Clarity',sat2:'🛰️ Satellite 2',street:'🗺️ Street'};
 function toggleLayer(){
   if(!LM) return;
-  LM.removeLayer(LMl[curLayer]); curLayer = curLayer==='sat'?'street':'sat'; LMl[curLayer].addTo(LM);
-  $('layerBtn').textContent = curLayer==='sat' ? '🗺️ Street' : '🛰️ Satellite';
+  LM.removeLayer(LMl[curLayer]); curLayer=LAYER_ORDER[(LAYER_ORDER.indexOf(curLayer)+1)%3]; LMl[curLayer].addTo(LM);
+  $('layerBtn').textContent=LAYER_NAME[curLayer]; toast('Map: '+LAYER_NAME[curLayer]);
 }
 function startWatch(){
   if(meWatch!==null || !navigator.geolocation) return;
