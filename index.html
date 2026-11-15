@@ -245,6 +245,9 @@ details[open] summary::before{content:"－ "}
 .pick button.isp{background:#fff;color:#0a0b0c;border:none}
 .pick button.cli{background:#ff6b6b;color:#0a0b0c;border:none}
 .leaflet-container a.leaflet-popup-close-button{color:var(--mut)!important}
+.sheet{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center}
+.sheetBox{width:min(520px,100%);max-height:90vh;overflow:auto;background:#141617;border:1px solid var(--line);border-radius:24px 24px 0 0;padding:18px 16px calc(24px + env(safe-area-inset-bottom));animation:rise .25s ease both}
+#licBar{cursor:pointer}
 .rdev{border:1px solid var(--line);border-radius:20px;padding:14px;margin-bottom:12px;background:rgba(255,255,255,.02);transition:border-color .2s}
 .rdev.sel{border-color:var(--lime);box-shadow:0 0 0 1px var(--lime) inset}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
@@ -317,14 +320,14 @@ details[open] summary::before{content:"－ "}
   <div class="top">
     <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 3 7 21M12 3l5 18M8.5 15h7M10 9h4"/><path d="M5 6a9 9 0 0 1 3-3M19 6a9 9 0 0 0-3-3"/></svg></div>
     <div><h1>Tower Finder</h1><p class="sub" id="pageTitle">Direction</p></div>
-    <div class="chip" id="licBar"></div>
+    <div class="chip" id="licBar" onclick="openLic()"></div>
   </div>
 
   <!-- PAGE 1: Direction -->
   <section class="page on" id="page-dir">
     <div class="card">
       <h2><span class="dot" style="background:var(--a)"></span> ISP Tower</h2>
-      <input id="a" placeholder="30.7565, 70.6357  ya  30°45.38'N 70°38.14'E" autocomplete="off">
+      <input id="a" placeholder="30.7565, 70.6357  or  30°45.38'N 70°38.14'E" autocomplete="off">
       <div class="btns"><button class="gps" onclick="useGPS('a')">📍 Use my GPS</button></div>
       <div class="err" id="aErr"></div>
       <h2 style="margin-top:16px"><span class="dot" style="background:var(--b)"></span> Client Tower</h2>
@@ -552,6 +555,22 @@ details[open] summary::before{content:"－ "}
   </section>
 </div>
 
+<div id="licSheet" class="sheet" style="display:none" onclick="if(event.target===this)closeLic()">
+  <div class="sheetBox">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><h2 style="margin:0;font-size:18px">🔑 License</h2><button onclick="closeLic()" style="margin-left:auto;width:38px;height:38px;padding:0;border-radius:50%">✕</button></div>
+    <div class="big" style="margin-bottom:12px">
+      <div class="stat"><div class="k">TIME LEFT</div><div class="v" id="lsLeft" style="font-size:24px">--</div><div class="s" id="lsExp"></div></div>
+      <div class="stat"><div class="k">DEVICE CODE</div><div class="v" id="lsCode" style="font-size:20px;letter-spacing:2px;font-family:ui-monospace,Consolas,monospace">--</div><div class="s"><a href="#" onclick="event.preventDefault();copyCode()" style="color:var(--lime)">Copy code</a></div></div>
+    </div>
+    <h2 style="font-size:15px;margin:6px 0 10px">💎 Renew / extend</h2>
+    <div class="pk" id="pkgList2"></div>
+    <p class="hint" id="payInfo2" style="margin-top:10px"></p>
+    <label>New license key</label>
+    <input id="licKey2" placeholder="Paste your new key here" autocomplete="off">
+    <div class="btns" style="margin-top:10px"><button class="main" onclick="activate2()">Activate new key</button></div>
+    <div class="err" id="licErr2"></div>
+  </div>
+</div>
 <nav class="nav" id="nav" style="display:none">
   <span class="ind" id="ind"></span>
   <button class="on" data-p="dir" onclick="go('dir')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg>Direction</button>
@@ -1079,18 +1098,48 @@ async function checkKey(key){
     return {ok:true, exp:d.e};
   }catch(_){ return {err:'Invalid key.'}; }
 }
+
+// ===== Packages (shared) + License sheet =====
+function pkgHTML(selId,priceId){
+  const fmt=n=>'Rs '+n.toLocaleString('en-PK');
+  return '<div><span>1 day</span><b>'+fmt(PRICE_PER_DAY)+'</b><span>Rs 1,000 per day</span></div>'+
+    '<div><span>Choose days</span><b id="'+priceId+'">'+fmt(7*PRICE_PER_DAY)+'</b><select id="'+selId+'" onchange="document.getElementById(\''+priceId+'\').textContent=\'Rs \'+(this.value*PRICE_PER_DAY).toLocaleString(\'en-PK\')" style="margin-top:6px;padding:8px 10px;font-size:14px;background:rgba(10,11,12,.15);border:none;color:inherit;font-weight:800">'+
+    PACKAGES.map(p=>'<option value="'+p.days+'"'+(p.days===7?' selected':'')+'>'+p.days+' day'+(p.days>1?'s':'')+'</option>').join('')+'</select></div>';
+}
+let licExp=null;
+function openLic(){
+  $('licSheet').style.display='flex';
+  $('lsCode').textContent=deviceCode();
+  $('pkgList2').innerHTML=pkgHTML('pkDays2','pkPrice2');
+  $('payInfo2').innerHTML='Payment: <b>'+SELLER.pay+'</b><br>WhatsApp: <b>'+SELLER.whatsapp+'</b><br>Send your Device Code with the payment — you will receive a new key.';
+  if(licExp){ const left=licExp-Date.now()/1000, dd=Math.floor(left/86400), hh=Math.floor(left%86400/3600);
+    $('lsLeft').textContent= left>0 ? (dd>0? dd+'d '+hh+'h' : hh+'h') : 'Expired';
+    $('lsExp').textContent='Expires '+new Date(licExp*1000).toLocaleString('en-PK'); }
+  $('licErr2').textContent=''; $('licKey2').value='';
+}
+function closeLic(){ $('licSheet').style.display='none'; }
+async function activate2(){
+  const k=$('licKey2').value.trim(), e=$('licErr2'); e.style.color='';
+  if(!k){ e.textContent='Paste your key.'; return; }
+  const r=await checkKey(k);
+  if(!r.ok){ e.textContent=r.err; return; }
+  if(licExp && r.exp<=licExp){ e.textContent='This key does not extend your current license.'; return; }
+  store('tdf_lic',k); showApp(r.exp); e.style.color='var(--lime)'; e.textContent='✅ License updated'; openLic();
+}
+
 function showLock(msg){
   $('app').style.display='none'; $('nav').style.display='none'; $('lock').style.display='';
   $('devCode').textContent=deviceCode();
   if(window.Android) $('webWarn').style.display='none';
-  const fmt=n=>'Rs '+n.toLocaleString('en-PK');
-  $('pkgList').innerHTML='<div><span>1 day</span><b>'+fmt(PRICE_PER_DAY)+'</b><span>Rs 1,000 per day</span></div>'+
+  $('pkgList').innerHTML=pkgHTML('pkDays','pkPrice');
+  if(false) $('pkgList').innerHTML='<div><span>1 day</span><b>'+fmt(PRICE_PER_DAY)+'</b><span>Rs 1,000 per day</span></div>'+
     '<div><span>Choose days</span><b id="pkPrice">'+fmt(7*PRICE_PER_DAY)+'</b><select id="pkDays" onchange="$(\'pkPrice\').textContent=\'Rs \'+(this.value*PRICE_PER_DAY).toLocaleString(\'en-PK\')" style="margin-top:6px;padding:8px 10px;font-size:14px;background:rgba(10,11,12,.15);border:none;color:inherit;font-weight:800">'+
     PACKAGES.map(p=>'<option value="'+p.days+'"'+(p.days===7?' selected':'')+'>'+p.days+' day'+(p.days>1?'s':'')+'</option>').join('')+'</select></div>';
   $('payInfo').innerHTML='Payment: <b>'+SELLER.pay+'</b><br>WhatsApp: <b>'+SELLER.whatsapp+'</b>';
   if(msg) $('licErr').textContent=msg;
 }
 function showApp(exp){
+  licExp=exp;
   $('lock').style.display='none'; $('app').style.display=''; $('nav').style.display='';
   setTimeout(autoConnectRadios, 300);
   const left=exp-Date.now()/1000, dd=Math.floor(left/86400), hh=Math.floor(left%86400/3600);
