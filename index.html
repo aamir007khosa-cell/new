@@ -90,7 +90,7 @@
         <li><span>Compass app ke liye (magnetic, ~2° kam)</span><b id="mag"></b></li>
         <li id="tiltRow" style="display:none"><span>ISP par dish ka tilt</span><b id="tiltA"></b></li>
         <li id="tiltRowB" style="display:none"><span>Client par dish ka tilt</span><b id="tiltB"></b></li>
-        <li><span>Fresnel zone (5.8 GHz, beech mein)</span><b id="fres"></b></li>
+        <li><span>Fresnel zone (5.8 GHz / 5790 MHz, beech mein)</span><b id="fres"></b></li>
       </ul>
     </div>
 
@@ -105,12 +105,14 @@
       <p class="hint">Rastay ki zameen ki unchai satellite data se lega aur bataye ga ke kitne feet ka tower chahiye.</p>
       <div class="row">
         <div><label>Rastay mein darakht/building (ft)</label><input id="clut" type="number" inputmode="decimal" value="35"></div>
-        <div><label>Frequency</label>
-          <select id="freq">
-            <option value="5.8" selected>5.8 GHz</option>
-            <option value="5.2">5.2 GHz</option>
-            <option value="2.4">2.4 GHz</option>
-            <option value="60">60 GHz</option>
+        <div><label>Center Frequency (MHz)</label><input id="freq" type="number" inputmode="decimal" value="5790"></div>
+      </div>
+      <div class="row">
+        <div><label>Channel Bandwidth (MHz)</label>
+          <select id="bw">
+            <option value="20">20</option>
+            <option value="40">40</option>
+            <option value="80" selected>80</option>
           </select></div>
       </div>
       <div class="row">
@@ -316,13 +318,21 @@ function equalHeight(pts,gA,gB){
   }
   return null;
 }
+function bwNote(bw,d){
+  const need={20:-75,40:-70,80:-65}[bw];
+  let t='<br>Channel '+bw+' MHz: achhi speed ke liye signal kam se kam <b>'+need+' dBm</b> ya behtar chahiye.';
+  if(bw===80 && d>10000) t+=' Link lamba hai, signal kamzor ho to 40 MHz par aa jao.';
+  return t;
+}
 const ceil5 = ft => Math.ceil(ft/5)*5;
 
 async function design(){
   const e=$('dErr'); e.textContent='';
   if(!result){ e.textContent='Pehle upar Calculate karo.'; return; }
   const {a,b,d}=result;
-  const clutFt=num('clut')??0, f=parseFloat($('freq').value);
+  const clutFt=num('clut')??0;
+  let fM=num('freq'); if(fM===null||fM<1000||fM>80000){ e.textContent='Center Frequency MHz mein likho, jaise 5790'; return; }
+  const f=fM/1000, bw=parseInt($('bw').value);
   e.textContent='Zameen ka data le raha hai...';
   let elev;
   try{ elev = await getProfile(a,b,100); }
@@ -345,7 +355,7 @@ async function design(){
   } else {
     $('dCli').textContent=minFt;
     const wd=(res.worst.t*d);
-    $('dNote').innerHTML='Sab se bari rukawat ISP se <b>'+fmtDist(wd)+'</b> door hai. Zameen ka farq: ISP '+Math.round(gA/FT)+' ft, Client '+Math.round(gB/FT)+' ft (samandar se).';
+    $('dNote').innerHTML='Sab se bari rukawat ISP se <b>'+fmtDist(wd)+'</b> door hai. Zameen ka farq: ISP '+Math.round(gA/FT)+' ft, Client '+Math.round(gB/FT)+' ft (samandar se).'+bwNote(bw,d);
   }
 
   // Options table
@@ -463,8 +473,8 @@ function drawLive(h){
 }
 
 // Pichli values yaad rakho (sirf isi phone par)
-function save(){ try{ ['a','b','ga','ha','gb','hb','clut','ispH'].forEach(k=>localStorage.setItem('tdf_'+k,$(k).value)); }catch(_){} }
-try{ ['a','b','ga','ha','gb','hb','clut','ispH'].forEach(k=>{ const v=localStorage.getItem('tdf_'+k); if(v) $(k).value=v; }); }catch(_){}
+function save(){ try{ ['a','b','ga','ha','gb','hb','clut','ispH','freq','bw'].forEach(k=>localStorage.setItem('tdf_'+k,$(k).value)); }catch(_){} }
+try{ ['a','b','ga','ha','gb','hb','clut','ispH','freq','bw'].forEach(k=>{ const v=localStorage.getItem('tdf_'+k); if(v) $(k).value=v; }); }catch(_){}
 </script>
 </body>
 </html>
