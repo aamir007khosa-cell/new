@@ -1371,7 +1371,7 @@ function startDev(dev, ok){
   mountDev(dev);
   if(ok) devStatus(dev,'● Juda hua','var(--lime)'); else devStatus(dev,'● Offline — dobara jod raha hai','#fbbf24');
   clearTimeout(dev.timer); devLoop(dev);
-  if(SEL===dev.id) startBeacon(dev);
+  startBeacon(dev);
 }
 // ---- Stats loop: har ~1 second (radio bhi itna hi naya karta hai) ----
 async function devLoop(dev){
@@ -1387,7 +1387,8 @@ async function devLoop(dev){
 async function devPoll(dev){
   const t=++dev.tick, D=dev.d;
   // Pehle sirf zaroori request; baqi kabhi kabhi (radio par bojh kam)
-  const cs=await devGet(dev,'/restconf/data/mimosa-wifi-network:statistics/client-statistics');
+  const tq=Date.now(); const cs=await devGet(dev,'/restconf/data/mimosa-wifi-network:statistics/client-statistics');
+  dev.slat = Date.now()-tq;
   D.ok=!!cs; if(!cs) return;
   let best=null, n=0; try{ const L=cs['mimosa-wifi-network:statistics']['client-statistics']||[]; n=L.length;
     L.forEach(c=>{ const x=rdNode(c['raw-statistics']); if(x && (!best || (rdRssi(x.rssi)||-200)>(rdRssi(best.rssi)||-200))){ best=x; D.staMac=c.name; } }); }catch(_){}
@@ -1398,7 +1399,7 @@ async function devPoll(dev){
   if(sv!=null && peer && peer.d.bema!=null && peer.d.beacon && Date.now()-peer.d.beacon.t<2500){ const xo=sv-peer.d.bema; D.xoff = D.xoff==null ? xo : D.xoff*0.7 + xo*0.3; }
   const heavy=[];
   if(t%2===1) heavy.push(devGet(dev,'/restconf/data/mimosa-wifi-radio:statistics/radio-statistics').then(rs=>{ if(rs){ try{ D.self=rdSelf(rs['mimosa-wifi-radio:statistics']['radio-statistics'][0]['raw-statistics']); }catch(_){} } }));
-  if(t%3===1 && devRole(dev)==='client') heavy.push(devGet(dev,'/restconf/data/mimosa-ap-info:ap-info/status').then(ap=>{ if(!ap) return; try{ const st=ap['mimosa-ap-info:ap-info'].status;
+  if(t%5===1 && devRole(dev)==='client') heavy.push(devGet(dev,'/restconf/data/mimosa-ap-info:ap-info/status').then(ap=>{ if(!ap) return; try{ const st=ap['mimosa-ap-info:ap-info'].status;
       D.rem=rdNode(JSON.parse(st.cli_stats)['mimosa-wifi-network:statistics']['client-statistics'][0]['raw-statistics']);
       D.remSelf=rdSelf(JSON.parse(st.radio_stats)['mimosa-wifi-radio:statistics']['radio-statistics'][0]['raw-statistics']);
       D.remName=st.device_name; D.remTemp=st.temp; const rl=findLatLon({latitude:st.latitude,longitude:st.longitude}); if(rl) D.remLoc=rl; }catch(_){} }));
@@ -1412,18 +1413,19 @@ async function devPoll(dev){
 }
 function peerOf(dev){ const r=devRole(dev); return DEVS.find(d=>d!==dev && d.on && devRole(d)!==r) || null; }
 // ---- Tez beacon: sirf chune hue radio par ----
-function startBeacon(dev){ DEVS.forEach(d=>{ if(d!==dev){ clearTimeout(d.btimer); d.bOn=false; } }); if(!dev.bOn){ dev.bOn=true; beaconLoop(dev); } }
+function startBeacon(dev){ if(!dev.bOn){ dev.bOn=true; beaconLoop(dev); } }
 async function beaconLoop(dev){
-  if(!dev.on || !dev.bOn || SEL!==dev.id){ dev.bOn=false; return; }
+  if(!dev.on || !dev.bOn){ dev.bOn=false; return; }
   if(dev.beaconOff && Date.now()<dev.beaconOff){ dev.btimer=setTimeout(()=>beaconLoop(dev),5000); return; }
   const t0=Date.now(), isAP=devRole(dev)==='isp';
   const path = isAP ? (dev.d.staMac ? '/client/'+dev.d.staMac+'/beacon-rssi' : null) : '/beacon-rssi';
   if(!path){ dev.btimer=setTimeout(()=>beaconLoop(dev),1000); return; }
-  const r=await devReq(dev,'GET',path); let ok=false;
+  const tq=Date.now(); const r=await devReq(dev,'GET',path); let ok=false;
+  dev.lat = dev.lat==null ? (Date.now()-tq) : dev.lat*0.8 + (Date.now()-tq)*0.2;
   if(r.status===200){ try{ const j=JSON.parse(r.body); if(j.status==='success' && typeof j.rssi==='number' && j.rssi<0){ ok=true; const B=dev.d;
-      B.bema = B.bema==null ? j.rssi : B.bema*0.85 + j.rssi*0.15; B.bfast = B.bfast==null ? j.rssi : B.bfast*0.55 + j.rssi*0.45; B.beacon={v:B.bfast,t:Date.now()}; fastPaint(dev); } }catch(_){} }
+      B.bema = B.bema==null ? j.rssi : B.bema*0.85 + j.rssi*0.15; B.bfast = B.bfast==null ? j.rssi : B.bfast*0.55 + j.rssi*0.45; B.beacon={v:B.bfast,t:Date.now()}; (dev.hits=dev.hits||[]).push(Date.now()); if(dev.hits.length>20) dev.hits.shift(); fastPaint(dev); } }catch(_){} }
   if(ok) dev.bfail=0; else { dev.bfail=(dev.bfail||0)+1; if(dev.bfail>=3){ dev.beaconOff=Date.now()+30000; dev.bfail=0; } }
-  dev.btimer=setTimeout(()=>beaconLoop(dev), Math.max(80, 150-(Date.now()-t0)));
+  dev.btimer=setTimeout(()=>beaconLoop(dev), Math.max(60, 160-(Date.now()-t0)));
 }
 function devSignal(dev){
   const D=dev.d, sv=D.node? rdRssi(D.node.rssi) : null;
@@ -1456,12 +1458,17 @@ function devPos(dev){
   if(result){ if(role==='isp') return {p:result.a, src:'App coordinates'}; if(dev===DEVS.find(d=>devRole(d)==='client')) return {p:result.b, src:'App coordinates'}; }
   return null;
 }
+function speedTxt(dev){
+  const h=dev.hits||[], now=Date.now(); const recent=h.filter(t=>now-t<3000).length/3;
+  const parts=[]; if(recent>0) parts.push(recent.toFixed(1)+'/s'); if(dev.lat!=null) parts.push(Math.round(dev.lat)+' ms'); if(dev.slat!=null) parts.push('stats '+dev.slat+' ms');
+  return parts.length? ' · '+parts.join(' · ') : '';
+}
 function paintDev(dev){
   if(!$('dc-'+dev.id)) return;
   const D=dev.d, sg=devSignal(dev), v=sg.v;
   paintRssi($('rr-'+dev.id),$('rb-'+dev.id),v);
   $('rn-'+dev.id).textContent = dev.fails>=3 ? 'Radio se rabta nahi — khud dobara koshish ho rahi hai' :
-    ((D.clients>1?D.clients+' clients · ':'')+(v==null?'Link nahi':(sg.via?'⚡ Live ('+sg.via+' ke beacon se)':(sg.fast?'⚡ Live signal':(SEL===dev.id?'Signal (har second)':'Signal (har second) — tez ke liye card dabao')))));
+    ((D.clients>1?D.clients+' clients · ':'')+(v==null?'Link nahi':(sg.via?'⚡ Live ('+sg.via+' ke beacon se)':(sg.fast?'⚡ Live signal':'Signal (har second)')))) + speedTxt(dev);
   const c=D.cfg||{};
   $('rk-'+dev.id).innerHTML='<div><b>'+(D.model||'--')+'</b><span>Model</span></div><div><b>'+(c.freq||'--')+'</b><span>MHz / '+(c.bw||'--')+'</span></div><div><b>'+(c.tx!=null?c.tx:'--')+'</b><span>Tx dBm</span></div><div><b>'+(D.temp!=null?D.temp+'°':'--')+'</b><span>Temp</span></div>';
   const pos=devPos(dev); let li='📍 '+(pos? pos.p.lat.toFixed(5)+', '+pos.p.lon.toFixed(5)+' <span style="color:var(--mut)">('+pos.src+')</span>' : 'Location nahi — radio mein save karo');
