@@ -178,6 +178,14 @@ details[open] summary::before{content:"－ "}
 .leaflet-control-attribution{background:rgba(10,11,12,.7)!important;color:#777!important;font-size:8px!important}
 .flow{animation:flow 1s linear infinite}
 @keyframes flow{to{stroke-dashoffset:-20}}
+
+/* ===== Radio live ===== */
+.rssi{display:flex;align-items:baseline;justify-content:center;gap:6px;margin:4px 0 8px}
+.rssi .rv{font-size:58px;font-weight:900;letter-spacing:-2px;color:var(--lime);font-variant-numeric:tabular-nums;transition:color .3s}
+.rssi .ru{color:var(--mut);font-weight:800}
+.rbar{position:relative;height:14px;border-radius:999px;background:var(--card2);overflow:hidden}
+.rbar i{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#ff6b6b,#fbbf24 45%,#c8f135);transition:width .4s cubic-bezier(.2,.8,.2,1)}
+.rbar b{position:absolute;top:-2px;bottom:-2px;width:3px;background:#fff;border-radius:2px;display:none}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -284,6 +292,12 @@ details[open] summary::before{content:"－ "}
         <h2><span class="ic">🧭</span> Seedhi line <span class="hint" style="margin:0 0 0 auto">upar = North</span></h2>
         <svg id="map" viewBox="0 0 320 345"></svg>
         <p class="hint">Compass app mein <b>Heading</b> ko is degree par le aao — phone ka upar wala hissa Client tower ki taraf hoga.</p>
+      </div>
+      <div class="card">
+        <h2><span class="ic">📍</span> Coordinates Mimosa mein bhejo</h2>
+        <p class="hint" style="margin-top:-6px">Pehle Compass tab mein "Mimosa se jodo". Phir batao yeh radio kis tower par hai:</p>
+        <div class="btns"><button onclick="rdSendLoc('isp')">ISP wala radio</button><button onclick="rdSendLoc('client')">Client wala radio</button></div>
+        <div class="err" id="locErr"></div>
       </div>
     </div>
   </section>
@@ -415,6 +429,28 @@ details[open] summary::before{content:"－ "}
     <path d="M30 8 Q22 22 30 36" style="--w:.25s"/><path d="M70 8 Q78 22 70 36" style="--w:.25s"/>
   </g>
 </svg><p>Pehle <b>Direction</b> tab mein dono towers ke coordinates daalo.</p><button class="main" onclick="go('dir')">Direction kholo</button></div>
+    <div class="card hasres">
+      <h2><span class="ic">📶</span> Mimosa se jodo <span class="hint" id="rdState" style="margin:0 0 0 auto"></span></h2>
+      <div id="rdForm">
+        <div class="row">
+          <div><label>Radio IP</label><input id="rdIp" placeholder="192.168.1.20" inputmode="decimal"></div>
+          <div><label>Username</label><input id="rdUser" placeholder="admin" autocomplete="off"></div>
+        </div>
+        <label>Password</label><input id="rdPass" type="password" placeholder="Radio ka password" autocomplete="off">
+        <div class="btns" style="margin-top:12px"><button class="main" onclick="rdConnect()">Jodo</button></div>
+        <p class="hint">Phone radio wale network (Wi-Fi/LAN) par hona chahiye. Yeh sirf app (APK) mein chalta hai.</p>
+      </div>
+      <div id="rdLive" style="display:none">
+        <div class="rssi"><div class="rv" id="rdRssi">--</div><div class="ru">dBm</div></div>
+        <div class="rbar"><i id="rdBar"></i><b id="rdTarget"></b></div>
+        <p class="hint" id="rdInfo" style="text-align:center"></p>
+        <div class="btns" style="justify-content:center">
+          <button id="rdBeepBtn" onclick="rdBeepToggle()">🔊 Beep ON karo</button>
+          <button onclick="rdDisconnect()">✖ Band karo</button>
+        </div>
+      </div>
+      <div class="err" id="rdErr"></div>
+    </div>
     <div class="card hasres">
       <h2><span class="ic">🧭</span> Live compass</h2>
       <p class="hint" style="margin-top:-6px">Phone flat pakdo ya camera ki tarah khara karo. Tower ke steel se 5–10 qadam door raho.</p>
@@ -725,7 +761,7 @@ function linkBudget(){
     h+='<li><span>'+f+' MHz par</span><b>'+r.toFixed(0)+' dBm &nbsp;<span style="color:'+(bw?'var(--ok)':'var(--b)')+'">'+(bw?bw+' MHz chalega':'kamzor')+'</span></b></li>';
   });
   h+='</ul>';
-  const r=rssi(fC), bw=pickBw(r);
+  const r=rssi(fC), bw=pickBw(r); window.EXPECTED=r;
   h+='<div class="big" style="margin-top:10px"><div class="stat"><div class="k">Aap ki frequency '+fC+' MHz</div><div class="v">'+r.toFixed(0)+'</div><div class="s">dBm (andaza)</div></div>';
   h+='<div class="stat"><div class="k">Best bandwidth</div><div class="v" style="color:'+(bw?'var(--ok)':'var(--b)')+'">'+(bw||'–')+'</div><div class="s">'+(bw?'MHz':'dish bari karo')+'</div></div></div>';
   h+='<p class="hint" style="margin-top:8px">Neeche wali frequency par signal thoda zyada (1–2 dB) aata hai. Yeh andaza tab sahi hai jab dish sahi align ho aur rasta saaf ho (Tower height design dekho). Asli signal ±5 dB farq ho sakta hai. 160 MHz sirf C6x / 6 GHz devices par.</p>';
@@ -1012,6 +1048,89 @@ function startWatch(){
   }catch(_){}
 }
 function rotateMap(h){ const m=$('lmap'); if(m) m.style.transform='rotate('+(-h)+'deg)'; }
+
+
+// ===== Mimosa radio (APK bridge) =====
+let RD=null, rdTimer=null, rdBeep=false, rdAudio=null, rdLocArm=null;
+function hasBridge(){ return !!(window.Android && Android.radio); }
+function rdCall(method,path,body){
+  const r=JSON.parse(Android.radio(method,RD.ip,RD.auth,path,body||''));
+  return r;
+}
+function rdParseRssi(b64){
+  try{
+    const b=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
+    const a=new Int32Array(b.slice(20,52).buffer);
+    const ch=[...a].filter(v=>v>-1000 && v<0);
+    if(!ch.length) return null;
+    return {rssi:10*Math.log10(ch.reduce((s,v)=>s+Math.pow(10,v/100),0)), chains:ch.map(v=>v/10)};
+  }catch(_){ return null; }
+}
+function rdConnect(){
+  const e=$('rdErr'); e.textContent='';
+  if(!hasBridge()){ e.textContent='Yeh feature sirf Tower Finder app (APK v2.2+) mein chalta hai.'; return; }
+  const ip=$('rdIp').value.trim()||'192.168.1.20', u=$('rdUser').value.trim(), pw=$('rdPass').value;
+  if(!u||!pw){ e.textContent='Username aur password likho.'; return; }
+  RD={ip, auth:btoa(u+':'+pw)};
+  $('rdState').innerHTML='<span class="spin"></span>';
+  setTimeout(()=>{
+    const r=rdCall('GET','/restconf/data/mimosa-wifi-network:statistics/client-statistics');
+    $('rdState').textContent='';
+    if(r.status===200){
+      try{ localStorage.setItem('tdf_rd',JSON.stringify({ip,u})); }catch(_){}
+      $('rdForm').style.display='none'; $('rdLive').style.display=''; $('rdState').textContent='● Juda hua';
+      $('rdState').style.color='var(--lime)'; rdPoll(); rdTimer=setInterval(rdPoll,1000); toast('✅ Mimosa se jud gaya');
+    } else if(r.status===401||r.status===403){ e.textContent='Username ya password ghalat hai.'; RD=null; }
+    else { e.textContent='Radio nahi mila ('+r.status+'). IP check karo aur phone radio ke network par ho.'; RD=null; }
+  },30);
+}
+function rdDisconnect(){ clearInterval(rdTimer); rdTimer=null; RD=null; $('rdLive').style.display='none'; $('rdForm').style.display=''; $('rdState').textContent=''; }
+function rdPoll(){
+  if(!RD) return;
+  const r=rdCall('GET','/restconf/data/mimosa-wifi-network:statistics/client-statistics');
+  if(r.status!==200){ $('rdInfo').textContent='Radio se jawab nahi aaya ('+r.status+')'; return; }
+  let best=null, n=0;
+  try{
+    const list=JSON.parse(r.body)['mimosa-wifi-network:statistics']['client-statistics']||[];
+    n=list.length;
+    list.forEach(c=>{ const p=rdParseRssi(c['raw-statistics']); if(p && (!best || p.rssi>best.rssi)) best=p; });
+  }catch(_){}
+  if(!best){ $('rdRssi').textContent='--'; $('rdInfo').textContent='Link nahi juda — doosra radio nahi mila'; $('rdBar').style.width='0'; return; }
+  const v=best.rssi;
+  $('rdRssi').textContent=v.toFixed(1);
+  $('rdRssi').style.color = v>=-60?'var(--lime)':(v>=-70?'#fbbf24':'#ff6b6b');
+  $('rdBar').style.width=Math.max(0,Math.min(100,(v+90)/50*100))+'%';
+  let info='Antenna: '+best.chains.map(c=>c.toFixed(1)).join(' / ')+' dBm'+(n>1?' · '+n+' clients':'');
+  if(window.EXPECTED!=null){ const t=$('rdTarget'); t.style.display='block'; t.style.left=Math.max(0,Math.min(100,(EXPECTED+90)/50*100))+'%'; info+=' · Andaza: '+EXPECTED.toFixed(0)+' dBm'; }
+  $('rdInfo').textContent=info;
+  if(rdBeep) rdTone(v);
+}
+function rdBeepToggle(){
+  rdBeep=!rdBeep; $('rdBeepBtn').textContent=rdBeep?'🔇 Beep band karo':'🔊 Beep ON karo';
+  if(rdBeep && !rdAudio){ try{ rdAudio=new (window.AudioContext||window.webkitAudioContext)(); }catch(_){} }
+}
+function rdTone(v){
+  if(!rdAudio) return;
+  try{
+    const o=rdAudio.createOscillator(), g=rdAudio.createGain(), t=rdAudio.currentTime;
+    o.frequency.value=300+Math.max(0,Math.min(1,(v+90)/50))*1400; o.type='sine';
+    g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.3,t+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t+0.12);
+    o.connect(g).connect(rdAudio.destination); o.start(t); o.stop(t+0.13);
+  }catch(_){}
+}
+function rdSendLoc(side){
+  const e=$('locErr'); e.style.color=''; e.textContent='';
+  if(!RD){ e.textContent='Pehle Compass tab mein "Mimosa se jodo".'; return; }
+  if(!result) return;
+  if(rdLocArm!==side){ rdLocArm=side; e.style.color='var(--acc)'; e.textContent='Yeh radio ki location badal dega. Pakka? Dobara wahi button dabao.'; return; }
+  rdLocArm=null;
+  const me = side==='isp'?result.a:result.b, other = side==='isp'?result.b:result.a;
+  const body=JSON.stringify({"mimosa-device:location":{"local":{"latitude":+me.lat.toFixed(6),"longitude":+me.lon.toFixed(6)},"remote":{"latitude":+other.lat.toFixed(6),"longitude":+other.lon.toFixed(6)}}});
+  const r=rdCall('PATCH','/restconf/data/mimosa-device:device/config/location',body);
+  if(r.status>=200 && r.status<300){ e.style.color='var(--lime)'; e.textContent='✅ Coordinates radio mein save ho gaye. Mimosa ab Link Distance dikhayega.'; }
+  else { e.textContent='Save nahi hua ('+r.status+'): '+String(r.body||'').slice(0,160); }
+}
+try{ const sv=JSON.parse(localStorage.getItem('tdf_rd')||'null'); if(sv){ $('rdIp').value=sv.ip; $('rdUser').value=sv.u; } }catch(_){}
 
 // ===== UI helpers =====
 const TITLES={dir:'Direction',h:'Tower height',s:'Expected signal',f:'Frequency planner',c:'Live compass'};
