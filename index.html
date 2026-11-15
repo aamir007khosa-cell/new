@@ -186,6 +186,18 @@ details[open] summary::before{content:"－ "}
 .rbar{position:relative;height:14px;border-radius:999px;background:var(--card2);overflow:hidden}
 .rbar i{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#ff6b6b,#fbbf24 45%,#c8f135);transition:width .4s cubic-bezier(.2,.8,.2,1)}
 .rbar b{position:absolute;top:-2px;bottom:-2px;width:3px;background:#fff;border-radius:2px;display:none}
+
+.tblw{margin-top:14px}
+.tblw h3{font-size:13px;margin:0 0 6px;color:var(--mut);font-weight:800;letter-spacing:.3px;text-transform:uppercase}
+.tbl{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+.tbl th{color:var(--mut);font-weight:700;text-align:left;padding:6px 4px;border-bottom:1px solid var(--line);font-size:11px}
+.tbl td{padding:7px 4px;border-bottom:1px solid var(--line);font-weight:700}
+.tbl td:first-child{color:var(--mut);font-weight:600}
+.tbl tr:last-child td{border-bottom:none}
+.kv{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px}
+.kv div{background:var(--card2);border-radius:14px;padding:8px 6px;text-align:center}
+.kv b{display:block;font-size:15px;font-weight:900}
+.kv span{font-size:10.5px;color:var(--mut);font-weight:700}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -444,6 +456,7 @@ details[open] summary::before{content:"－ "}
         <div class="rssi"><div class="rv" id="rdRssi">--</div><div class="ru">dBm</div></div>
         <div class="rbar"><i id="rdBar"></i><b id="rdTarget"></b></div>
         <p class="hint" id="rdInfo" style="text-align:center"></p>
+        <div id="rdStats"></div>
         <div class="btns" style="justify-content:center">
           <button id="rdBeepBtn" onclick="rdBeepToggle()">🔊 Beep ON karo</button>
           <button onclick="rdDisconnect()">✖ Band karo</button>
@@ -1057,15 +1070,33 @@ function rdCall(method,path,body){
   const r=JSON.parse(Android.radio(method,RD.ip,RD.auth,path,body||''));
   return r;
 }
-function rdParseRssi(b64){
+// Mimosa ke binary stats parhne wale helpers
+function rdB(b64){ return Uint8Array.from(atob(b64),c=>c.charCodeAt(0)); }
+function rdI32(b,o,n){ return [...new Int32Array(b.slice(o,o+4*n).buffer)]; }
+function rdU32(b,o){ return new Uint32Array(b.slice(o,o+4).buffer)[0]; }
+function rdI16(b,o){ return new Int16Array(b.slice(o,o+2).buffer)[0]; }
+function rdNode(b64){
   try{
-    const b=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
-    const a=new Int32Array(b.slice(20,52).buffer);
-    const ch=[...a].filter(v=>v>-1000 && v<0);
-    if(!ch.length) return null;
-    return {rssi:10*Math.log10(ch.reduce((s,v)=>s+Math.pow(10,v/100),0)), chains:ch.map(v=>v/10)};
+    const b=rdB(b64), m=rdU32(b,364), tm=rdU32(b,492), pd=rdU32(b,640);
+    const mcs=v=>((v>>12)&15)+String(v&127).padStart(2,'0');
+    return {rssi:rdI32(b,60,10), evm:rdI32(b,228,8),
+      rxMcs:mcs(m), rxBw:[20,40,80,160][(m>>10)&3], rxPhy:rdU32(b,432),
+      txMcs:mcs(tm), txBw:[20,40,80,160][(tm>>10)&3], txPhy:rdU32(b,652),
+      per: pd? 100*rdU32(b,548)/pd : 0};
   }catch(_){ return null; }
 }
+function rdSelf(b64){ try{ const b=rdB(b64); return {txPower:rdI16(b,20)/10, noise:rdI32(b,56,1)[0]/10}; }catch(_){ return null; } }
+// Mimosa ka formula: dono polarization ka signal jor kar
+function rdRssi(e){
+  if(!e||!e.length) return null;
+  const P=x=>Math.pow(10,x/100);
+  const n=10*Math.log10(P(e[0])+P(e[2])+P(e[4])+P(e[6])), i=10*Math.log10(P(e[1])+P(e[3])+P(e[5])+P(e[7]));
+  const r=10*Math.log10(Math.pow(10,n/10)+Math.pow(10,i/10));
+  return isFinite(r)&&r>-100 ? r : null;
+}
+function rdSnr(e){ if(!e||!e.length) return null; const t=(e[0]+e[1])/2; return t===0?null:Math.abs(t/10); }
+const f1=(v,d)=> v==null||isNaN(v) ? '--' : Number(v).toFixed(d==null?1:d);
+const fPhy=v=> v==null||v<6.5 ? '--' : v;
 function rdConnect(){
   const e=$('rdErr'); e.textContent='';
   if(!hasBridge()){ e.textContent='Yeh feature sirf Tower Finder app (APK v2.2+) mein chalta hai.'; return; }
@@ -1085,25 +1116,62 @@ function rdConnect(){
   },30);
 }
 function rdDisconnect(){ clearInterval(rdTimer); rdTimer=null; RD=null; $('rdLive').style.display='none'; $('rdForm').style.display=''; $('rdState').textContent=''; }
+let rdTick=0, rdRem=null, rdRemSelf=null, rdRemInfo=null, rdCfg=null;
+function rdGet(path){ const r=rdCall('GET',path); if(r.status!==200) return null; try{ return JSON.parse(r.body); }catch(_){ return null; } }
 function rdPoll(){
   if(!RD) return;
-  const r=rdCall('GET','/restconf/data/mimosa-wifi-network:statistics/client-statistics');
-  if(r.status!==200){ $('rdInfo').textContent='Radio se jawab nahi aaya ('+r.status+')'; return; }
-  let best=null, n=0;
-  try{
-    const list=JSON.parse(r.body)['mimosa-wifi-network:statistics']['client-statistics']||[];
-    n=list.length;
-    list.forEach(c=>{ const p=rdParseRssi(c['raw-statistics']); if(p && (!best || p.rssi>best.rssi)) best=p; });
-  }catch(_){}
-  if(!best){ $('rdRssi').textContent='--'; $('rdInfo').textContent='Link nahi juda — doosra radio nahi mila'; $('rdBar').style.width='0'; return; }
-  const v=best.rssi;
-  $('rdRssi').textContent=v.toFixed(1);
-  $('rdRssi').style.color = v>=-60?'var(--lime)':(v>=-70?'#fbbf24':'#ff6b6b');
-  $('rdBar').style.width=Math.max(0,Math.min(100,(v+90)/50*100))+'%';
-  let info='Antenna: '+best.chains.map(c=>c.toFixed(1)).join(' / ')+' dBm'+(n>1?' · '+n+' clients':'');
-  if(window.EXPECTED!=null){ const t=$('rdTarget'); t.style.display='block'; t.style.left=Math.max(0,Math.min(100,(EXPECTED+90)/50*100))+'%'; info+=' · Andaza: '+EXPECTED.toFixed(0)+' dBm'; }
+  rdTick++;
+  const cs=rdGet('/restconf/data/mimosa-wifi-network:statistics/client-statistics');
+  if(!cs){ $('rdInfo').textContent='Radio se jawab nahi aaya'; return; }
+  const rsj=rdGet('/restconf/data/mimosa-wifi-radio:statistics/radio-statistics');
+  let loc=null, ls=null, n=0;
+  try{ const L=cs['mimosa-wifi-network:statistics']['client-statistics']||[]; n=L.length;
+       // sab se strong client lo
+       L.forEach(c=>{ const x=rdNode(c['raw-statistics']); if(x && (!loc || (rdRssi(x.rssi)||-200)>(rdRssi(loc.rssi)||-200))) loc=x; }); }catch(_){}
+  try{ ls=rdSelf(rsj['mimosa-wifi-radio:statistics']['radio-statistics'][0]['raw-statistics']); }catch(_){}
+  if(rdTick%2===1){
+    const ap=rdGet('/restconf/data/mimosa-ap-info:ap-info/status');
+    try{ const st=ap['mimosa-ap-info:ap-info'].status;
+      rdRem=rdNode(JSON.parse(st.cli_stats)['mimosa-wifi-network:statistics']['client-statistics'][0]['raw-statistics']);
+      rdRemSelf=rdSelf(JSON.parse(st.radio_stats)['mimosa-wifi-radio:statistics']['radio-statistics'][0]['raw-statistics']);
+      rdRemInfo={name:st.device_name, temp:st.temp};
+    }catch(_){ rdRem=null; rdRemSelf=null; }
+  }
+  if(rdTick%10===1){
+    const ifs=rdGet('/restconf/data/ietf-interfaces:interfaces');
+    try{ const w=ifs['ietf-interfaces:interfaces'].interface.find(i=>i.name==='wifi0'); const st=w['mimosa-wifi-radio:state']||{};
+      const cc=st['current-channel-configuration']||{}, cp=st['current-power-configuration']||{};
+      const cfg=w['mimosa-wifi-radio:client-configuration']||w['mimosa-wifi-radio:access-point-configuration']||{};
+      rdCfg={freq:cc.frequency, bw:cc.bandwidth, tx:cp['transmit-power'], gain:(cfg['power-configuration']||{})['antenna-gain']};
+    }catch(_){}
+  }
+  const dl = loc? rdRssi(loc.rssi) : null, ul = rdRem? rdRssi(rdRem.rssi) : null;
+  if(dl==null){ $('rdRssi').textContent='--'; $('rdInfo').textContent='Link nahi juda — doosra radio nahi mila'; $('rdBar').style.width='0'; $('rdStats').innerHTML=''; return; }
+  $('rdRssi').textContent=dl.toFixed(1);
+  $('rdRssi').style.color = dl>=-60?'var(--lime)':(dl>=-70?'#fbbf24':'#ff6b6b');
+  $('rdBar').style.width=Math.max(0,Math.min(100,(dl+90)/50*100))+'%';
+  let info='DL signal'+(ul!=null?' · UL '+ul.toFixed(1)+' dBm':'')+(n>1?' · '+n+' clients':'');
+  if(window.EXPECTED!=null){ const t=$('rdTarget'); t.style.display='block'; t.style.left=Math.max(0,Math.min(100,(EXPECTED+90)/50*100))+'%'; info+=' · Andaza '+EXPECTED.toFixed(0); }
   $('rdInfo').textContent=info;
-  if(rdBeep) rdTone(v);
+  const R=rdRem||{}, noiseL=ls?ls.noise:null, noiseR=rdRemSelf?rdRemSelf.noise:null;
+  const snrUL=rdSnr(R.evm), snrDL=rdSnr(loc.evm);
+  const cinr=i=> loc.evm&&loc.evm[i] ? Math.abs(loc.evm[i]/10) : null;
+  let h='';
+  if(rdCfg) h+='<div class="kv"><div><b>'+(rdCfg.freq||'--')+'</b><span>MHz</span></div><div><b>'+(rdCfg.bw||'--')+'</b><span>Width</span></div><div><b>'+(rdCfg.tx!=null?rdCfg.tx:'--')+'</b><span>Tx dBm</span></div><div><b>'+(rdRemInfo&&rdRemInfo.temp!=null?rdRemInfo.temp:'--')+'</b><span>Remote °C</span></div></div>';
+  h+='<div class="tblw"><h3>Link Statistics (UL / DL)</h3><table class="tbl">'+
+    '<tr><td>RSSI (dBm)</td><td>'+f1(ul,2)+' / '+f1(dl,2)+'</td></tr>'+
+    '<tr><td>PHY Rate (Mbps)</td><td>'+fPhy(loc.txPhy)+' / '+fPhy(loc.rxPhy)+'</td></tr>'+
+    '<tr><td>MCS</td><td>'+loc.txMcs+' / '+loc.rxMcs+'</td></tr>'+
+    '<tr><td>PER (%)</td><td>'+f1(loc.per,2)+' / '+f1(R.per,2)+'</td></tr>'+
+    '<tr><td>SNR (dB)</td><td>'+f1(snrUL,2)+' / '+f1(snrDL,2)+'</td></tr>'+
+    '<tr><td>CINR</td><td>'+f1(snrUL,2)+' / '+f1(snrDL,2)+'</td></tr>'+
+    '<tr><td>Noise Level</td><td>'+f1(noiseR)+' / '+f1(noiseL)+'</td></tr></table></div>';
+  h+='<div class="tblw"><h3>MIMO Status</h3><table class="tbl"><tr><th>Chain</th><th>Rx Power</th><th>Rx Noise</th><th>CINR</th><th>Freq</th><th>Pol</th></tr>'+
+    [0,1].map(i=>'<tr><td>'+(i+1)+'</td><td>'+f1(loc.rssi[i]/10)+'</td><td>'+f1(noiseL)+'</td><td>'+f1(cinr(i))+'</td><td>'+(rdCfg&&rdCfg.freq||'--')+'</td><td>'+(i?'V':'H')+'</td></tr>').join('')+'</table></div>';
+  h+='<div class="tblw"><h3>Streams</h3><table class="tbl"><tr><th>#</th><th>Tx MCS</th><th>Tx W</th><th>Tx PHY</th><th>Rx MCS</th><th>Rx W</th><th>Rx PHY</th><th>Rx SNR</th></tr>'+
+    [0,1].map(i=>'<tr><td>'+(i+1)+'</td><td>'+loc.txMcs+'</td><td>'+loc.txBw+'</td><td>'+fPhy(loc.txPhy)+'</td><td>'+loc.rxMcs+'</td><td>'+loc.rxBw+'</td><td>'+fPhy(loc.rxPhy)+'</td><td>'+f1(cinr(i))+'</td></tr>').join('')+'</table></div>';
+  $('rdStats').innerHTML=h;
+  if(rdBeep) rdTone(dl);
 }
 function rdBeepToggle(){
   rdBeep=!rdBeep; $('rdBeepBtn').textContent=rdBeep?'🔇 Beep band karo':'🔊 Beep ON karo';
