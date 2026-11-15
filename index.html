@@ -1365,7 +1365,7 @@ async function devLoop(dev){
   if(dev.d.ok){ if(dev.fails>=3) { devStatus(role,'● Juda hua','var(--lime)'); toast('✅ '+dev.label+' dobara jud gaya'); } dev.fails=0; }
   else { dev.fails=(dev.fails||0)+1; if(dev.fails===3) devStatus(role,'● Offline — dobara jod raha hai','#fbbf24'); }
   renderRadios();
-  const wait = dev.fails>=3 ? 3000 : Math.max(100, 1000-(Date.now()-t0));
+  const wait = dev.fails>=3 ? 3000 : Math.max(100, 500-(Date.now()-t0));
   if(dev.on) dev.timer=setTimeout(()=>devLoop(dev), wait);
 }
 // App khulte hi saved radios khud jodo
@@ -1384,18 +1384,21 @@ async function devPoll(dev){
     devGet(dev,'/restconf/data/mimosa-wifi-network:statistics/client-statistics'),
     devGet(dev,'/restconf/data/mimosa-wifi-radio:statistics/radio-statistics'),
     t%3===1 ? devGet(dev,'/restconf/data/mimosa-ap-info:ap-info/status') : undefined,
-    t%15===1 ? devGet(dev,'/restconf/data/ietf-interfaces:interfaces') : undefined,
-    t%25===1 ? devGet(dev,'/restconf/data/mimosa-device:device/config/location') : undefined,
-    t%10===1 ? devGet(dev,'/restconf/data/mimosa-gps:gps') : undefined,
-    t%25===1 ? devGet(dev,'/restconf/data/ietf-system:system-state') : undefined
+    t%30===1 ? devGet(dev,'/restconf/data/ietf-interfaces:interfaces') : undefined,
+    t%50===1 ? devGet(dev,'/restconf/data/mimosa-device:device/config/location') : undefined,
+    t%20===1 ? devGet(dev,'/restconf/data/mimosa-gps:gps') : undefined,
+    t%50===1 ? devGet(dev,'/restconf/data/ietf-system:system-state') : undefined
   ]);
   D.ok=!!cs; D.at=Date.now();
   if(cs){ let best=null, n=0; try{ const L=cs['mimosa-wifi-network:statistics']['client-statistics']||[]; n=L.length;
-      L.forEach(c=>{ const x=rdNode(c['raw-statistics']); if(x && (!best || (rdRssi(x.rssi)||-200)>(rdRssi(best.rssi)||-200))) best=x; }); }catch(_){}
+      L.forEach(c=>{ const x=rdNode(c['raw-statistics']); if(x && (!best || (rdRssi(x.rssi)||-200)>(rdRssi(best.rssi)||-200))){ best=x; D.staMac=c.name; } }); }catch(_){}
     D.node=best; D.clients=n;
     // Beacon (ek antenna) ko Mimosa ke jore hue signal (dono antenna) ke barabar karo
     const sv = best? rdRssi(best.rssi) : null;
     if(sv!=null && D.bema!=null && D.beacon && Date.now()-D.beacon.t<2000){ const off=sv-D.bema; D.boff = D.boff==null ? off : D.boff*0.7 + off*0.3; }
+    // Doosre radio ka tez beacon (link dono taraf barabar hota hai)
+    const O=RADIOS[dev.role==='isp'?'client':'isp'].d;
+    if(sv!=null && O && O.bema!=null && O.beacon && Date.now()-O.beacon.t<2000){ const xo=sv-O.bema; D.xoff = D.xoff==null ? xo : D.xoff*0.7 + xo*0.3; }
   }
   if(rs){ try{ D.self=rdSelf(rs['mimosa-wifi-radio:statistics']['radio-statistics'][0]['raw-statistics']); }catch(_){} }
   if(ap!==undefined && ap){ try{ const st=ap['mimosa-ap-info:ap-info'].status;
@@ -1418,9 +1421,12 @@ async function beaconLoop(dev){
   if(!dev.on) return;
   if(dev.beaconOff && Date.now()<dev.beaconOff) { dev.btimer=setTimeout(()=>beaconLoop(dev),5000); return; }
   const t0=Date.now();
-  const r=await devReq(dev,'GET','/beacon-rssi');
+  const isAP = dev.d.cfg && dev.d.cfg.mode==='AP';
+  const path = isAP ? (dev.d.staMac ? '/client/'+dev.d.staMac+'/beacon-rssi' : null) : '/beacon-rssi';
+  if(!path){ dev.btimer=setTimeout(()=>beaconLoop(dev),1000); return; }
+  const r=await devReq(dev,'GET',path);
   let ok=false;
-  if(r.status===200){ try{ const j=JSON.parse(r.body); if(j.status==='success' && typeof j.rssi==='number'){ ok=true; const B=dev.d; B.bema = B.bema==null ? j.rssi : B.bema*0.85 + j.rssi*0.15; B.bfast = B.bfast==null ? j.rssi : B.bfast*0.55 + j.rssi*0.45; B.beacon={v:B.bfast,t:Date.now()}; fastPaint(dev); } }catch(_){} }
+  if(r.status===200){ try{ const j=JSON.parse(r.body); if(j.status==='success' && typeof j.rssi==='number' && j.rssi<0){ ok=true; const B=dev.d; B.bema = B.bema==null ? j.rssi : B.bema*0.85 + j.rssi*0.15; B.bfast = B.bfast==null ? j.rssi : B.bfast*0.55 + j.rssi*0.45; B.beacon={v:B.bfast,t:Date.now()}; fastPaint(dev); } }catch(_){} }
   if(ok){ dev.bfail=0; } else { dev.bfail=(dev.bfail||0)+1; if(dev.bfail>=3){ dev.beaconOff=Date.now()+30000; dev.bfail=0; } }
   if(dev.on) dev.btimer=setTimeout(()=>beaconLoop(dev), Math.max(60, 120-(Date.now()-t0)));
 }
@@ -1432,6 +1438,9 @@ function devSignal(dev){
     const sv=D.node? rdRssi(D.node.rssi) : null; if(sv!=null) return {v:sv, fast:false};
     return {v:D.beacon.v, fast:true};
   }
+  const other=RADIOS[dev.role==='isp'?'client':'isp'];
+  if(other.on && D.xoff!=null && other.d.beacon && Date.now()-other.d.beacon.t<2000)
+    return {v:Math.round((other.d.beacon.v + D.xoff)*10)/10, fast:true, via:other.label};
   const v=D.node? rdRssi(D.node.rssi) : null; return {v, fast:false};
 }
 function paintRssi(el,bar,v){
@@ -1441,6 +1450,7 @@ function paintRssi(el,bar,v){
 }
 function fastPaint(dev){
   const s=devSignal(dev); paintRssi($('rr-'+dev.role),$('rb-'+dev.role),s.v);
+  const od=RADIOS[dev.role==='isp'?'client':'isp']; if(od.on){ const so=devSignal(od); if(so.via) paintRssi($('rr-'+od.role),$('rb-'+od.role),so.v); }
   const top = RADIOS.client.on?RADIOS.client:(RADIOS.isp.on?RADIOS.isp:null);
   if(top===dev){ paintRssi($('stRssi'),$('stBar'),s.v); $('stName').textContent=dev.label+(s.fast?' ⚡':''); if(rdBeep && s.v!=null && Date.now()-(window._lastBeep||0)>200){ window._lastBeep=Date.now(); rdTone(s.v); } }
 }
@@ -1467,7 +1477,7 @@ function renderRadios(force){
     let li='📍 '+(pos? pos.p.lat.toFixed(5)+', '+pos.p.lon.toFixed(5)+' <span style="color:var(--mut)">('+pos.src+')</span>' : 'Location nahi');
     if(pos&&other){ const br=bearing(pos.p,other.p); li+='<br>🎯 Dish ki direction: <b style="color:var(--lime)">'+br.toFixed(1)+'° '+dir16(br)+'</b> · '+fmtDist(distance(pos.p,other.p)); }
     $('rloc-'+role).innerHTML=li;
-    $('rn-'+role).textContent = dev.fails>=3 ? 'Radio se rabta nahi — khud dobara koshish ho rahi hai' : ((D.clients>1?D.clients+' clients · ':'')+(v==null?'Link nahi':(sg.fast?'⚡ Live signal (Aiming)':'Signal (har second)')));
+    $('rn-'+role).textContent = dev.fails>=3 ? 'Radio se rabta nahi — khud dobara koshish ho rahi hai' : ((D.clients>1?D.clients+' clients · ':'')+(v==null?'Link nahi':(sg.via?'⚡ Live ('+sg.via+' ke beacon se)':(sg.fast?'⚡ Live signal (Aiming)':'Signal (har second)'))));
   });
   renderLinkSummary(); renderStrip();
 }
