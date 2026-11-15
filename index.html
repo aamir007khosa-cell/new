@@ -476,8 +476,9 @@ details[open] summary::before{content:"－ "}
         </div>
         <div class="turn" id="turn"></div>
         <p class="hint" id="mode" style="text-align:center"></p>
-        <div class="btns" style="justify-content:center"><button onclick="zoomMap(-1)" style="width:44px">－</button><button onclick="zoomMap(1)" style="width:44px">＋</button><button id="layerBtn" onclick="toggleLayer()">🗺️ Street</button><button id="flipBtn" onclick="toggleFlip()">↕️ Direction ulti hai?</button></div>
+        <div class="btns" style="justify-content:center"><button onclick="zoomMap(-1)" style="width:44px">－</button><button onclick="zoomMap(1)" style="width:44px">＋</button><button id="layerBtn" onclick="toggleLayer()">🗺️ Street</button><button onclick="downloadArea()">⬇️ Area save</button><button id="flipBtn" onclick="toggleFlip()">↕️ Direction ulti hai?</button></div>
         <p class="hint" id="meInfo" style="text-align:center"></p>
+        <p class="hint" id="dlInfo" style="text-align:center"></p>
       </div>
     </div>
     
@@ -860,44 +861,68 @@ function phoneHeading(a,b,g){
   return (toDeg(Math.atan2(vx,vy))+360)%360;
 }
 function toggleFlip(){ flip=!flip; $('flipBtn').textContent = flip ? '↕️ Direction ulti (ON)' : '↕️ Direction ulti hai? Theek karo'; }
-let liveOn=false;
+let liveOn=false, hTarget=null, hShow=null, liveRaf=0, liveGot=false, lastTurn='';
+function wrap180(d){ return ((d+540)%360)-180; }
+function buildLive(){
+  const br=result.br, tx=160+130*Math.sin(toRad(br)), ty=160-130*Math.cos(toRad(br));
+  let g=rose(0).replace(/^<g transform="rotate\(-?0 160 160\)">/,'<g id="roseG" style="transform-origin:160px 160px;will-change:transform">');
+  g=g.replace(/<text /g,'<text class="lbl" ');
+  g+=`<circle cx="${tx}" cy="${ty}" r="11" fill="#ff6b6b" stroke="#0a0b0c" stroke-width="3"/><text x="${tx}" y="${ty+4}" font-size="10" font-weight="900" fill="#0a0b0c" text-anchor="middle" class="lblc">C</text></g>`;
+  g+=`<polygon points="160,8 150,30 170,30" fill="#c8f135"/>`;
+  $('liveSvg').innerHTML=g;
+  $('liveSvg').querySelectorAll('text.lbl,text.lblc').forEach(t=>{ t.dataset.x=t.getAttribute('x'); t.dataset.y=t.getAttribute('y'); t.removeAttribute('transform'); });
+}
+// Sensor se heading aaye to sirf target badlo; screen rAF se smooth update hoti hai
+function setHeading(h){
+  if(flip) h=(h+180)%360;
+  hTarget=h; if(hShow===null) hShow=h; liveGot=true;
+  if(!liveRaf) liveRaf=requestAnimationFrame(liveFrame);
+}
+function liveFrame(){
+  liveRaf=0; if(hTarget===null) return;
+  const d=wrap180(hTarget-hShow);
+  hShow=(hShow+d*0.25+360)%360;
+  applyHeading(hShow);
+  if(Math.abs(d)>0.15) liveRaf=requestAnimationFrame(liveFrame);
+}
+function applyHeading(h){
+  const g=$('roseG'); if(g) g.style.transform='rotate('+(-h)+'deg)';
+  $('liveSvg').querySelectorAll('text.lbl,text.lblc').forEach(t=>t.setAttribute('transform','rotate('+h+' '+t.dataset.x+' '+(t.dataset.y-4)+')'));
+  rotateMap(h);
+  const diff=wrap180(result.br-h); const t=$('turn'); let txt, col;
+  if(Math.abs(diff)<=3){ txt='✅ Seedha tower ki taraf'; col='var(--ok)'; }
+  else if(diff>0){ txt='➡️ '+diff.toFixed(0)+'° right ghumao'; col='var(--acc)'; }
+  else { txt='⬅️ '+(-diff).toFixed(0)+'° left ghumao'; col='var(--acc)'; }
+  if(txt!==lastTurn){ lastTurn=txt; t.textContent=txt; t.style.color=col; }
+}
+window.nativeHeading=function(h,up){ setHeading(h); const m=$('mode'); const tx=up?'📷 Phone khara: peeche wala camera tower ki taraf':'📱 Phone flat: upar wala kinara tower ki taraf'; if(m.textContent!==tx) m.textContent=tx; };
+window.nativeAcc=function(a){ const e=$('liveErr'); e.style.color='var(--acc)'; e.textContent = a<=1 ? 'Compass ki accuracy kam hai — phone ko hawa mein 8 ki shape mein 3–4 baar ghumao.' : ''; };
 function startLive(){
-  if(!result){ return; }
-  const e=$('liveErr'); e.textContent='';
-  const go = () => {
-    liveOn=true; $('live').style.display='block'; startWatch(); initMap();
-    let got=false;
-    const handler = ev => {
-      let h = null;
-      if(typeof ev.webkitCompassHeading === 'number') h = ev.webkitCompassHeading;
-      else if(ev.absolute && ev.alpha!=null) h = phoneHeading(ev.alpha, ev.beta||0, ev.gamma||0);
-      if(h===null) return;
-      if(flip) h = (h+180)%360;
-      got=true; drawLive(h);
-    };
-    window.addEventListener('deviceorientationabsolute', handler);
-    window.addEventListener('deviceorientation', handler);
-    setTimeout(()=>{ if(!got) e.textContent='Compass nahi mila. Laptop mein compass sensor nahi hota. Yeh link phone ke Chrome mein kholo: aamir007khosa-cell.github.io/new'; }, 2500);
+  if(!result) return;
+  const e=$('liveErr'); e.textContent=''; e.style.color='';
+  liveOn=true; liveGot=false; hShow=null; $('live').style.display='block';
+  buildLive(); startWatch(); initMap();
+  // 1) App (APK) ka asli compass sensor
+  if(window.Android && Android.startCompass){ if(Android.startCompass()) return; }
+  // 2) Browser compass
+  const handler = ev => {
+    let h=null;
+    if(typeof ev.webkitCompassHeading==='number') h=ev.webkitCompassHeading;
+    else if(ev.absolute && ev.alpha!=null) h=phoneHeading(ev.alpha, ev.beta||0, ev.gamma||0);
+    if(h!==null) setHeading(h);
+  };
+  const go=()=>{
+    if('ondeviceorientationabsolute' in window) window.addEventListener('deviceorientationabsolute', handler);
+    else window.addEventListener('deviceorientation', handler);
+    setTimeout(()=>{ if(!liveGot) e.textContent='Compass sensor ka data nahi mila. Phone ko 8 ki shape mein ghumao, ya app (APK) istemal karo.'; }, 4000);
   };
   try{
-    if(typeof DeviceOrientationEvent!=='undefined' && typeof DeviceOrientationEvent.requestPermission==='function'){
+    if(typeof DeviceOrientationEvent!=='undefined' && typeof DeviceOrientationEvent.requestPermission==='function')
       DeviceOrientationEvent.requestPermission().then(r=>{ r==='granted'?go():e.textContent='Compass ki permission nahi mili.'; }).catch(()=>e.textContent='Compass ki permission nahi mili.');
-    } else go();
+    else go();
   }catch(_){ e.textContent='Compass yahan available nahi.'; }
 }
-function drawLive(h){
-  rotateMap(h);
-  const br=result.br;
-  const tx=160+130*Math.sin(toRad(br)), ty=160-130*Math.cos(toRad(br));
-  let s = rose(h) + `<circle cx="${tx}" cy="${ty}" r="11" fill="#ff6b6b" stroke="#0a0b0c" stroke-width="3"/><text x="${tx}" y="${ty+4}" font-size="10" font-weight="900" fill="#0a0b0c" text-anchor="middle">C</text></g>`;
-  s += `<polygon points="160,8 150,30 170,30" fill="#c8f135"/>`;
-  $('liveSvg').innerHTML = s;
-  let diff = ((br - h + 540) % 360) - 180;
-  const t=$('turn');
-  if(Math.abs(diff)<=3){ t.textContent='✅ Seedha tower ki taraf'; t.style.color='var(--ok)'; }
-  else if(diff>0){ t.textContent='➡️ '+diff.toFixed(0)+'° right ghumao'; t.style.color='var(--acc)'; }
-  else { t.textContent='⬅️ '+(-diff).toFixed(0)+'° left ghumao'; t.style.color='var(--acc)'; }
-}
+function drawLive(h){ if(!$('roseG')) buildLive(); setHeading(h); }
 
 // ===== License =====
 const SELLER = { whatsapp: '03XX-XXXXXXX', pay: 'JazzCash / Easypaisa: 03XX-XXXXXXX' };
@@ -979,6 +1004,45 @@ go=function(p){
 };
 
 
+// ===== Offline map tiles (Cache API) =====
+const TILE_CACHE='tdf-tiles-v1';
+async function tileFromCache(url){ try{ const c=await caches.open(TILE_CACHE); const r=await c.match(url); return r? URL.createObjectURL(await r.blob()) : null; }catch(_){ return null; } }
+async function tileFetchSave(url){ try{ const r=await fetch(url,{mode:'cors'}); if(!r.ok) return null; const c=await caches.open(TILE_CACHE); await c.put(url, r.clone()); return URL.createObjectURL(await r.blob()); }catch(_){ return null; } }
+function cachedLayer(tpl,opt){
+  const Cls=L.TileLayer.extend({
+    createTile(coords,done){
+      const img=document.createElement('img'); img.alt=''; const url=this.getTileUrl(coords);
+      img.onload=()=>{ if(img.src.startsWith('blob:')) setTimeout(()=>URL.revokeObjectURL(img.src),2000); done(null,img); };
+      img.onerror=e=>done(e,img);
+      (async()=>{ let u=await tileFromCache(url); if(!u) u=await tileFetchSave(url); img.src=u||url; })();
+      return img;
+    }
+  });
+  return new Cls(tpl,opt);
+}
+function tileXY(lat,lon,z){ const n=2**z; return [Math.floor((lon+180)/360*n), Math.floor((1-Math.log(Math.tan(toRad(lat))+1/Math.cos(toRad(lat)))/Math.PI)/2*n)]; }
+let dlRunning=false;
+async function downloadArea(){
+  if(!result||!LM||dlRunning) return;
+  const info=$('dlInfo'); dlRunning=true;
+  const pad=0.012; // ~1.3 km
+  const la1=Math.min(result.a.lat,result.b.lat)-pad, la2=Math.max(result.a.lat,result.b.lat)+pad;
+  const lo1=Math.min(result.a.lon,result.b.lon)-pad, lo2=Math.max(result.a.lon,result.b.lon)+pad;
+  const layer=LMl[curLayer], maxZ=Math.min(curLayer==='sat'?(LMl.sat.options.maxNativeZoom||17):17, 17);
+  const urls=[];
+  for(let z=12; z<=maxZ; z++){
+    const [x1,y1]=tileXY(la2,lo1,z), [x2,y2]=tileXY(la1,lo2,z);
+    for(let x=x1;x<=x2;x++) for(let y=y1;y<=y2;y++) urls.push(layer.getTileUrl({x,y,z}));
+  }
+  if(urls.length>4000){ info.textContent='Area bohat bara hai ('+urls.length+' tiles).'; dlRunning=false; return; }
+  let done=0, fail=0; const c=await caches.open(TILE_CACHE);
+  const work=async()=>{ while(urls.length){ const u=urls.pop(); try{ if(!(await c.match(u))){ const r=await fetch(u,{mode:'cors'}); if(r.ok) await c.put(u,r); else fail++; } }catch(_){ fail++; } done++; if(done%10===0) info.textContent='⬇️ Download: '+done+' tiles...'; } };
+  const total=urls.length; info.textContent='⬇️ Download shuru: '+total+' tiles';
+  await Promise.all([1,2,3,4,5,6].map(work));
+  info.textContent='✅ Area ka map save ho gaya ('+(total-fail)+' tiles). Ab bina internet bhi chalega.';
+  dlRunning=false;
+}
+
 // ===== Map inside compass (Leaflet, lazy load) =====
 let LM=null, LMl={}, curLayer='sat', meWatch=null, mePos=null;
 function loadLeaflet(){
@@ -996,8 +1060,8 @@ async function initMap(){
     LM=L.map('lmap',{zoomControl:false,attributionControl:true,dragging:false,touchZoom:false,doubleClickZoom:false,scrollWheelZoom:false,boxZoom:false,keyboard:false,fadeAnimation:false,zoomAnimation:false});
     LM.attributionControl.setPrefix(false);
     // Satellite: is area mein zoom 17 tak tasveer hai, us se upar bara kar ke dikhao
-    LMl.sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:15,maxZoom:19,attribution:'Esri'});
-    LMl.street=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxNativeZoom:19,maxZoom:19,attribution:'© OSM'});
+    LMl.sat=cachedLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:15,maxZoom:19,attribution:'Esri'});
+    LMl.street=cachedLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxNativeZoom:19,maxZoom:19,attribution:'© OSM'});
     LMl[curLayer].addTo(LM);
   }
   drawTowers();
@@ -1066,9 +1130,14 @@ function rotateMap(h){ const m=$('lmap'); if(m) m.style.transform='rotate('+(-h)
 // ===== Mimosa radio (APK bridge) =====
 let RD=null, rdTimer=null, rdBeep=false, rdAudio=null, rdLocArm=null;
 function hasBridge(){ return !!(window.Android && Android.radio); }
-function rdCall(method,path,body){
-  const r=JSON.parse(Android.radio(method,RD.ip,RD.auth,path,body||''));
-  return r;
+let rdSeq=0; const rdPend={};
+window.rdCb=function(id,json){ const f=rdPend[id]; delete rdPend[id]; if(f){ try{ f(JSON.parse(json)); }catch(_){ f({status:-1,body:''}); } } };
+// Background mein request (app atakti nahi). Purani APK par purana tareeqa.
+function rdReq(method,path,body){
+  return new Promise(res=>{
+    if(Android.radioAsync){ const id=++rdSeq; rdPend[id]=res; Android.radioAsync(id,method,RD.ip,RD.auth,path,body||''); setTimeout(()=>{ if(rdPend[id]){ delete rdPend[id]; res({status:-1,body:'timeout'}); } },8000); }
+    else setTimeout(()=>{ try{ res(JSON.parse(Android.radio(method,RD.ip,RD.auth,path,body||''))); }catch(_){ res({status:-1,body:''}); } },0);
+  });
 }
 // Mimosa ke binary stats parhne wale helpers
 function rdB(b64){ return Uint8Array.from(atob(b64),c=>c.charCodeAt(0)); }
@@ -1097,48 +1166,57 @@ function rdRssi(e){
 function rdSnr(e){ if(!e||!e.length) return null; const t=(e[0]+e[1])/2; return t===0?null:Math.abs(t/10); }
 const f1=(v,d)=> v==null||isNaN(v) ? '--' : Number(v).toFixed(d==null?1:d);
 const fPhy=v=> v==null||v<6.5 ? '--' : v;
-function rdConnect(){
+async function rdConnect(){
   const e=$('rdErr'); e.textContent='';
-  if(!hasBridge()){ e.textContent='Yeh feature sirf Tower Finder app (APK v2.2+) mein chalta hai.'; return; }
+  if(!hasBridge()){ e.textContent='Yeh feature sirf Tower Finder app (APK) mein chalta hai.'; return; }
   const ip=$('rdIp').value.trim()||'192.168.1.20', u=$('rdUser').value.trim(), pw=$('rdPass').value;
   if(!u||!pw){ e.textContent='Username aur password likho.'; return; }
   RD={ip, auth:btoa(u+':'+pw)};
   $('rdState').innerHTML='<span class="spin"></span>';
-  setTimeout(()=>{
-    const r=rdCall('GET','/restconf/data/mimosa-wifi-network:statistics/client-statistics');
-    $('rdState').textContent='';
-    if(r.status===200){
-      try{ localStorage.setItem('tdf_rd',JSON.stringify({ip,u})); }catch(_){}
-      $('rdForm').style.display='none'; $('rdLive').style.display=''; $('rdState').textContent='● Juda hua';
-      $('rdState').style.color='var(--lime)'; rdPoll(); rdTimer=setInterval(rdPoll,1000); toast('✅ Mimosa se jud gaya');
-    } else if(r.status===401||r.status===403){ e.textContent='Username ya password ghalat hai.'; RD=null; }
-    else { e.textContent='Radio nahi mila ('+r.status+'). IP check karo aur phone radio ke network par ho.'; RD=null; }
-  },30);
+  const r=await rdReq('GET','/restconf/data/mimosa-wifi-network:statistics/client-statistics');
+  $('rdState').textContent='';
+  if(r.status===200){
+    try{ localStorage.setItem('tdf_rd',JSON.stringify({ip,u})); }catch(_){}
+    $('rdForm').style.display='none'; $('rdLive').style.display=''; $('rdState').textContent='● Juda hua'; $('rdState').style.color='var(--lime)';
+    rdLoop(); toast('✅ Mimosa se jud gaya');
+  } else if(r.status===401||r.status===403){ e.textContent='Username ya password ghalat hai.'; RD=null; }
+  else { e.textContent='Radio nahi mila ('+r.status+'). IP check karo aur phone radio ke network par ho.'; RD=null; }
 }
-function rdDisconnect(){ clearInterval(rdTimer); rdTimer=null; RD=null; $('rdLive').style.display='none'; $('rdForm').style.display=''; $('rdState').textContent=''; }
+let rdBusy=false;
+async function rdLoop(){
+  if(!RD) return;
+  const t0=Date.now();
+  if(!rdBusy){ rdBusy=true; try{ await rdPoll(); }catch(_){} rdBusy=false; }
+  if(RD) rdTimer=setTimeout(rdLoop, Math.max(150, 600-(Date.now()-t0)));
+}
+function rdDisconnect(){ clearTimeout(rdTimer); rdTimer=null; RD=null; $('rdLive').style.display='none'; $('rdForm').style.display=''; $('rdState').textContent=''; }
 let rdTick=0, rdRem=null, rdRemSelf=null, rdRemInfo=null, rdCfg=null;
-function rdGet(path){ const r=rdCall('GET',path); if(r.status!==200) return null; try{ return JSON.parse(r.body); }catch(_){ return null; } }
-function rdPoll(){
+async function rdGet(path){ const r=await rdReq('GET',path); if(r.status!==200) return null; try{ return JSON.parse(r.body); }catch(_){ return null; } }
+async function rdPoll(){
   if(!RD) return;
   rdTick++;
-  const cs=rdGet('/restconf/data/mimosa-wifi-network:statistics/client-statistics');
+  // Sab requests ek saath (parallel)
+  const [cs, rsj, ap, ifs] = await Promise.all([
+    rdGet('/restconf/data/mimosa-wifi-network:statistics/client-statistics'),
+    rdGet('/restconf/data/mimosa-wifi-radio:statistics/radio-statistics'),
+    rdTick%3===1 ? rdGet('/restconf/data/mimosa-ap-info:ap-info/status') : Promise.resolve(undefined),
+    rdTick%15===1 ? rdGet('/restconf/data/ietf-interfaces:interfaces') : Promise.resolve(undefined)
+  ]);
+  if(!RD) return;
   if(!cs){ $('rdInfo').textContent='Radio se jawab nahi aaya'; return; }
-  const rsj=rdGet('/restconf/data/mimosa-wifi-radio:statistics/radio-statistics');
   let loc=null, ls=null, n=0;
   try{ const L=cs['mimosa-wifi-network:statistics']['client-statistics']||[]; n=L.length;
        // sab se strong client lo
        L.forEach(c=>{ const x=rdNode(c['raw-statistics']); if(x && (!loc || (rdRssi(x.rssi)||-200)>(rdRssi(loc.rssi)||-200))) loc=x; }); }catch(_){}
   try{ ls=rdSelf(rsj['mimosa-wifi-radio:statistics']['radio-statistics'][0]['raw-statistics']); }catch(_){}
-  if(rdTick%2===1){
-    const ap=rdGet('/restconf/data/mimosa-ap-info:ap-info/status');
+  if(ap!==undefined){
     try{ const st=ap['mimosa-ap-info:ap-info'].status;
       rdRem=rdNode(JSON.parse(st.cli_stats)['mimosa-wifi-network:statistics']['client-statistics'][0]['raw-statistics']);
       rdRemSelf=rdSelf(JSON.parse(st.radio_stats)['mimosa-wifi-radio:statistics']['radio-statistics'][0]['raw-statistics']);
       rdRemInfo={name:st.device_name, temp:st.temp};
     }catch(_){ rdRem=null; rdRemSelf=null; }
   }
-  if(rdTick%10===1){
-    const ifs=rdGet('/restconf/data/ietf-interfaces:interfaces');
+  if(ifs!==undefined){
     try{ const w=ifs['ietf-interfaces:interfaces'].interface.find(i=>i.name==='wifi0'); const st=w['mimosa-wifi-radio:state']||{};
       const cc=st['current-channel-configuration']||{}, cp=st['current-power-configuration']||{};
       const cfg=w['mimosa-wifi-radio:client-configuration']||w['mimosa-wifi-radio:access-point-configuration']||{};
@@ -1186,7 +1264,7 @@ function rdTone(v){
     o.connect(g).connect(rdAudio.destination); o.start(t); o.stop(t+0.13);
   }catch(_){}
 }
-function rdSendLoc(side){
+async function rdSendLoc(side){
   const e=$('locErr'); e.style.color=''; e.textContent='';
   if(!RD){ e.textContent='Pehle Compass tab mein "Mimosa se jodo".'; return; }
   if(!result) return;
@@ -1194,7 +1272,7 @@ function rdSendLoc(side){
   rdLocArm=null;
   const me = side==='isp'?result.a:result.b, other = side==='isp'?result.b:result.a;
   const body=JSON.stringify({"mimosa-device:location":{"local":{"latitude":+me.lat.toFixed(6),"longitude":+me.lon.toFixed(6)},"remote":{"latitude":+other.lat.toFixed(6),"longitude":+other.lon.toFixed(6)}}});
-  const r=rdCall('PATCH','/restconf/data/mimosa-device:device/config/location',body);
+  const r=await rdReq('PATCH','/restconf/data/mimosa-device:device/config/location',body);
   if(r.status>=200 && r.status<300){ e.style.color='var(--lime)'; e.textContent='✅ Coordinates radio mein save ho gaye. Mimosa ab Link Distance dikhayega.'; }
   else { e.textContent='Save nahi hua ('+r.status+'): '+String(r.body||'').slice(0,160); }
 }
