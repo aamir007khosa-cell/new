@@ -33,34 +33,34 @@ button.s{background:#1c1f21;color:#f4f6f5;border:1px solid #24282b;width:auto;pa
 #msg{color:#c8f135!important}
 </style></head><body><div class="w">
 <h2>License Generator</h2>
-<p class="warn">⚠️ Sirf aap ke liye — License Generator app ke andar hi chalta hai.</p>
+<p class="warn">⚠️ Private — works only inside the License Generator app.</p>
 <div class="c">
   <div class="row">
-    <div><label>Customer ka naam</label><input id="name" placeholder="jaise Ali Faisalabad"></div>
+    <div><label>Customer name</label><input id="name" placeholder="e.g. Ali Faisalabad"></div>
     <div><label>Device Code</label><input id="dev" placeholder="K7PQ2MXA" style="text-transform:uppercase"></div>
   </div>
   <div class="row">
     <div><label>Package</label>
-      <select id="pkg"><option value="1">1 din · 1,000</option><option value="30">30 din · 20,000</option></select></div>
-    <div><label>Ya apne din (optional)</label><input id="custom" type="number" placeholder="jaise 7"></div>
+      <select id="pkg"><option value="1">1d · 1,000</option><option value="2">2d · 2,000</option><option value="3">3d · 3,000</option><option value="4">4d · 4,000</option><option value="5">5d · 5,000</option><option value="6">6d · 6,000</option><option value="7" selected>7d · 7,000</option><option value="8">8d · 8,000</option><option value="9">9d · 9,000</option><option value="10">10d · 10,000</option><option value="11">11d · 11,000</option><option value="12">12d · 12,000</option><option value="13">13d · 13,000</option><option value="14">14d · 14,000</option><option value="15">15d · 15,000</option><option value="16">16d · 16,000</option><option value="17">17d · 17,000</option><option value="18">18d · 18,000</option><option value="19">19d · 19,000</option><option value="20">20d · 20,000</option><option value="21">21d · 21,000</option><option value="22">22d · 22,000</option><option value="23">23d · 23,000</option><option value="24">24d · 24,000</option><option value="25">25d · 25,000</option><option value="26">26d · 26,000</option><option value="27">27d · 27,000</option><option value="28">28d · 28,000</option><option value="29">29d · 29,000</option><option value="30">30d · 30,000</option></select></div>
+    <div><label>Custom days (optional)</label><input id="custom" type="number" placeholder="e.g. 45"></div>
   </div>
-  <button onclick="gen()">Key banao</button>
+  <button onclick="gen()">Generate key</button>
   <p id="msg" style="color:#3ecf7a;font-size:13px"></p>
-  <textarea id="out" readonly placeholder="Key yahan aayegi"></textarea>
-  <button class="s" onclick="cp(document.getElementById('out').value)">📋 Key copy karo</button>
+  <textarea id="out" readonly placeholder="Key will appear here"></textarea>
+  <button class="s" onclick="cp(document.getElementById('out').value)">📋 Copy key</button>
 </div>
 <div class="c">
   <h2>👥 Customers</h2>
-  <div class="sum"><div><b id="nAct">0</b>Chal rahe</div><div><b id="nSoon">0</b>24 ghante se kam</div><div><b id="nExp">0</b>Khatam</div></div>
-  <input id="q" placeholder="🔍 Naam ya code se dhoondo" oninput="render()">
+  <div class="sum"><div><b id="nAct">0</b>Active</div><div><b id="nSoon">0</b>Under 24 h</div><div><b id="nExp">0</b>Expired</div></div>
+  <input id="q" placeholder="🔍 Search by name or code" oninput="render()">
   <div id="list"></div>
 </div>
 <div class="c">
   <h2>💾 Backup</h2>
-  <p style="color:#9aa3ae;font-size:13px">Customers ki list isi phone mein hai. App data clear karne se pehle backup copy kar ke WhatsApp par khud ko bhej do.</p>
-  <button class="s" onclick="cp(JSON.stringify(load()))">📋 Backup copy karo</button>
-  <textarea id="rest" placeholder="Restore ke liye backup yahan paste karo"></textarea>
-  <button class="s" onclick="restore()">♻️ Restore karo</button>
+  <p style="color:#9aa3ae;font-size:13px">The customer list is stored on this phone only. Before clearing app data, copy a backup and send it to yourself on WhatsApp.</p>
+  <button class="s" onclick="cp(JSON.stringify(load()))">📋 Copy backup</button>
+  <textarea id="rest" placeholder="Paste a backup here to restore"></textarea>
+  <button class="s" onclick="restore()">♻️ Restore</button>
 </div>
 </div>
 <script>
@@ -69,22 +69,22 @@ const $=id=>document.getElementById(id);
 function load(){ try{ return JSON.parse(localStorage.getItem('lg_clients')||'[]'); }catch(_){ return []; } }
 function saveL(a){ try{ localStorage.setItem('lg_clients',JSON.stringify(a)); }catch(_){} }
 async function gen(){
-  const dev=$('dev').value.trim().toUpperCase(), name=$('name').value.trim()||'Bina naam';
-  if(!/^[A-Z0-9]{8}$/.test(dev)){ $('msg').textContent='Device Code 8 harf ka hota hai.'; return; }
+  const dev=$('dev').value.trim().toUpperCase(), name=$('name').value.trim()||'No name';
+  if(!/^[A-Z0-9]{8}$/.test(dev)){ $('msg').textContent='Device code must be 8 characters.'; return; }
   const c=parseInt($('custom').value), days=c>0?c:parseInt($('pkg').value);
   const now=Math.floor(Date.now()/1000), e=now+days*86400;
   const p=b64u(new TextEncoder().encode(JSON.stringify({d:dev,e,p:days})));
-  if(!window.Android || !Android.sign){ $('msg').textContent='Yeh sirf License Generator app mein chalta hai.'; return; }
-  const sig=Android.sign(p); if(!sig){ $('msg').textContent='Key nahi bani — dobara try karo.'; return; }
+  if(!window.Android || !Android.sign){ $('msg').textContent='Works only inside the License Generator app.'; return; }
+  const sig=Android.sign(p); if(!sig){ $('msg').textContent='Key generation failed — try again.'; return; }
   const key=p+'.'+sig;
   $('out').value=key;
-  $('msg').textContent='✅ '+name+' — '+days+' din ki key ban gayi. Khatam: '+new Date(e*1000).toLocaleString('en-PK');
+  $('msg').textContent='✅ '+name+' — '+days+'-day key created. Expires: '+new Date(e*1000).toLocaleString('en-PK');
   const a=load(); a.unshift({name,dev,days,c:now,e,key}); saveL(a); render();
 }
 function left(e){
   const s=e-Date.now()/1000; if(s<=0) return null;
   const d=Math.floor(s/86400), h=Math.floor(s%86400/3600), m=Math.floor(s%3600/60);
-  return d>0? d+' din '+h+' ghante' : (h>0? h+' ghante '+m+' min' : m+' min');
+  return d>0? d+'d '+h+'h' : (h>0? h+'h '+m+'m' : m+'m');
 }
 function render(){
   const a=load(), q=($('q').value||'').trim().toUpperCase();
@@ -96,19 +96,19 @@ function render(){
     .sort((x,y)=>{ const lx=x.r.e-Date.now()/1000, ly=y.r.e-Date.now()/1000; if((lx>0)!==(ly>0)) return lx>0?-1:1; return lx>0? lx-ly : y.r.e-x.r.e; });
   $('list').innerHTML = rows.length? rows.map(({r,i})=>{
     const l=left(r.e), s=r.e-Date.now()/1000;
-    const st = !l ? '<span class="bad">Khatam</span>' : (s<86400? '<span class="soon">'+l+' baqi</span>' : '<span class="ok">'+l+' baqi</span>');
+    const st = !l ? '<span class="bad">Expired</span>' : (s<86400? '<span class="soon">'+l+' left</span>' : '<span class="ok">'+l+' left</span>');
     return '<div class="cl"><div class="t"><span class="n">'+esc(r.name)+'</span>'+st+'</div>'+
-      '<div class="m">📱 '+r.dev+' · '+r.days+' din · Shuru: '+new Date(r.c*1000).toLocaleDateString('en-PK')+' · Khatam: '+new Date(r.e*1000).toLocaleString('en-PK')+'</div>'+
+      '<div class="m">📱 '+r.dev+' · '+r.days+' days · Start: '+new Date(r.c*1000).toLocaleDateString('en-PK')+' · Expires: '+new Date(r.e*1000).toLocaleString('en-PK')+'</div>'+
       '<button class="s" onclick="cp(load()['+i+'].key)">📋 Key</button>'+
       '<button class="s" onclick="renew('+i+')">🔄 Renew</button>'+
       '<button class="s" onclick="del('+i+')">🗑️</button></div>';
-  }).join('') : '<p style="color:#9aa3ae;font-size:13px">Abhi koi customer nahi.</p>';
+  }).join('') : '<p style="color:#9aa3ae;font-size:13px">No customers yet.</p>';
 }
 function esc(t){ return String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-function renew(i){ const r=load()[i]; $('name').value=r.name; $('dev').value=r.dev; window.scrollTo(0,0); $('msg').textContent='Package chuno aur Key banao dabao.'; }
+function renew(i){ const r=load()[i]; $('name').value=r.name; $('dev').value=r.dev; window.scrollTo(0,0); $('msg').textContent='Choose a package and press Generate key.'; }
 let delArm=-1;
-function del(i){ if(delArm!==i){ delArm=i; $('msg').textContent='Delete karne ke liye 🗑️ dobara dabao.'; return; } const a=load(); a.splice(i,1); saveL(a); delArm=-1; $('msg').textContent='Delete ho gaya.'; render(); }
-function cp(v){ if(!v) return; if(window.Android){ Android.copy(v); $('msg').textContent='Copy ho gaya ✅'; return; } try{ navigator.clipboard.writeText(v).then(()=>$('msg').textContent='Copy ho gaya ✅'); }catch(_){} }
-function restore(){ try{ const a=JSON.parse($('rest').value); if(!Array.isArray(a)) throw 0; const cur=load(); const keys=new Set(cur.map(r=>r.key)); a.forEach(r=>{ if(r&&r.key&&!keys.has(r.key)) cur.push(r); }); saveL(cur); $('rest').value=''; $('msg').textContent='Restore ho gaya ✅'; render(); }catch(_){ $('msg').textContent='Backup ghalat hai.'; } }
+function del(i){ if(delArm!==i){ delArm=i; $('msg').textContent='Press 🗑️ again to delete.'; return; } const a=load(); a.splice(i,1); saveL(a); delArm=-1; $('msg').textContent='Deleted.'; render(); }
+function cp(v){ if(!v) return; if(window.Android){ Android.copy(v); $('msg').textContent='Copied ✅'; return; } try{ navigator.clipboard.writeText(v).then(()=>$('msg').textContent='Copied ✅'); }catch(_){} }
+function restore(){ try{ const a=JSON.parse($('rest').value); if(!Array.isArray(a)) throw 0; const cur=load(); const keys=new Set(cur.map(r=>r.key)); a.forEach(r=>{ if(r&&r.key&&!keys.has(r.key)) cur.push(r); }); saveL(cur); $('rest').value=''; $('msg').textContent='Restored ✅'; render(); }catch(_){ $('msg').textContent='Invalid backup.'; } }
 render(); setInterval(render,60000);
 </script></body></html>
