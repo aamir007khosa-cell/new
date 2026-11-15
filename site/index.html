@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Tower Direction Finder — WISP Survey App</title>
+<meta name="description" content="Tower direction, distance, tower height, Fresnel zone, frequency planner and live Mimosa radio data — in one Android app for WISP operators.">
+<meta name="theme-color" content="#0a0b0c">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<style>
+:root{--bg:#0a0b0c;--card:#141617;--card2:#1c1f21;--line:#24282b;--txt:#f4f6f5;--mut:#8b9290;--lime:#c8f135;--ink:#0a0b0c;--red:#ff6b6b}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.55 "Segoe UI",Roboto,system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--lime);text-decoration:none}
+.wrap{max-width:980px;margin:0 auto;padding:0 18px}
+nav{position:sticky;top:0;z-index:20;background:rgba(10,11,12,.86);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;align-items:center;gap:10px;height:58px}
+.brand{white-space:nowrap;font-weight:900;letter-spacing:.2px;display:flex;align-items:center;gap:8px}
+.brand svg{width:22px;height:22px}
+nav .links{margin-left:auto;display:flex;gap:4px;overflow-x:auto}
+nav .links a{color:var(--mut);font-weight:700;font-size:13.5px;padding:8px 10px;border-radius:999px;white-space:nowrap}
+nav .links a:hover{color:var(--txt);background:var(--card2)}
+.hero{padding:56px 0 30px;text-align:center}
+.hero h1{font-size:clamp(30px,6vw,50px);line-height:1.08;margin:14px 0 12px;font-weight:900}
+.hero h1 span{color:var(--lime)}
+.hero p{color:var(--mut);max-width:620px;margin:0 auto 24px;font-size:16.5px}
+.tower{width:92px;height:100px}
+.tower path{stroke-dasharray:1;stroke-dashoffset:1;animation:draw 1s ease forwards;animation-delay:var(--d)}
+.waves path{opacity:0;animation:wv 2.2s ease-in-out infinite;animation-delay:var(--w)}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes wv{0%,100%{opacity:0}40%{opacity:1}}
+.cta{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);border-radius:999px;padding:13px 20px;font-weight:800;font-size:15px;color:var(--txt);background:var(--card2);cursor:pointer;font-family:inherit;transition:transform .1s}
+.btn:active{transform:scale(.97)}
+.btn.main{background:var(--lime);color:var(--ink);border:none}
+.btn.sm{padding:9px 14px;font-size:13.5px}
+.btn.full{width:100%}
+section{padding:38px 0}
+h2{font-size:26px;margin:0 0 6px;font-weight:900}
+.sub{color:var(--mut);margin:0 0 20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px}
+.feat .ic{font-size:24px}
+.feat h3{margin:8px 0 4px;font-size:16px}
+.feat p{margin:0;color:var(--mut);font-size:14px}
+.price-top{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.big{font-size:40px;font-weight:900;color:var(--lime)}
+input[type=range]{width:100%;accent-color:var(--lime);height:28px}
+input[type=text],textarea,select{width:100%;background:var(--card2);border:1px solid transparent;color:var(--txt);border-radius:14px;padding:13px 14px;font-size:15.5px;font-family:inherit}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--lime)}
+label{display:block;font-size:13px;font-weight:700;color:var(--mut);margin:14px 0 6px}
+.quick{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.quick button{border:1px solid var(--line);background:var(--card2);color:var(--txt);border-radius:999px;padding:7px 12px;font-weight:700;font-family:inherit;cursor:pointer}
+.quick button.on{background:var(--lime);color:var(--ink);border-color:var(--lime)}
+.steps{counter-reset:s;display:grid;gap:12px}
+.step{position:relative;padding-left:46px}
+.step:before{counter-increment:s;content:counter(s);position:absolute;left:0;top:0;width:32px;height:32px;border-radius:50%;background:var(--lime);color:var(--ink);font-weight:900;display:grid;place-items:center}
+.step h3{margin:4px 0 8px;font-size:16.5px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs button{flex:1;min-width:120px;border:1px solid var(--line);background:var(--card2);color:var(--txt);border-radius:14px;padding:10px;font-weight:800;font-family:inherit;cursor:pointer;font-size:13.5px}
+.tabs button.on{border-color:var(--lime);color:var(--lime)}
+.addr{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:12px}
+#qr{background:#fff;border-radius:14px;padding:8px;width:150px;height:150px;display:grid;place-items:center}
+#qr img,#qr svg{width:134px;height:134px}
+.mono{font-family:ui-monospace,Consolas,monospace;word-break:break-all;font-size:13.5px;background:var(--card2);padding:10px 12px;border-radius:12px}
+.amt{font-size:24px;font-weight:900}
+.warn{background:rgba(255,107,107,.08);border:1px solid rgba(255,107,107,.35);color:#ffc2c2;border-radius:14px;padding:10px 12px;font-size:13.5px;margin-top:12px}
+.note{color:var(--mut);font-size:13px}
+details{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin-bottom:8px}
+summary{cursor:pointer;font-weight:800;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary:after{content:"+";float:right;color:var(--lime);font-weight:900}
+details[open] summary:after{content:"–"}
+details p{color:var(--mut);margin:10px 0 0}
+.contact{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--mut);font-size:13px;text-align:center}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(30px);background:var(--lime);color:var(--ink);font-weight:800;padding:11px 18px;border-radius:999px;opacity:0;transition:.25s;z-index:50;pointer-events:none}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.ok{color:var(--lime)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:560px){.row2{grid-template-columns:1fr}nav .links a{padding:8px 7px;font-size:12.5px}}
+</style>
+</head>
+<body>
+<nav><div class="wrap">
+  <div class="brand"><svg viewBox="0 0 24 24" fill="none" stroke="#c8f135" stroke-width="2" stroke-linecap="round"><path d="M12 3 7 21M12 3l5 18M8.5 15h7M10 9h4"/><path d="M5 6a9 9 0 0 1 3-3M19 6a9 9 0 0 0-3-3"/></svg>Tower Finder</div>
+  <div class="links"><a href="#features">Features</a><a href="#pricing">Pricing</a><a href="#buy">Buy</a><a href="#download" class="dl-only">Download</a><a href="#support">Support</a></div>
+</div></nav>
+
+<header class="hero wrap">
+  <svg viewBox="0 0 100 110" class="tower" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <g stroke="#c8f135" stroke-width="3.2">
+      <path pathLength="1" style="--d:0s" d="M50 22 L28 104"/><path pathLength="1" style="--d:.08s" d="M50 22 L72 104"/>
+      <path pathLength="1" style="--d:.25s" d="M44 44 L56 44 M41 58 L59 58 M37 74 L63 74 M33 90 L67 90"/>
+      <path pathLength="1" style="--d:.4s" d="M44 44 L59 58 L37 74 L67 90 M56 44 L41 58 L63 74 L33 90"/>
+      <path pathLength="1" style="--d:.55s" d="M50 22 L50 10"/>
+    </g>
+    <g stroke="#c8f135" stroke-width="3" class="waves">
+      <path d="M38 14 Q34 22 38 30" style="--w:0s"/><path d="M62 14 Q66 22 62 30" style="--w:0s"/>
+      <path d="M30 8 Q22 22 30 36" style="--w:.25s"/><path d="M70 8 Q78 22 70 36" style="--w:.25s"/>
+    </g>
+  </svg>
+  <h1>Align your links <span>faster</span>.<br>Plan towers <span>smarter</span>.</h1>
+  <p>Tower Direction Finder is an Android app for WISP operators: direction &amp; distance between towers, tower height design, frequency planning and live Mimosa radio data — all in one place.</p>
+  <div class="cta">
+    <a class="btn main" href="#buy">💳 Buy a license</a>
+    <a class="btn dl-only" href="#download">⬇️ Download APK</a>
+  </div>
+</header>
+
+<section id="features" class="wrap">
+  <h2>Features</h2>
+  <p class="sub">Everything you need on site, from survey to alignment.</p>
+  <div class="grid">
+    <div class="card feat"><div class="ic">🧭</div><h3>Direction &amp; distance</h3><p>Enter ISP and Client tower coordinates — get exact bearing, distance (km/m) and a straight line on the map.</p></div>
+    <div class="card feat"><div class="ic">📱</div><h3>Live compass</h3><p>Phone-style dial: point the front of your phone and the app tells you how many degrees to turn.</p></div>
+    <div class="card feat"><div class="ic">🗼</div><h3>Tower height design</h3><p>Terrain, trees, Fresnel zone and earth curvature — see the minimum ISP and Client tower height.</p></div>
+    <div class="card feat"><div class="ic">📶</div><h3>Expected signal</h3><p>Estimated dBm for Mimosa C6x with original dish and C6x Lite with a 30 dBi dish.</p></div>
+    <div class="card feat"><div class="ic">📡</div><h3>Frequency planner</h3><p>Mimosa-style center frequency and 20/40/80/160 MHz bandwidth suggestions.</p></div>
+    <div class="card feat"><div class="ic">⚡</div><h3>Live Mimosa data</h3><p>Connect multiple radios: live RSSI with beep, SNR, MCS, streams, speed and full link stats.</p></div>
+    <div class="card feat"><div class="ic">🛰️</div><h3>Satellite map</h3><p>Clear satellite map, fullscreen view, tap on map to set a tower, offline area download.</p></div>
+    <div class="card feat"><div class="ic">🔄</div><h3>Auto updates</h3><p>New features arrive automatically — no need to reinstall the app.</p></div>
+  </div>
+</section>
+
+<section id="pricing" class="wrap">
+  <h2>Pricing</h2>
+  <p class="sub">Simple daily pricing. Pick any package from 1 to 30 days.</p>
+  <div class="card">
+    <div class="price-top"><span class="big">Rs 1,000</span><span class="note">per day · 1 to 30 days · paid in USDT (crypto)</span></div>
+    <label>Package: <b id="daysLbl" style="color:var(--txt)">7 days</b></label>
+    <input type="range" id="days" min="1" max="30" value="7">
+    <div class="quick" id="quick"></div>
+    <div class="row2" style="margin-top:14px">
+      <div class="card" style="background:var(--card2)"><div class="note">Price in rupees</div><div class="amt" id="pkr">Rs 7,000</div></div>
+      <div class="card" style="background:var(--card2)"><div class="note">Pay in USDT</div><div class="amt ok" id="usdt">–</div><div class="note" id="rateTxt">Loading rate…</div></div>
+    </div>
+    <a class="btn main full" href="#buy" style="margin-top:14px">Continue to payment →</a>
+  </div>
+</section>
+
+<section id="buy" class="wrap">
+  <h2>Buy with crypto</h2>
+  <p class="sub">Pay with USDT, send the proof, get your license key.</p>
+  <div class="card steps">
+    <div class="step">
+      <h3>Your Device Code</h3>
+      <p class="note" style="margin:0 0 8px">Open the app — the Device Code is shown on the lock screen (or in the License sheet).</p>
+      <input type="text" id="dev" placeholder="e.g. 7K2QX9MD" maxlength="12" autocomplete="off" style="text-transform:uppercase;font-family:ui-monospace,Consolas,monospace;letter-spacing:2px">
+    </div>
+    <div class="step">
+      <h3>Send <span id="payAmt" class="ok">–</span></h3>
+      <div class="tabs" id="nets"></div>
+      <div class="addr">
+        <div id="qr"></div>
+        <div style="flex:1;min-width:220px">
+          <div class="note" id="netName"></div>
+          <div class="mono" id="addr" style="margin:6px 0 8px"></div>
+          <button class="btn sm" onclick="copy($('addr').textContent,'Address copied')">📋 Copy address</button>
+          <button class="btn sm" onclick="copy(String(curUsdt()),'Amount copied')">📋 Copy amount</button>
+        </div>
+      </div>
+      <div class="warn">⚠️ Send <b>only USDT</b> on the <b id="netWarn"></b> network. Wrong coin or wrong network = funds lost. Network fee is paid by you.</div>
+    </div>
+    <div class="step">
+      <h3>Paste your Transaction ID (TXID)</h3>
+      <p class="note" style="margin:0 0 8px">After sending, copy the TXID / hash from your wallet or exchange (Binance: Wallet → History → Withdrawal → TxID).</p>
+      <input type="text" id="txid" placeholder="Transaction hash" autocomplete="off" style="font-family:ui-monospace,Consolas,monospace">
+      <div style="margin-top:8px"><a id="explorer" class="note" href="#" target="_blank" rel="noopener" style="display:none">🔎 View this transaction on the explorer</a></div>
+    </div>
+    <div class="step">
+      <h3>Send proof &amp; get your key</h3>
+      <div class="contact">
+        <button class="btn main" onclick="sendProof('wa')">💬 Send on WhatsApp</button>
+        <button class="btn" onclick="sendProof('tg')">✈️ Send on Telegram</button>
+        <button class="btn" onclick="sendProof('mail')">✉️ Send by email</button>
+      </div>
+      <p class="note" style="margin-top:10px">Your key is sent after the payment is confirmed on the blockchain — usually within a few minutes to a few hours. Open the app → <b>License</b> → paste the key → Activate.</p>
+    </div>
+  </div>
+</section>
+
+<section id="download" class="wrap dl-only">
+  <h2>Download</h2>
+  <p class="sub">Android 6.0 and newer. Small download, fast install.</p>
+  <div class="card">
+    <a class="btn main full" href="Tower-Finder.apk" download>⬇️ Download Tower Finder APK</a>
+    <p class="note" style="margin:10px 0 0">Version 2.8 · about 55 KB · updates arrive automatically inside the app.</p>
+    <div class="steps" style="margin-top:16px">
+      <div class="step"><h3>Download the APK</h3><p class="note" style="margin:0">Tap the button above and open the file when it finishes.</p></div>
+      <div class="step"><h3>Allow install</h3><p class="note" style="margin:0">If Android asks, allow <b>Install unknown apps</b> for your browser / file manager.</p></div>
+      <div class="step"><h3>Open &amp; copy your Device Code</h3><p class="note" style="margin:0">Then buy a package above and activate your key.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="support" class="wrap">
+  <h2>Customer support</h2>
+  <p class="sub">Quick answers first. Still stuck? Open a ticket — we reply on WhatsApp or Telegram.</p>
+  <details><summary>Where do I find my Device Code?</summary><p>Open the app. If you have no license, the lock screen shows it. If you already have one, open the License sheet. Tap “Copy code”.</p></details>
+  <details><summary>How long until I get my key?</summary><p>After the USDT transaction is confirmed on the blockchain and the proof is received — usually minutes, at most a few hours.</p></details>
+  <details><summary>My key says “wrong device”.</summary><p>Each key works only on the phone whose Device Code was sent. Check the code you sent matches the one in the app, then contact support.</p></details>
+  <details><summary>I changed / reset my phone.</summary><p>A factory reset or new phone gives a new Device Code. Contact support with the old and new code.</p></details>
+  <details><summary>I sent on the wrong network.</summary><p>Contact support immediately with the TXID. Funds sent on the wrong network or as the wrong coin may not be recoverable.</p></details>
+  <details><summary>The app is not installing.</summary><p>Uninstall any older copy first, allow “Install unknown apps”, and make sure you downloaded the full file. Android 6.0 or newer is required.</p></details>
+  <details><summary>Mimosa radio is not connecting.</summary><p>Your phone must be on the same network as the radio. Check the IP, username and password in the Radios tab. HTTPS is supported.</p></details>
+
+  <div class="card" style="margin-top:14px">
+    <h3 style="margin:0 0 4px">🎫 Open a support ticket</h3>
+    <label>Your name</label><input type="text" id="tName" placeholder="Name">
+    <div class="row2">
+      <div><label>Device Code (if any)</label><input type="text" id="tDev" placeholder="Device Code" style="text-transform:uppercase"></div>
+      <div><label>Topic</label><select id="tTopic"><option>License / key</option><option>Payment</option><option>Install problem</option><option>Mimosa radio</option><option>Bug / not working</option><option>Feature request</option><option>Other</option></select></div>
+    </div>
+    <label>Describe the problem</label><textarea id="tMsg" rows="4" placeholder="What happened? What did you expect?"></textarea>
+    <div class="contact" style="margin-top:12px">
+      <button class="btn main" onclick="ticket('wa')">💬 Send on WhatsApp</button>
+      <button class="btn" onclick="ticket('tg')">✈️ Telegram</button>
+      <button class="btn" onclick="ticket('mail')">✉️ Email</button>
+    </div>
+    <p class="note" id="tId" style="margin-top:10px"></p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">© <span id="yr"></span> Tower Direction Finder · <a href="#support">Support</a><br>Prices in PKR; USDT amount is calculated at the current rate.</div>
+</footer>
+<div class="toast" id="toast"></div>
+
+<script>
+// ===================== SETTINGS — edit these =====================
+const SHOP = {
+  pricePerDay: 1000,                 // Rs per day
+  whatsapp: '92XXXXXXXXXX',          // international format, no + or spaces (e.g. 923001234567)
+  telegram: 'your_telegram_username',// without @
+  email:    'support@example.com',
+  wallets: [                         // remove a line to hide that network
+    { id:'trc20', name:'USDT · TRON (TRC20)', short:'TRC20', addr:'T_YOUR_TRC20_ADDRESS_HERE', explorer:'https://tronscan.org/#/transaction/' },
+    { id:'bep20', name:'USDT · BNB Smart Chain (BEP20)', short:'BEP20', addr:'0x_YOUR_BEP20_ADDRESS_HERE', explorer:'https://bscscan.com/tx/' }
+  ],
+  fallbackRate: 282,                 // PKR per 1 USDT if live rate fails
+  rateMargin: 0                      // extra % added on top of the live rate (e.g. 1 = +1%)
+};
+// =================================================================
+
+const $=id=>document.getElementById(id);
+const inApp = !!window.Android;           // opened inside the Tower Finder app
+if(inApp) document.querySelectorAll('.dl-only').forEach(e=>e.style.display='none');
+$('yr').textContent=new Date().getFullYear();
+
+let rate=SHOP.fallbackRate, net=SHOP.wallets[0];
+const days=$('days');
+const fmt=n=>n.toLocaleString('en-PK');
+function curPkr(){ return (+days.value)*SHOP.pricePerDay; }
+function curUsdt(){ return Math.ceil(curPkr()/(rate*(1+SHOP.rateMargin/100))*100)/100; }
+function toast(t){ const e=$('toast'); e.textContent=t; e.classList.add('on'); clearTimeout(toast.t); toast.t=setTimeout(()=>e.classList.remove('on'),1600); }
+function copy(t,msg){
+  if(window.Android&&Android.copy){ try{ Android.copy(t); toast(msg); return; }catch(_){} }
+  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast(msg)).catch(()=>{
+    const a=document.createElement('textarea'); a.value=t; document.body.appendChild(a); a.select(); document.execCommand('copy'); a.remove(); toast(msg); });
+}
+
+// quick package buttons
+[1,3,7,15,30].forEach(d=>{ const b=document.createElement('button'); b.textContent=d+(d>1?' days':' day'); b.dataset.d=d; b.onclick=()=>{days.value=d;upd();}; $('quick').appendChild(b); });
+
+function upd(){
+  const d=+days.value;
+  $('daysLbl').textContent=d+(d>1?' days':' day');
+  $('pkr').textContent='Rs '+fmt(curPkr());
+  const u=curUsdt();
+  $('usdt').textContent=u.toFixed(2)+' USDT';
+  $('payAmt').textContent=u.toFixed(2)+' USDT ('+d+(d>1?' days':' day')+')';
+  document.querySelectorAll('#quick button').forEach(b=>b.classList.toggle('on',+b.dataset.d===d));
+  try{ localStorage.setItem('shop_days',d); }catch(_){}
+}
+days.oninput=upd;
+
+// networks
+SHOP.wallets.forEach((w,i)=>{ const b=document.createElement('button'); b.textContent=w.short; b.onclick=()=>setNet(i); $('nets').appendChild(b); });
+function setNet(i){
+  net=SHOP.wallets[i];
+  [...$('nets').children].forEach((b,j)=>b.classList.toggle('on',i===j));
+  $('netName').textContent=net.name; $('netWarn').textContent=net.short; $('addr').textContent=net.addr;
+  try{ const q=qrcode(0,'M'); q.addData(net.addr); q.make(); $('qr').innerHTML=q.createSvgTag({cellSize:4,margin:0}); }catch(_){ $('qr').textContent='QR'; }
+  updExplorer();
+}
+
+// live USDT→PKR rate (free CoinGecko API)
+async function loadRate(){
+  try{
+    const j=await (await fetch('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=pkr',{cache:'no-store'})).json();
+    const r=j&&j.tether&&j.tether.pkr; if(r>100&&r<1000){ rate=r; $('rateTxt').textContent='Rate: 1 USDT ≈ Rs '+r.toFixed(1)+' (live)'; upd(); return; }
+  }catch(_){}
+  $('rateTxt').textContent='Rate: 1 USDT ≈ Rs '+rate+' (approx.)'; upd();
+}
+
+// device code from link (?d=CODE or #buy?d=CODE)
+(function(){
+  const m=(location.search+location.hash).match(/[?&]d=([A-Za-z0-9]+)/);
+  let saved=''; try{ saved=localStorage.getItem('shop_dev')||''; const sd=+localStorage.getItem('shop_days'); if(sd>=1&&sd<=30) days.value=sd; }catch(_){}
+  const m2=(location.search+location.hash).match(/[?&]p=(\d+)/); if(m2&&+m2[1]>=1&&+m2[1]<=30) days.value=m2[1];
+  $('dev').value=(m?m[1]:saved).toUpperCase(); $('tDev').value=$('dev').value;
+})();
+$('dev').oninput=()=>{ $('dev').value=$('dev').value.toUpperCase().replace(/[^A-Z0-9]/g,''); try{localStorage.setItem('shop_dev',$('dev').value);}catch(_){} };
+$('txid').oninput=updExplorer;
+function updExplorer(){ const t=$('txid').value.trim(); const a=$('explorer'); if(t.length>=20){ a.href=net.explorer+t; a.style.display='inline'; } else a.style.display='none'; }
+
+function openChat(kind,text,subject){
+  let url;
+  if(kind==='wa') url='https://wa.me/'+SHOP.whatsapp+'?text='+encodeURIComponent(text);
+  else if(kind==='tg'){ copy(text,'Message copied — paste it in Telegram'); url='https://t.me/'+SHOP.telegram; }
+  else url='mailto:'+SHOP.email+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(text);
+  if(inApp) location.href=url; else window.open(url,'_blank');
+}
+function sendProof(kind){
+  const dev=$('dev').value.trim(), tx=$('txid').value.trim(), d=+days.value;
+  if(dev.length<6){ toast('Enter your Device Code'); $('dev').focus(); return; }
+  if(tx.length<20){ toast('Paste the Transaction ID'); $('txid').focus(); return; }
+  const text='Tower Finder — license order\n'+
+    'Device Code: '+dev+'\nPackage: '+d+(d>1?' days':' day')+' (Rs '+fmt(curPkr())+')\n'+
+    'Paid: '+curUsdt().toFixed(2)+' USDT via '+net.short+'\nTXID: '+tx+'\nCheck: '+net.explorer+tx;
+  openChat(kind,text,'License order '+dev);
+}
+function ticket(kind){
+  const msg=$('tMsg').value.trim(); if(msg.length<5){ toast('Describe the problem'); $('tMsg').focus(); return; }
+  const id='T'+Date.now().toString(36).toUpperCase().slice(-6);
+  const text='Support ticket '+id+'\nName: '+($('tName').value.trim()||'-')+'\nDevice Code: '+($('tDev').value.trim().toUpperCase()||'-')+
+    '\nTopic: '+$('tTopic').value+'\n\n'+msg;
+  $('tId').innerHTML='Your ticket number: <b class="ok">'+id+'</b> — keep it for reference.';
+  openChat(kind,text,'Support '+id+' — '+$('tTopic').value);
+}
+
+setNet(0); upd(); loadRate();
+</script>
+</body>
+</html>

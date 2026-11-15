@@ -1115,7 +1115,7 @@ function openLic(){
   $('licSheet').style.display='flex';
   $('lsCode').textContent=deviceCode();
   $('pkgList2').innerHTML=pkgHTML('pkDays2','pkPrice2');
-  $('payInfo2').innerHTML='Payment: <b>'+SELLER.pay+'</b><br>WhatsApp: <b>'+SELLER.whatsapp+'</b><br>Send your Device Code with the payment — you will receive a new key.';
+  $('payInfo2').innerHTML='<button class="main" style="margin:4px 0 10px" onclick="buyOnline()">💳 Buy online (USDT crypto)</button>Pay with USDT on our website — your Device Code is filled in automatically. You will receive a new key.';
   if(licExp){ const left=licExp-Date.now()/1000, dd=Math.floor(left/86400), hh=Math.floor(left%86400/3600);
     $('lsLeft').textContent= left>0 ? (dd>0? dd+'d '+hh+'h' : hh+'h') : 'Expired';
     $('lsExp').textContent='Expires '+new Date(licExp*1000).toLocaleString('en-PK'); }
@@ -1131,6 +1131,8 @@ async function activate2(){
   store('tdf_lic',k); showApp(r.exp); e.style.color='var(--lime)'; e.textContent='✅ License updated'; openLic();
 }
 
+const SHOP_URL='https://aamir007khosa-cell.github.io/new/site/';
+function buyOnline(){ location.href=SHOP_URL+'?d='+encodeURIComponent(deviceCode())+'#buy'; }
 function showLock(msg){
   $('app').style.display='none'; $('nav').style.display='none'; $('lock').style.display='';
   $('devCode').textContent=deviceCode();
@@ -1139,7 +1141,7 @@ function showLock(msg){
   if(false) $('pkgList').innerHTML='<div><span>1 day</span><b>'+fmt(PRICE_PER_DAY)+'</b><span>Rs 1,000 per day</span></div>'+
     '<div><span>Choose days</span><b id="pkPrice">'+fmt(7*PRICE_PER_DAY)+'</b><select id="pkDays" onchange="$(\'pkPrice\').textContent=\'Rs \'+(this.value*PRICE_PER_DAY).toLocaleString(\'en-PK\')" style="margin-top:6px;padding:8px 10px;font-size:14px;background:rgba(10,11,12,.15);border:none;color:inherit;font-weight:800">'+
     PACKAGES.map(p=>'<option value="'+p.days+'"'+(p.days===7?' selected':'')+'>'+p.days+' day'+(p.days>1?'s':'')+'</option>').join('')+'</select></div>';
-  $('payInfo').innerHTML='Payment: <b>'+SELLER.pay+'</b><br>WhatsApp: <b>'+SELLER.whatsapp+'</b>';
+  $('payInfo').innerHTML='<button class="main" style="margin:4px 0 10px" onclick="buyOnline()">💳 Buy online (USDT crypto)</button>Pay with USDT on our website, then paste your key below.';
   if(msg) $('licErr').textContent=msg;
 }
 function showApp(exp){
