@@ -56,6 +56,7 @@
     <div class="stat"><div class="v" id="devCode" style="font-size:26px;letter-spacing:3px">–</div></div>
     <div class="btns"><button onclick="copyCode()">📋 Code copy karo</button></div>
     <p class="hint">Payment ke baad yeh code bhejo — aap ko license key mil jayegi.</p>
+    <p class="hint" id="webWarn" style="color:var(--acc)">⚠️ Browser ka data clear karne ya browser badalne se yeh code badal jata hai aur license chala jata hai. Pakke license ke liye app (APK) istemal karo.</p>
   </div>
   <div class="card">
     <h2>License key daalo</h2>
@@ -604,6 +605,7 @@ const PUBKEY = {"kty":"EC","crv":"P-256","x":"X3qDab0PFkISO3Yoit0w6ZG8Q3KnZGqjXT
 function b64u(s){ s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4) s+='='; return Uint8Array.from(atob(s),c=>c.charCodeAt(0)); }
 function store(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); }catch(_){ return null; } }
 function deviceCode(){
+  try{ if(window.Android && Android.deviceCode) return Android.deviceCode(); }catch(_){}
   let c=store('tdf_dev');
   if(!c){ const a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; c=''; const r=crypto.getRandomValues(new Uint8Array(8)); r.forEach(x=>c+=a[x%a.length]); store('tdf_dev',c); }
   return c;
@@ -626,6 +628,7 @@ async function checkKey(key){
 function showLock(msg){
   $('app').style.display='none'; $('lock').style.display='';
   $('devCode').textContent=deviceCode();
+  if(window.Android) $('webWarn').style.display='none';
   $('pkgList').innerHTML=PACKAGES.map(p=>'<li><span>'+p.days+' din</span><b>Rs '+p.price.toLocaleString('en-PK')+'</b></li>').join('');
   $('payInfo').innerHTML='Payment: <b>'+SELLER.pay+'</b><br>WhatsApp: <b>'+SELLER.whatsapp+'</b>';
   if(msg) $('licErr').textContent=msg;
@@ -640,7 +643,7 @@ async function activate(){
   const r=await checkKey(k);
   if(r.ok){ store('tdf_lic',k.trim()); showApp(r.exp); } else $('licErr').textContent=r.err;
 }
-function copyCode(){ try{ navigator.clipboard.writeText(deviceCode()).then(()=>$('licErr').textContent='Code copy ho gaya ✅').catch(()=>{}); }catch(_){} }
+function copyCode(){ if(window.Android){ Android.copy(deviceCode()); $('licErr').textContent='Code copy ho gaya ✅'; return; } try{ navigator.clipboard.writeText(deviceCode()).then(()=>$('licErr').textContent='Code copy ho gaya ✅').catch(()=>{}); }catch(_){} }
 async function boot(){
   const k=store('tdf_lic');
   if(!k){ showLock(); return; }
