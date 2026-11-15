@@ -135,15 +135,15 @@ function tok(){ try{ return localStorage.getItem('lg_gh')||''; }catch(_){ return
 function saveTok(){ try{ localStorage.setItem('lg_gh',$('ghTok').value.trim()); }catch(_){} $('ghTok').value=''; $('ghMsg').textContent=tok()?'Token saved ✅':'Token removed'; }
 async function ghGet(){
   const r=await fetch('https://api.github.com/repos/'+GH.owner+'/'+GH.repo+'/contents/'+GH.path+'?t='+Date.now(),{headers:{Authorization:'Bearer '+tok(),Accept:'application/vnd.github+json'},cache:'no-store'});
-  if(!r.ok) throw new Error('GitHub '+r.status);
+  if(!r.ok){ let m=''; try{ m=(await r.json()).message||''; }catch(_){} throw new Error('read '+r.status+(m?': '+m:'')); }
   const j=await r.json(); return {sha:j.sha, data:JSON.parse(decodeURIComponent(escape(atob(j.content.replace(/\n/g,'')))))};
 }
 async function ghPut(data,sha,msg){
   const body={message:msg, content:btoa(unescape(encodeURIComponent(JSON.stringify(data)+'\n'))), sha};
   const r=await fetch('https://api.github.com/repos/'+GH.owner+'/'+GH.repo+'/contents/'+GH.path,{method:'PUT',headers:{Authorization:'Bearer '+tok(),Accept:'application/vnd.github+json','Content-Type':'application/json'},body:JSON.stringify(body)});
-  if(!r.ok) throw new Error('GitHub '+r.status);
+  if(!r.ok){ let m=''; try{ m=(await r.json()).message||''; }catch(_){} throw new Error('write '+r.status+(m?': '+m:'')+(r.status===403?' — token needs Contents: Read and write on repo "new"':'')); }
 }
-async function testTok(){ if(!tok()){ $('ghMsg').textContent='Save a token first.'; return; } $('ghMsg').textContent='Testing...'; try{ const x=await ghGet(); $('ghMsg').textContent='✅ Token works — '+x.data.list.length+' blocked device(s).'; }catch(e){ $('ghMsg').textContent='❌ '+e.message+' — check token permissions.'; } }
+async function testTok(){ if(!tok()){ $('ghMsg').textContent='Save a token first.'; return; } $('ghMsg').textContent='Testing...'; try{ const x=await ghGet(); await ghPut(x.data,x.sha,'Token test'); $('ghMsg').textContent='✅ Token works (read + write) — '+x.data.list.length+' blocked device(s).'; }catch(e){ $('ghMsg').textContent='❌ '+e.message+' — check token permissions.'; } }
 async function blockDevice(dev){
   const x=await ghGet(); const now=Math.floor(Date.now()/1000);
   x.data.list=(x.data.list||[]).filter(e=>e.d!==dev); x.data.list.push({d:dev,t:now});
