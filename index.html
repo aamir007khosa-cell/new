@@ -249,6 +249,10 @@ details[open] summary::before{content:"－ "}
 .sheetBox{width:min(520px,100%);max-height:90vh;overflow:auto;background:#141617;border:1px solid var(--line);border-radius:24px 24px 0 0;padding:18px 16px calc(24px + env(safe-area-inset-bottom));animation:rise .25s ease both}
 #licBar{cursor:pointer}
 .rdev{border:1px solid var(--line);border-radius:20px;padding:14px;margin-bottom:12px;background:rgba(255,255,255,.02);transition:border-color .2s}
+.rdet{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
+.rdet summary{cursor:pointer;color:var(--lime);font-weight:800;font-size:13px;list-style:none}
+.rdet summary::before{content:'▾ '}
+.rdet:not([open]) summary::before{content:'▸ '}
 .rdev.sel{border-color:var(--lime);box-shadow:0 0 0 1px var(--lime) inset}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -1389,6 +1393,7 @@ function devCardHTML(dev){
     '<p class="hint" id="rn-'+id+'" style="text-align:center"></p>'+
     '<div class="kv" id="rk-'+id+'"></div>'+
     '<p class="hint" id="rloc-'+id+'" style="margin-top:10px;line-height:1.6"></p>'+
+    '<details class="rdet" open onclick="event.stopPropagation()"><summary>📊 Full data</summary><div id="rdet-'+id+'"></div></details>'+
     '<div class="btns"><button class="beepBtn" onclick="event.stopPropagation();rdBeepToggle()">🔊 Beep</button><button onclick="event.stopPropagation();removeDev(\''+id+'\')">🗑️ Remove</button></div>'+
   '</div>';
 }
@@ -1552,28 +1557,39 @@ function renderAll(force){
   const now=Date.now(); if(!force && now-rLastRender<500) return; rLastRender=now;
   renderLinkSummary();
 }
+
+// Har radio ka apna poora data (uske card mein)
+function devTablesHTML(dev){
+  const loc=dev.d.node; if(!loc) return '<p class="hint">Waiting for data...</p>';
+  const role=devRole(dev), peer=peerOf(dev);
+  // remote side: Client ke liye AP ka data (ap-info), AP ke liye jure hue Client radio ka data
+  const R = role==='client' ? (dev.d.rem||null) : (peer && peer.d.node ? peer.d.node : null);
+  const rSelf = role==='client' ? dev.d.remSelf : (peer? peer.d.self : null);
+  const ls=dev.d.self;
+  const mine=devSignal(dev).v ?? rdRssi(loc.rssi);
+  const other = peer ? (devSignal(peer).v ?? (R?rdRssi(R.rssi):null)) : (R?rdRssi(R.rssi):null);
+  const hdr = role==='client' ? 'Link Statistics (UL / DL)' : 'Link Statistics (DL / UL)';
+  const cinr=i=> loc.evm&&loc.evm[i] ? Math.abs(loc.evm[i]/10) : null;
+  const freq=(dev.d.cfg&&dev.d.cfg.freq)||'--';
+  let h='<div class="tblw"><h3>'+hdr+'</h3><table class="tbl">'+
+    '<tr><td>RSSI (dBm)</td><td>'+f1(other,2)+' / '+f1(mine,2)+'</td></tr>'+
+    '<tr><td>PHY Rate (Mbps)</td><td>'+fPhy(loc.txPhy)+' / '+fPhy(loc.rxPhy)+'</td></tr>'+
+    '<tr><td>MCS</td><td>'+loc.txMcs+' / '+loc.rxMcs+'</td></tr>'+
+    '<tr><td>PER (%)</td><td>'+f1(loc.per,2)+' / '+f1(R?R.per:null,2)+'</td></tr>'+
+    '<tr><td>SNR (dB)</td><td>'+f1(R?rdSnr(R.evm):null,2)+' / '+f1(rdSnr(loc.evm),2)+'</td></tr>'+
+    '<tr><td>Noise Level</td><td>'+f1(rSelf?rSelf.noise:null)+' / '+f1(ls?ls.noise:null)+'</td></tr></table></div>';
+  h+='<div class="tblw"><h3>MIMO Status</h3><table class="tbl"><tr><th>Chain</th><th>Rx Power</th><th>Rx Noise</th><th>CINR</th><th>Freq</th><th>Pol</th></tr>'+
+    [0,1].map(i=>'<tr><td>'+(i+1)+'</td><td>'+f1(loc.rssi[i]/10)+'</td><td>'+f1(ls?ls.noise:null)+'</td><td>'+f1(cinr(i))+'</td><td>'+freq+'</td><td>'+(i?'V':'H')+'</td></tr>').join('')+'</table></div>';
+  h+='<div class="tblw"><h3>Streams</h3><table class="tbl"><tr><th>#</th><th>Tx MCS</th><th>Tx W</th><th>Tx PHY</th><th>Rx MCS</th><th>Rx W</th><th>Rx PHY</th><th>Rx SNR</th></tr>'+
+    [0,1].map(i=>'<tr><td>'+(i+1)+'</td><td>'+loc.txMcs+'</td><td>'+loc.txBw+'</td><td>'+fPhy(loc.txPhy)+'</td><td>'+loc.rxMcs+'</td><td>'+loc.rxBw+'</td><td>'+fPhy(loc.rxPhy)+'</td><td>'+f1(cinr(i))+'</td></tr>').join('')+'</table></div>';
+  return h;
+}
+
 function renderLinkSummary(){
   const on=DEVS.filter(d=>d.on); $('rSum').style.display=on.length?'':'none'; if(!on.length) return;
-  const sel=devById(SEL)||on[0];
-  const src = devRole(sel)==='client' ? sel : (DEVS.find(d=>d.on&&devRole(d)==='client')||sel);
-  let h='';
-  if(src && src.d.node){
-    const loc=src.d.node, R=src.d.rem||{}, ls=src.d.self, rsf=src.d.remSelf;
-    const dl=devSignal(src).v ?? rdRssi(loc.rssi); const apd=peerOf(src); const ul = apd ? (devSignal(apd).v ?? (src.d.rem?rdRssi(src.d.rem.rssi):null)) : (src.d.rem?rdRssi(src.d.rem.rssi):null);
-    const cinr=i=> loc.evm&&loc.evm[i] ? Math.abs(loc.evm[i]/10) : null;
-    h+='<div class="tblw"><h3>Link Statistics (UL / DL) — '+src.label+'</h3><table class="tbl">'+
-      '<tr><td>RSSI (dBm)</td><td>'+f1(ul,2)+' / '+f1(dl,2)+'</td></tr>'+
-      '<tr><td>PHY Rate (Mbps)</td><td>'+fPhy(loc.txPhy)+' / '+fPhy(loc.rxPhy)+'</td></tr>'+
-      '<tr><td>MCS</td><td>'+loc.txMcs+' / '+loc.rxMcs+'</td></tr>'+
-      '<tr><td>PER (%)</td><td>'+f1(loc.per,2)+' / '+f1(R.per,2)+'</td></tr>'+
-      '<tr><td>SNR (dB)</td><td>'+f1(rdSnr(R.evm),2)+' / '+f1(rdSnr(loc.evm),2)+'</td></tr>'+
-      '<tr><td>Noise Level</td><td>'+f1(rsf?rsf.noise:null)+' / '+f1(ls?ls.noise:null)+'</td></tr></table></div>';
-    h+='<div class="tblw"><h3>MIMO Status</h3><table class="tbl"><tr><th>Chain</th><th>Rx Power</th><th>Rx Noise</th><th>CINR</th><th>Pol</th></tr>'+
-      [0,1].map(i=>'<tr><td>'+(i+1)+'</td><td>'+f1(loc.rssi[i]/10)+'</td><td>'+f1(ls?ls.noise:null)+'</td><td>'+f1(cinr(i))+'</td><td>'+(i?'V':'H')+'</td></tr>').join('')+'</table></div>';
-    h+='<div class="tblw"><h3>Streams</h3><table class="tbl"><tr><th>#</th><th>Tx MCS</th><th>Tx W</th><th>Tx PHY</th><th>Rx MCS</th><th>Rx W</th><th>Rx PHY</th><th>Rx SNR</th></tr>'+
-      [0,1].map(i=>'<tr><td>'+(i+1)+'</td><td>'+loc.txMcs+'</td><td>'+loc.txBw+'</td><td>'+fPhy(loc.txPhy)+'</td><td>'+loc.rxMcs+'</td><td>'+loc.rxBw+'</td><td>'+fPhy(loc.rxPhy)+'</td><td>'+f1(cinr(i))+'</td></tr>').join('')+'</table></div>';
-  }
-  if($('rSumBody').innerHTML!==h) $('rSumBody').innerHTML=h;
+  on.forEach(dev=>{ const el=$('rdet-'+dev.id); if(!el) return; const det=el.parentNode; if(det && !det.open) return;
+    const h=devTablesHTML(dev); if(el.innerHTML!==h) el.innerHTML=h; });
+  if($('rSumBody').innerHTML) $('rSumBody').innerHTML='';
   drawRadioMap();
 }
 let RM=null, RMg=null;
