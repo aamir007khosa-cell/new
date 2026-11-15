@@ -997,18 +997,13 @@ const MAG_DECL=2; // Pakistan mein ~+2°
 let liveOn=false, hTarget=null, hShow=null, liveRaf=0, liveGot=false, lastTurn='', tgt='b', tgtManual=false;
 function wrap180(d){ return ((d+540)%360)-180; }
 function tgtPoint(){ return tgt==='b'?result.b:result.a; }
-function fromPoint(){ return mePos || (tgt==='b'?result.a:result.b); }
+function fromPoint(){ return tgt==='b'?result.a:result.b; }   // sirf diye hue coordinates se
 function tgtBearing(){ return bearing(fromPoint(), tgtPoint()); }
 function setTarget(k,manual){
   tgt=k; if(manual) tgtManual=true;
   $('tgB').classList.toggle('on',k==='b'); $('tgA').classList.toggle('on',k==='a');
   const tb=tgtBearing(); $('hTgt').textContent=tb.toFixed(0)+'°'; $('dTgt').textContent=fmtDist(distance(fromPoint(),tgtPoint()));
-  const tname = k==='b'?'Client tower':'ISP tower', other = k==='b'?result.a:result.b, oname = k==='b'?'ISP':'Client';
-  let ft;
-  if(!mePos) ft='📍 '+oname+' tower se → '+tname+' (GPS ka intezaar)';
-  else { const dOther=distance(mePos,other);
-    ft = dOther<=150 ? '📍 Aap '+oname+' tower par ho → '+tname+' ki taraf'
-                     : '⚠️ Aap '+oname+' tower se '+fmtDist(dOther)+' door ho — direction aap ki <b>abhi ki jagah</b> se '+tname+' tak hai'; }
+  const ft = (k==='b' ? '📍 ISP tower se → Client tower' : '📍 Client tower se → ISP tower') + ' (aap ke diye hue coordinates)';
   const fe=$('fromTxt'); if(fe && fe.innerHTML!==ft) fe.innerHTML=ft;
   if(Math.abs((window._lastTb||-999)-tb)>0.5 || !$('liveDial').firstChild){ window._lastTb=tb; $('liveDial').innerHTML=dialMarkup(tb,['--','']); }
   if(hShow!==null) applyHeading(hShow);
@@ -1275,8 +1270,7 @@ function startWatch(){
     meWatch=navigator.geolocation.watchPosition(p=>{
       const first=!mePos;
       mePos={lat:p.coords.latitude, lon:p.coords.longitude};
-      if(result && !tgtManual) setTarget(distance(mePos,result.a)<=distance(mePos,result.b)?'b':'a');
-      else if(result) setTarget(tgt);
+
       if(LM){
         const ll=[mePos.lat,mePos.lon];
         if(!meMk) meMk=L.marker(ll,{icon:L.divIcon({className:'me',html:'<div class="cone" id="meCone"></div><div class="dot"></div>',iconSize:[80,80],iconAnchor:[40,40]}),interactive:false,zIndexOffset:1000}).addTo(LM);
