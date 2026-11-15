@@ -56,6 +56,13 @@ button.s{background:#1c1f21;color:#f4f6f5;border:1px solid #24282b;width:auto;pa
   <div id="list"></div>
 </div>
 <div class="c">
+  <h2>🔐 Remote logout</h2>
+  <p style="color:#8b9290;font-size:13px">Deleting a customer blocks their device online — their app logs out within ~5 minutes. Needs a GitHub token (one time).</p>
+  <input id="ghTok" type="password" placeholder="GitHub token (github_pat_...)">
+  <button class="s" onclick="saveTok()">💾 Save token</button><button class="s" onclick="testTok()">🔎 Test</button>
+  <p id="ghMsg" style="font-size:13px;color:#8b9290"></p>
+</div>
+<div class="c">
   <h2>💾 Backup</h2>
   <p style="color:#9aa3ae;font-size:13px">The customer list is stored on this phone only. Before clearing app data, copy a backup and send it to yourself on WhatsApp.</p>
   <button class="s" onclick="cp(JSON.stringify(load()))">📋 Copy backup</button>
@@ -107,8 +114,41 @@ function render(){
 function esc(t){ return String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function renew(i){ const r=load()[i]; $('name').value=r.name; $('dev').value=r.dev; window.scrollTo(0,0); $('msg').textContent='Choose a package and press Generate key.'; }
 let delArm=-1;
-function del(i){ if(delArm!==i){ delArm=i; $('msg').textContent='Press 🗑️ again to delete.'; return; } const a=load(); a.splice(i,1); saveL(a); delArm=-1; $('msg').textContent='Deleted.'; render(); }
+async function del(i){
+  if(delArm!==i){ delArm=i; $('msg').textContent='Press 🗑️ again to delete and log out this customer.'; return; }
+  delArm=-1; const r=load()[i]; if(!r) return;
+  const others=load().filter((x,j)=>j!==i && x.dev===r.dev && x.e>Date.now()/1000);
+  if(others.length){ const a=load(); a.splice(i,1); saveL(a); render(); $('msg').textContent='Old entry removed. '+r.dev+' still has an active key, so it was not logged out.'; return; }
+  if(tok()){
+    $('msg').textContent='Blocking '+r.dev+'...';
+    try{ await blockDevice(r.dev); $('msg').textContent='✅ '+r.name+' deleted — their app will log out within ~5 minutes.'; }
+    catch(e){ $('msg').textContent='❌ Could not block online ('+e.message+'). Not deleted.'; return; }
+  } else { $('msg').textContent='Deleted from list only — set a GitHub token (Remote logout) to log the customer out.'; }
+  const a=load(); a.splice(i,1); saveL(a); render();
+}
 function cp(v){ if(!v) return; if(window.Android){ Android.copy(v); $('msg').textContent='Copied ✅'; return; } try{ navigator.clipboard.writeText(v).then(()=>$('msg').textContent='Copied ✅'); }catch(_){} }
 function restore(){ try{ const a=JSON.parse($('rest').value); if(!Array.isArray(a)) throw 0; const cur=load(); const keys=new Set(cur.map(r=>r.key)); a.forEach(r=>{ if(r&&r.key&&!keys.has(r.key)) cur.push(r); }); saveL(cur); $('rest').value=''; $('msg').textContent='Restored ✅'; render(); }catch(_){ $('msg').textContent='Invalid backup.'; } }
+
+// ===== Remote logout (GitHub block list) =====
+const GH={owner:'aamir007khosa-cell',repo:'new',path:'revoked.json'};
+function tok(){ try{ return localStorage.getItem('lg_gh')||''; }catch(_){ return ''; } }
+function saveTok(){ try{ localStorage.setItem('lg_gh',$('ghTok').value.trim()); }catch(_){} $('ghTok').value=''; $('ghMsg').textContent=tok()?'Token saved ✅':'Token removed'; }
+async function ghGet(){
+  const r=await fetch('https://api.github.com/repos/'+GH.owner+'/'+GH.repo+'/contents/'+GH.path+'?t='+Date.now(),{headers:{Authorization:'Bearer '+tok(),Accept:'application/vnd.github+json'},cache:'no-store'});
+  if(!r.ok) throw new Error('GitHub '+r.status);
+  const j=await r.json(); return {sha:j.sha, data:JSON.parse(decodeURIComponent(escape(atob(j.content.replace(/\n/g,'')))))};
+}
+async function ghPut(data,sha,msg){
+  const body={message:msg, content:btoa(unescape(encodeURIComponent(JSON.stringify(data)+'\n'))), sha};
+  const r=await fetch('https://api.github.com/repos/'+GH.owner+'/'+GH.repo+'/contents/'+GH.path,{method:'PUT',headers:{Authorization:'Bearer '+tok(),Accept:'application/vnd.github+json','Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!r.ok) throw new Error('GitHub '+r.status);
+}
+async function testTok(){ if(!tok()){ $('ghMsg').textContent='Save a token first.'; return; } $('ghMsg').textContent='Testing...'; try{ const x=await ghGet(); $('ghMsg').textContent='✅ Token works — '+x.data.list.length+' blocked device(s).'; }catch(e){ $('ghMsg').textContent='❌ '+e.message+' — check token permissions.'; } }
+async function blockDevice(dev){
+  const x=await ghGet(); const now=Math.floor(Date.now()/1000);
+  x.data.list=(x.data.list||[]).filter(e=>e.d!==dev); x.data.list.push({d:dev,t:now});
+  await ghPut(x.data,x.sha,'Block '+dev);
+}
+
 render(); setInterval(render,60000);
 </script></body></html>

@@ -1099,7 +1099,7 @@ async function checkKey(key){
     if(now < last-3600) return {err:'Phone date/time is wrong. Please fix it.'};
     if(now > d.e) return {err:'License expired. Please buy a new package.', exp:true};
     store('tdf_last', String(Math.max(now,last)));
-    return {ok:true, exp:d.e};
+    return {ok:true, exp:d.e, iss:d.e-(d.p||0)*86400};
   }catch(_){ return {err:'Invalid key.'}; }
 }
 
@@ -1163,6 +1163,20 @@ async function boot(){
 }
 boot();
 setInterval(async()=>{ const k=store('tdf_lic'); if(!k) return; const r=await checkKey(k); if(!r.ok) showLock(r.err); }, 60000);
+
+
+// ===== Remote logout: seller ki block list (GitHub par) =====
+const REVOKE_URL='https://aamir007khosa-cell.github.io/new/revoked.json';
+async function checkRevoked(){
+  const k=store('tdf_lic'); if(!k) return;
+  let j=null; try{ j=await (await fetch(REVOKE_URL+'?t='+Date.now(),{cache:'no-store'})).json(); }catch(_){ return; }   // offline: kuch na karo
+  const r=await checkKey(k); if(!r.ok) return;
+  const me=deviceCode();
+  const hit=(j&&j.list||[]).find(x=>x.d===me && x.t>=r.iss-60);
+  if(hit){ store('tdf_lic',''); showLock('This license has been cancelled. Please contact the seller.'); }
+}
+setTimeout(checkRevoked, 2500); setInterval(checkRevoked, 5*60*1000);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) checkRevoked(); });
 
 // Pichli values yaad rakho (sirf isi phone par)
 function save(){ try{ ['a','b','ga','ha','gb','hb','clut','ispH','freq','bw','busy','fmin','fmax','gA','gB','txp','loss'].forEach(k=>localStorage.setItem('tdf_'+k,$(k).value)); }catch(_){} }
