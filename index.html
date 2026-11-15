@@ -1261,9 +1261,20 @@ function startWatch(){
 function hasBridge(){ return !!(window.Android && Android.radio); }
 let rdSeq=0; const rdPend={}; let rdBeep=false, rdAudio=null;
 window.rdCb=function(id,json){ const f=rdPend[id]; delete rdPend[id]; if(f){ try{ f(JSON.parse(json)); }catch(_){ f({status:-1,body:''}); } } };
-function devReq(dev,method,path,body){
+function devReq(dev,method,path,body,prio){
+  // Har radio par ek waqt mein zyada se zyada 2 request (radio aur phone dono par bojh kam)
+  return new Promise(res=>{ (dev.q=dev.q||[])[prio?'unshift':'push']({method,path,body,res}); pumpQ(dev); });
+}
+function pumpQ(dev){
+  dev.inflight=dev.inflight||0;
+  while(dev.inflight<2 && dev.q && dev.q.length){
+    const j=dev.q.shift(); dev.inflight++;
+    rawReq(dev,j.method,j.path,j.body).then(r=>{ dev.inflight--; if(r.status<0 && r.status!==-3) dev.errs=(dev.errs||0)+1; j.res(r); pumpQ(dev); });
+  }
+}
+function rawReq(dev,method,path,body){
   return new Promise(res=>{
-    if(Android.radioAsync){ const id=++rdSeq; rdPend[id]=res; Android.radioAsync(id,method,dev.ip,dev.auth,path,body||''); setTimeout(()=>{ if(rdPend[id]){ delete rdPend[id]; res({status:-1,body:'timeout'}); } },8000); }
+    if(Android.radioAsync){ const id=++rdSeq; rdPend[id]=res; Android.radioAsync(id,method,dev.ip,dev.auth,path,body||''); setTimeout(()=>{ if(rdPend[id]){ delete rdPend[id]; res({status:-1,body:'timeout'}); } },4000); }
     else setTimeout(()=>{ try{ res(JSON.parse(Android.radio(method,dev.ip,dev.auth,path,body||''))); }catch(_){ res({status:-1,body:''}); } },0);
   });
 }
@@ -1420,7 +1431,8 @@ async function beaconLoop(dev){
   const t0=Date.now(), isAP=devRole(dev)==='isp';
   const path = isAP ? (dev.d.staMac ? '/client/'+dev.d.staMac+'/beacon-rssi' : null) : '/beacon-rssi';
   if(!path){ dev.btimer=setTimeout(()=>beaconLoop(dev),1000); return; }
-  const tq=Date.now(); const r=await devReq(dev,'GET',path); let ok=false;
+  const tq=Date.now(); const r=await devReq(dev,'GET',path,'',true); let ok=false;
+  if(r.status===-3){ dev.oldApk=true; dev.bOn=false; paintDev(dev); return; }
   dev.lat = dev.lat==null ? (Date.now()-tq) : dev.lat*0.8 + (Date.now()-tq)*0.2;
   if(r.status===200){ try{ const j=JSON.parse(r.body); if(j.status==='success' && typeof j.rssi==='number' && j.rssi<0){ ok=true; const B=dev.d;
       B.bema = B.bema==null ? j.rssi : B.bema*0.85 + j.rssi*0.15; B.bfast = B.bfast==null ? j.rssi : B.bfast*0.55 + j.rssi*0.45; B.beacon={v:B.bfast,t:Date.now()}; (dev.hits=dev.hits||[]).push(Date.now()); if(dev.hits.length>20) dev.hits.shift(); fastPaint(dev); } }catch(_){} }
@@ -1446,6 +1458,7 @@ function paintRssi(el,bar,v){
 }
 function fastPaint(dev){
   const s=devSignal(dev); paintRssi($('rr-'+dev.id),$('rb-'+dev.id),s.v);
+  renderAll();
   const peer=peerOf(dev); if(peer){ const so=devSignal(peer); if(so.via) paintRssi($('rr-'+peer.id),$('rb-'+peer.id),so.v); }
   renderStrip();
 }
@@ -1459,8 +1472,9 @@ function devPos(dev){
   return null;
 }
 function speedTxt(dev){
+  if(dev.oldApk) return ' · ⚠️ Tez signal ke liye nayi APK (v2.7) install karo';
   const h=dev.hits||[], now=Date.now(); const recent=h.filter(t=>now-t<3000).length/3;
-  const parts=[]; if(recent>0) parts.push(recent.toFixed(1)+'/s'); if(dev.lat!=null) parts.push(Math.round(dev.lat)+' ms'); if(dev.slat!=null) parts.push('stats '+dev.slat+' ms');
+  const parts=[]; if(recent>0) parts.push(recent.toFixed(1)+'/s'); if(dev.lat!=null) parts.push(Math.round(dev.lat)+' ms'); if(dev.slat!=null) parts.push('stats '+dev.slat+' ms'); if(dev.errs) parts.push(dev.errs+' fail');
   return parts.length? ' · '+parts.join(' · ') : '';
 }
 function paintDev(dev){
@@ -1482,7 +1496,7 @@ let rLastRender=0;
 function renderAll(force){
   renderStrip();
   if(curTab!=='r' && !force) return;            // Radios tab band ho to bhaari kaam nahi
-  const now=Date.now(); if(!force && now-rLastRender<1000) return; rLastRender=now;
+  const now=Date.now(); if(!force && now-rLastRender<500) return; rLastRender=now;
   renderLinkSummary();
 }
 function renderLinkSummary(){
@@ -1492,7 +1506,7 @@ function renderLinkSummary(){
   let h='';
   if(src && src.d.node){
     const loc=src.d.node, R=src.d.rem||{}, ls=src.d.self, rsf=src.d.remSelf;
-    const dl=rdRssi(loc.rssi), ul=src.d.rem?rdRssi(src.d.rem.rssi):null;
+    const dl=devSignal(src).v ?? rdRssi(loc.rssi); const apd=peerOf(src); const ul = apd ? (devSignal(apd).v ?? (src.d.rem?rdRssi(src.d.rem.rssi):null)) : (src.d.rem?rdRssi(src.d.rem.rssi):null);
     const cinr=i=> loc.evm&&loc.evm[i] ? Math.abs(loc.evm[i]/10) : null;
     h+='<div class="tblw"><h3>Link Statistics (UL / DL) — '+src.label+'</h3><table class="tbl">'+
       '<tr><td>RSSI (dBm)</td><td>'+f1(ul,2)+' / '+f1(dl,2)+'</td></tr>'+
