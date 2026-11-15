@@ -1348,8 +1348,9 @@ async function devConnect(role, silent){
   if(r.status===200){ devStatus(role,'● Juda hua','var(--lime)'); if(!silent) toast('✅ '+dev.label+' jud gaya'); }
   else devStatus(role,'● Offline — dobara jod raha hai','#fbbf24');
   clearTimeout(dev.timer); devLoop(dev);
+  clearTimeout(dev.btimer); dev.beaconOff=0; beaconLoop(dev);
 }
-function devDisconnect(role){ const dev=RADIOS[role]; dev.on=false; clearTimeout(dev.timer); $('rl-'+role).style.display='none'; $('rf-'+role).style.display=''; devStatus(role,''); renderRadios(true); }
+function devDisconnect(role){ const dev=RADIOS[role]; dev.on=false; clearTimeout(dev.timer); clearTimeout(dev.btimer); $('rl-'+role).style.display='none'; $('rf-'+role).style.display=''; devStatus(role,''); renderRadios(true); }
 function devForget(role){
   devDisconnect(role);
   try{ if(Android.delSecret) Android.delSecret('rd_'+role); }catch(_){}
@@ -1364,7 +1365,7 @@ async function devLoop(dev){
   if(dev.d.ok){ if(dev.fails>=3) { devStatus(role,'● Juda hua','var(--lime)'); toast('✅ '+dev.label+' dobara jud gaya'); } dev.fails=0; }
   else { dev.fails=(dev.fails||0)+1; if(dev.fails===3) devStatus(role,'● Offline — dobara jod raha hai','#fbbf24'); }
   renderRadios();
-  const wait = dev.fails>=3 ? 3000 : Math.max(100, 400-(Date.now()-t0));
+  const wait = dev.fails>=3 ? 3000 : Math.max(100, 1000-(Date.now()-t0));
   if(dev.on) dev.timer=setTimeout(()=>devLoop(dev), wait);
 }
 // App khulte hi saved radios khud jodo
@@ -1407,6 +1408,35 @@ async function devPoll(dev){
   if(gps){ const g=findLatLon(gps); if(g){ D.loc=g; D.locSrc='GPS'; } }
   if(loc && D.locSrc!=='GPS'){ try{ const l=loc['mimosa-device:location']||loc; const g=findLatLon(l.local||l); if(g){ D.loc=g; D.locSrc='Radio setting'; } else if(!D.loc){ D.locSrc=null; } }catch(_){} }
 }
+
+// ===== Tez signal: Mimosa Aiming Mode wala /beacon-rssi (har request par naya) =====
+async function beaconLoop(dev){
+  if(!dev.on) return;
+  if(dev.beaconOff && Date.now()<dev.beaconOff) { dev.btimer=setTimeout(()=>beaconLoop(dev),5000); return; }
+  const t0=Date.now();
+  const r=await devReq(dev,'GET','/beacon-rssi');
+  let ok=false;
+  if(r.status===200){ try{ const j=JSON.parse(r.body); if(j.status==='success' && typeof j.rssi==='number'){ ok=true; dev.d.beacon={v:j.rssi,t:Date.now()}; fastPaint(dev); } }catch(_){} }
+  if(ok){ dev.bfail=0; } else { dev.bfail=(dev.bfail||0)+1; if(dev.bfail>=3){ dev.beaconOff=Date.now()+30000; dev.bfail=0; } }
+  if(dev.on) dev.btimer=setTimeout(()=>beaconLoop(dev), Math.max(60, 120-(Date.now()-t0)));
+}
+// Signal number: tez beacon ho to woh, warna stats wala
+function devSignal(dev){
+  const D=dev.d;
+  if(D.beacon && Date.now()-D.beacon.t<2000) return {v:D.beacon.v, fast:true};
+  const v=D.node? rdRssi(D.node.rssi) : null; return {v, fast:false};
+}
+function paintRssi(el,bar,v){
+  el.textContent = v==null?'--':(Number.isInteger(v)?v:v.toFixed(1));
+  el.style.color = v==null?'var(--mut)':(v>=-60?'var(--lime)':(v>=-70?'#fbbf24':'#ff6b6b'));
+  bar.style.width = v==null?'0':Math.max(0,Math.min(100,(v+90)/50*100))+'%';
+}
+function fastPaint(dev){
+  const s=devSignal(dev); paintRssi($('rr-'+dev.role),$('rb-'+dev.role),s.v);
+  const top = RADIOS.client.on?RADIOS.client:(RADIOS.isp.on?RADIOS.isp:null);
+  if(top===dev){ paintRssi($('stRssi'),$('stBar'),s.v); $('stName').textContent=dev.label+(s.fast?' ⚡':''); if(rdBeep && s.v!=null && Date.now()-(window._lastBeep||0)>200){ window._lastBeep=Date.now(); rdTone(s.v); } }
+}
+
 // Har radio ki location: GPS > radio setting > app coordinates
 function devPos(role){
   const dev=RADIOS[role];
@@ -1421,17 +1451,15 @@ function renderRadios(force){
   const now=Date.now(); if(!force && now-rLastRender<250) return; rLastRender=now;
   ['isp','client'].forEach(role=>{
     const dev=RADIOS[role], D=dev.d; if(!dev.on) return;
-    const v=D.node? rdRssi(D.node.rssi) : null;
-    $('rr-'+role).textContent = v==null?'--':v.toFixed(1);
-    $('rr-'+role).style.color = v==null?'var(--mut)':(v>=-60?'var(--lime)':(v>=-70?'#fbbf24':'#ff6b6b'));
-    $('rb-'+role).style.width = v==null?'0':Math.max(0,Math.min(100,(v+90)/50*100))+'%';
+    const sg=devSignal(dev), v=sg.v;
+    paintRssi($('rr-'+role),$('rb-'+role),v);
     const c=D.cfg||{};
     $('rk-'+role).innerHTML='<div><b>'+(D.model||'--')+'</b><span>'+(c.mode||'Model')+'</span></div><div><b>'+(c.freq||'--')+'</b><span>MHz / '+(c.bw||'--')+'</span></div><div><b>'+(c.tx!=null?c.tx:'--')+'</b><span>Tx dBm</span></div><div><b>'+(D.temp!=null?D.temp+'°':'--')+'</b><span>Temp</span></div>';
     const pos=devPos(role), other=devPos(role==='isp'?'client':'isp');
     let li='📍 '+(pos? pos.p.lat.toFixed(5)+', '+pos.p.lon.toFixed(5)+' <span style="color:var(--mut)">('+pos.src+')</span>' : 'Location nahi');
     if(pos&&other){ const br=bearing(pos.p,other.p); li+='<br>🎯 Dish ki direction: <b style="color:var(--lime)">'+br.toFixed(1)+'° '+dir16(br)+'</b> · '+fmtDist(distance(pos.p,other.p)); }
     $('rloc-'+role).innerHTML=li;
-    $('rn-'+role).textContent = dev.fails>=3 ? 'Radio se rabta nahi — khud dobara koshish ho rahi hai' : ((D.clients>1?D.clients+' clients · ':'')+'Signal: '+(v==null?'link nahi':'is radio par aa raha hai'));
+    $('rn-'+role).textContent = dev.fails>=3 ? 'Radio se rabta nahi — khud dobara koshish ho rahi hai' : ((D.clients>1?D.clients+' clients · ':'')+(v==null?'Link nahi':(sg.fast?'⚡ Live signal (Aiming)':'Signal (har second)')));
   });
   renderLinkSummary(); renderStrip();
 }
@@ -1489,10 +1517,8 @@ async function drawRadioMap(){
 function renderStrip(){
   const dev = RADIOS.client.on?RADIOS.client:(RADIOS.isp.on?RADIOS.isp:null);
   $('rStrip').style.display = dev ? '' : 'none'; if(!dev) return;
-  const v=dev.d.node? rdRssi(dev.d.node.rssi) : null;
-  $('stRssi').textContent = v==null?'--':v.toFixed(1); $('stRssi').style.color = v==null?'var(--mut)':(v>=-60?'var(--lime)':(v>=-70?'#fbbf24':'#ff6b6b'));
-  $('stBar').style.width = v==null?'0':Math.max(0,Math.min(100,(v+90)/50*100))+'%';
-  $('stName').textContent=dev.label;
+  const sg=devSignal(dev), v=sg.v;
+  paintRssi($('stRssi'),$('stBar'),v); $('stName').textContent=dev.label+(sg.fast?' ⚡':'');
   if(rdBeep && v!=null && Date.now()-(window._lastBeep||0)>350){ window._lastBeep=Date.now(); rdTone(v); }
 }
 function rdBeepToggle(){
