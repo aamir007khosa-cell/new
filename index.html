@@ -1362,6 +1362,54 @@ function rawReq(dev,method,path,body){
   });
 }
 async function devGet(dev,path){ const r=await devReq(dev,'GET',path); if(r.status!==200) return null; try{ return JSON.parse(r.body); }catch(_){ return null; } }
+function hasC5x(){ return !!(window.Android && Android.c5xAsync); }
+function c5xReq(dev){
+  return new Promise(res=>{
+    if(!hasC5x()){ res(null); return; }
+    const id=++rdSeq; rdPend[id]=r=>{ try{ res(r.status===200? JSON.parse(r.body):null); }catch(_){ res(null); } };
+    try{ Android.c5xAsync(id, dev.ip, dev.pw); }catch(_){ delete rdPend[id]; res(null); return; }
+    setTimeout(()=>{ if(rdPend[id]){ delete rdPend[id]; res(null); } }, 8000);
+  });
+}
+function c5xNum(v){ const n=parseFloat(v); return isNaN(n)?null:n; }
+function applyC5x(dev,j){
+  const rt=j.realtime||{}, sm=rt.signalmeter||{}, ri=rt.remote_info||{}, cn=rt.connection||{};
+  let sig=null; if(ri.chan_info){ const m=String(ri.chan_info).match(/_(-\d{2,3})_/); if(m) sig=parseInt(m[1],10); }
+  const bwm=String(sm.BandWidth||'').match(/(\d+)\s*$/);
+  const fm=String(sm.Chains_1_2||'').match(/\d+/);
+  const D=dev.d; D.kind='c5x'; D.ok=true; D.model='C5x';
+  D.c5={ sig:sig, noise:c5xNum(sm.noise), evm:c5xNum(String(sm.evm||'').split(/\s+/)[0]), tx:c5xNum(sm.tx_power),
+    per:c5xNum(ri.Remote_PER), avail:c5xNum(ri.r_link_availability), temp:c5xNum(ri.Temperature),
+    peerMac:ri.remote_mac||ri.Mac5_0||'', peerIp:ri.IPAddress||'', mode:ri.DeviceMode||'',
+    connected:c5xNum(cn.connected), bearing:c5xNum(ri.bearing), dist:cn.distance||'' };
+  D.cfg={ freq: fm?fm[0]:null, bw: bwm?+bwm[1]:null, tx:D.c5.tx, mode:(ri.DeviceMode==='Station'?'STA':'AP') };
+  D.temp=D.c5.temp;
+  if(ri.DeviceMode==='Station') dev.type='client'; else if(ri.DeviceMode) dev.type='isp';
+}
+async function c5xPoll(dev){
+  const tq=Date.now(); const j=await c5xReq(dev); dev.slat=Date.now()-tq;
+  if(j && j.realtime){ applyC5x(dev,j); dev.d.ok=true; } else { dev.d.ok=false; }
+}
+function c5xTableHTML(dev){
+  const c=dev.d.c5||{}, cf=dev.d.cfg||{};
+  const row=(k,v)=>'<li><span>'+k+'</span><b>'+(v==null||v===''?'--':v)+'</b></li>';
+  return '<div class="tblw"><h3>C5x link</h3><ul class="list" style="margin:0">'+
+    row('Signal', c.sig!=null?c.sig+' dBm':null)+
+    row('Noise', c.noise!=null?c.noise.toFixed(1)+' dBm':null)+
+    row('EVM', c.evm!=null?c.evm+' dB':null)+
+    row('TX power', c.tx!=null?c.tx+' dBm':null)+
+    row('PER', c.per!=null?c.per+' %':null)+
+    row('Availability', c.avail!=null?c.avail.toFixed(1)+' %':null)+
+    row('Frequency', cf.freq?cf.freq+' MHz':null)+
+    row('Bandwidth', cf.bw?cf.bw+' MHz':null)+
+    row('Mode', c.mode)+
+    row('Distance', c.dist)+
+    row('Bearing', c.bearing!=null?c.bearing+'°':null)+
+    row('Temperature', c.temp!=null?c.temp+' °C':null)+
+    row('Peer MAC', c.peerMac)+
+    row('Peer IP', c.peerIp)+
+    '</ul></div>';
+}
 // Mimosa ke binary stats parhne wale helpers
 function rdB(b64){ return Uint8Array.from(atob(b64),c=>c.charCodeAt(0)); }
 function rdI32(b,o,n){ return [...new Int32Array(b.slice(o,o+4*n).buffer)]; }
@@ -1406,7 +1454,7 @@ function devRole(dev){ const m=dev.d&&dev.d.cfg&&dev.d.cfg.mode; if(m==='AP') re
 function devById(id){ return DEVS.find(d=>d.id===id); }
 function firstOf(role){ return DEVS.find(d=>d.on && devRole(d)===role) || null; }
 function saveDevList(){
-  const list=DEVS.map(d=>({id:d.id,label:d.label,type:d.type,ip:d.ip,u:d.u,pw:d.pw}));
+  const list=DEVS.map(d=>({id:d.id,label:d.label,type:d.type,ip:d.ip,u:d.u,pw:d.pw,kind:d.kind||''}));
   try{ if(Android.saveSecret) Android.saveSecret('rd_list', JSON.stringify(list)); }catch(_){}
   try{ localStorage.setItem('tdf_devs', JSON.stringify(list.map(x=>({id:x.id,label:x.label,type:x.type,ip:x.ip,u:x.u})))); }catch(_){}
 }
@@ -1447,8 +1495,12 @@ async function addDevice(){
   if(DEVS.some(d=>d.ip===ip)){ e.textContent='This IP is already added.'; return; }
   const dev={id:'d'+Date.now().toString(36), label:$('aLabel').value.trim()||ip, type:$('aType').value, ip, u, pw, auth:btoa(u+':'+pw), d:{}};
   e.innerHTML='<span class="spin"></span> Connecting...';
+  if(!u && hasC5x()){
+    const j=await c5xReq(dev);
+    if(j && j.realtime){ dev.kind='c5x'; applyC5x(dev,j); DEVS.push(dev); saveDevList(); $('aPass').value=''; closeAdd(); startDev(dev,true); if(!SEL) selectDev(dev.id); toast('✅ '+dev.label+' (C5x) connected'); return; }
+  }
   const r=await devReq(dev,'GET','/restconf/data/mimosa-wifi-network:statistics/client-statistics');
-  if(r.status===401||r.status===403){ e.textContent='Wrong username or password.'; return; }
+  if(r.status===401||r.status===403){ e.textContent = u? 'Wrong username or password.' : 'Login failed. For C5/C5c/C5x leave username empty; for C6x enter the username.'; return; }
   if(r.status!==200){ e.textContent='Radio not reachable ('+r.status+'). Check the IP and make sure the phone is on the radio network.'; return; }
   DEVS.push(dev); saveDevList(); $('aPass').value=''; closeAdd();
   startDev(dev, true); if(!SEL) selectDev(dev.id);
@@ -1480,6 +1532,7 @@ async function devLoop(dev){
   if(dev.on) dev.timer=setTimeout(()=>devLoop(dev), wait);
 }
 async function devPoll(dev){
+  if(dev.kind==='c5x') return c5xPoll(dev);
   const t=++dev.tick, D=dev.d;
   // Pehle sirf zaroori request; baqi kabhi kabhi (radio par bojh kam)
   const tq=Date.now(); const cs=await devGet(dev,'/restconf/data/mimosa-wifi-network:statistics/client-statistics');
@@ -1508,7 +1561,7 @@ async function devPoll(dev){
 }
 function peerOf(dev){ const r=devRole(dev); return DEVS.find(d=>d!==dev && d.on && devRole(d)!==r) || null; }
 // ---- Tez beacon: sirf chune hue radio par ----
-function startBeacon(dev){ if(!dev.bOn){ dev.bOn=true; beaconLoop(dev); } }
+function startBeacon(dev){ if(dev.kind==='c5x') return; if(!dev.bOn){ dev.bOn=true; beaconLoop(dev); } }
 async function beaconLoop(dev){
   if(!dev.on || !dev.bOn){ dev.bOn=false; return; }
   if(dev.beaconOff && Date.now()<dev.beaconOff){ dev.btimer=setTimeout(()=>beaconLoop(dev),5000); return; }
@@ -1524,6 +1577,7 @@ async function beaconLoop(dev){
   dev.btimer=setTimeout(()=>beaconLoop(dev), Math.max(60, 160-(Date.now()-t0)));
 }
 function devSignal(dev){
+  if(dev.kind==='c5x'){ const c=dev.d.c5||{}; return {v:(c.sig!=null?c.sig:null), fast:false}; }
   const D=dev.d, sv=D.node? rdRssi(D.node.rssi) : null;
   if(D.beacon && Date.now()-D.beacon.t<2000){
     if(D.boff!=null) return {v:Math.round((D.beacon.v + D.boff)*10)/10, fast:true};
@@ -1586,6 +1640,7 @@ function renderAll(force){
 
 // Har radio ka apna poora data (uske card mein)
 function devTablesHTML(dev){
+  if(dev.kind==='c5x') return c5xTableHTML(dev);
   const loc=dev.d.node; if(!loc) return '<p class="hint">Waiting for data...</p>';
   const role=devRole(dev), peer=peerOf(dev);
   // remote side: Client ke liye AP ka data (ap-info), AP ke liye jure hue Client radio ka data
@@ -1708,6 +1763,7 @@ function autoConnectRadios(){
   if(list.length) saveDevList();
   if(!SEL && DEVS.length) SEL=(DEVS.find(d=>d.type==='client')||DEVS[0]).id;
   DEVS.forEach(async dev=>{ mountDev(dev); devStatus(dev,'',''); $('rst-'+dev.id).innerHTML='<span class="spin"></span>';
+    if(dev.kind==='c5x'){ const j=await c5xReq(dev); if(j&&j.realtime){ applyC5x(dev,j); startDev(dev,true); } else { devStatus(dev,'C5x not responding — check password','#fbbf24'); startDev(dev,false); } return; }
     const r=await devReq(dev,'GET','/restconf/data/mimosa-wifi-network:statistics/client-statistics');
     if(r.status===401||r.status===403){ devStatus(dev,'Wrong password — remove and add again','#ff6b6b'); return; }
     startDev(dev, r.status===200); });
