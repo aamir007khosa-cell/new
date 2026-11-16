@@ -545,7 +545,7 @@ details[open] summary::before{content:"－ "}
       <div class="btns" id="addBtn"><button class="main" onclick="openAdd()">➕ Add new radio</button></div>
       <div id="addForm" style="display:none;margin-top:12px">
         <div class="row"><div><label>Name</label><input id="aLabel" placeholder="Client 2"></div><div><label>Type</label><select id="aType"><option value="client">Client (STA)</option><option value="isp">ISP (AP)</option></select></div></div>
-        <div class="row"><div><label>IP</label><input id="aIp" placeholder="192.168.1.21" inputmode="decimal"></div><div><label>Username</label><input id="aUser" placeholder="admin" autocomplete="off"></div></div>
+        <div class="row"><div><label>IP</label><input id="aIp" placeholder="192.168.1.21" inputmode="decimal"></div><div><label>Username <span style="color:var(--mut);font-weight:400;font-size:11px">C5/C5c: empty</span></label><input id="aUser" placeholder="admin (empty for C5/C5c)" autocomplete="off"></div></div>
         <label>Password</label><input id="aPass" type="password" placeholder="Radio password" autocomplete="off">
         <div class="btns" style="margin-top:10px"><button class="main" onclick="addDevice()" style="flex:2">Connect</button><button onclick="closeAdd()" style="flex:1">Cancel</button></div>
         <div class="err" id="aErr"></div>
@@ -1433,7 +1433,7 @@ async function addDevice(){
   const e=$('aErr'); e.textContent='';
   if(!hasBridge()){ e.textContent='This feature only works in the Tower Finder app (APK).'; return; }
   const ip=$('aIp').value.trim(), u=$('aUser').value.trim(), pw=$('aPass').value;
-  if(!ip||!u||!pw){ e.textContent='Enter IP, username and password.'; return; }
+  if(!ip||!pw){ e.textContent='Enter IP and password (username can be empty for C5/C5c).'; return; }
   if(DEVS.some(d=>d.ip===ip)){ e.textContent='This IP is already added.'; return; }
   const dev={id:'d'+Date.now().toString(36), label:$('aLabel').value.trim()||ip, type:$('aType').value, ip, u, pw, auth:btoa(u+':'+pw), d:{}};
   e.innerHTML='<span class="spin"></span> Connecting...';
