@@ -1365,15 +1365,17 @@ function hasC5x(){ return !!(window.Android && Android.c5xAsync); }
 function c5xReq(dev){
   return new Promise(res=>{
     if(!hasC5x()){ res(null); return; }
-    const id=++rdSeq; rdPend[id]=r=>{ try{ res(r.status===200? JSON.parse(r.body):null); }catch(_){ res(null); } };
+    const id=++rdSeq; rdPend[id]=r=>{ try{ if(r.status!==200){ res(null); return; } const j=JSON.parse(r.body); if(r.rssi!=null && r.rssi!=='') { const n=parseFloat(r.rssi); if(!isNaN(n)) j._rssi=n; } res(j); }catch(_){ res(null); } };
     try{ Android.c5xAsync(id, dev.ip, dev.pw); }catch(_){ delete rdPend[id]; res(null); return; }
-    setTimeout(()=>{ if(rdPend[id]){ delete rdPend[id]; res(null); } }, 8000);
+    setTimeout(()=>{ if(rdPend[id]){ delete rdPend[id]; res(null); } }, 7000);
   });
 }
 function c5xNum(v){ const n=parseFloat(v); return isNaN(n)?null:n; }
 function applyC5x(dev,j){
   const rt=j.realtime||{}, sm=rt.signalmeter||{}, ri=rt.remote_info||{}, cn=rt.connection||{};
-  let sig=null; if(ri.chan_info){ const m=String(ri.chan_info).match(/_(-\d{2,3})_/); if(m) sig=parseInt(m[1],10); }
+  let sig=null;
+  if(typeof j._rssi==='number' && !isNaN(j._rssi) && j._rssi<0) sig=Math.round(j._rssi*10)/10;
+  else if(ri.chan_info){ const m=String(ri.chan_info).match(/_(-\d{2,3})_/); if(m) sig=parseInt(m[1],10); }
   const bwm=String(sm.BandWidth||'').match(/(\d+)\s*$/);
   const fm=String(sm.Chains_1_2||'').match(/\d+/);
   const D=dev.d; D.kind='c5x'; D.ok=true; D.model='C5x';
@@ -1538,7 +1540,7 @@ async function devLoop(dev){
   if(dev.d.ok){ if(dev.fails>=3){ devStatus(dev,'● Connected','var(--lime)'); toast('✅ '+dev.label+' reconnected'); } dev.fails=0; }
   else { dev.fails=(dev.fails||0)+1; if(dev.fails===3) devStatus(dev,'● Offline — reconnecting','#fbbf24'); }
   paintDev(dev); renderAll();
-  const wait = dev.fails>=3 ? 3000 : Math.max(150, 1000-(Date.now()-t0));
+  const wait = dev.fails>=3 ? 3000 : (dev.kind==='c5x' ? Math.max(1200, 2500-(Date.now()-t0)) : Math.max(150, 1000-(Date.now()-t0)));
   if(dev.on) dev.timer=setTimeout(()=>devLoop(dev), wait);
 }
 async function devPoll(dev){
