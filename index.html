@@ -368,6 +368,16 @@ details[open] summary::before{content:"－ "}
         <div class="btns"><button onclick="rdSendLoc('isp')">Send to ISP radio</button><button onclick="rdSendLoc('client')">Send to Client radio</button></div>
         <div class="err" id="locErr"></div>
       </div>
+      <div class="card">
+        <h2><span class="ic">📡</span> Set channel on radio</h2>
+        <p class="hint" style="margin-top:-6px">Changes the radio's center frequency &amp; bandwidth. On a PTP link set the <b>same</b> on both radios. The link drops for a few seconds while it changes.</p>
+        <div class="row">
+          <div><label>Center Frequency (MHz)</label><input id="chFreq" type="number" inputmode="decimal" value="5790"></div>
+          <div><label>Bandwidth</label><select id="chBw"><option value="20">20 MHz</option><option value="40">40 MHz</option><option value="80" selected>80 MHz</option><option value="160">160 MHz (C6x)</option></select></div>
+        </div>
+        <div class="btns" style="margin-top:10px"><button onclick="rdSendChan('isp')">Apply to ISP radio</button><button onclick="rdSendChan('client')">Apply to Client radio</button></div>
+        <div class="err" id="chErr"></div>
+      </div>
     </div>
   </section>
 
@@ -1670,6 +1680,24 @@ async function rdSendLoc(role){
   const r=await devReq(dev,'PATCH','/restconf/data/mimosa-device:device/config/location',body);
   if(r.status>=200 && r.status<300){ e.style.color='var(--lime)'; e.textContent='✅ '+dev.label+': coordinates saved.'; dev.tick=59; }
   else { e.textContent='Save failed ('+r.status+'): '+String(r.body||'').slice(0,160); }
+}
+
+let rdChanArm=null;
+async function rdSendChan(role){
+  const e=$('chErr'); e.style.color=''; e.textContent='';
+  const dev=firstOf(role==='isp'?'isp':'client');
+  if(!dev){ e.textContent='First add the '+(role==='isp'?'ISP':'Client')+' radio in the Radios tab.'; return; }
+  const f=num('chFreq'), bw=+($('chBw').value);
+  if(f===null||f<1000||f>80000){ e.textContent='Enter the center frequency in MHz, e.g. 5790'; return; }
+  if(rdChanArm!==role){ rdChanArm=role; e.style.color='var(--acc)'; e.textContent='⚠️ '+dev.label+' channel → '+f+' MHz / '+bw+' MHz. The link will drop for a few seconds. Press the same button again to apply.'; return; }
+  rdChanArm=null;
+  const cfg = (dev.d && dev.d.cfg && dev.d.cfg.mode==='STA') ? 'mimosa-wifi-radio:client-configuration' : 'mimosa-wifi-radio:access-point-configuration';
+  const inner={name:'wifi0'}; inner[cfg]={"channel-configuration":{"frequency":f,"bandwidth":bw}};
+  const body=JSON.stringify({"ietf-interfaces:interface":[inner]});
+  e.innerHTML='<span class="spin"></span> Applying...';
+  const r=await devReq(dev,'PATCH','/restconf/data/ietf-interfaces:interfaces/interface=wifi0',body);
+  if(r.status>=200 && r.status<300){ e.style.color='var(--lime)'; e.textContent='✅ '+dev.label+': channel set to '+f+' MHz / '+bw+' MHz.'; dev.tick=29; }
+  else { e.textContent='Failed ('+r.status+'): '+String(r.body||'').slice(0,200)+' — yeh error mujhe bhej do, main command theek kar dunga.'; }
 }
 // App khulte hi saved radios khud jodo (purane 2-radio login bhi le aao)
 function autoConnectRadios(){
