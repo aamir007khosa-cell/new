@@ -1495,12 +1495,14 @@ async function addDevice(){
   if(DEVS.some(d=>d.ip===ip)){ e.textContent='This IP is already added.'; return; }
   const dev={id:'d'+Date.now().toString(36), label:$('aLabel').value.trim()||ip, type:$('aType').value, ip, u, pw, auth:btoa(u+':'+pw), d:{}};
   e.innerHTML='<span class="spin"></span> Connecting...';
-  if(!u && hasC5x()){
+  if(!u){
+    if(!hasC5x()){ e.textContent='For C5/C5c/C5x install the latest APK (v2.9+). Old APK does not support them.'; return; }
     const j=await c5xReq(dev);
     if(j && j.realtime){ dev.kind='c5x'; applyC5x(dev,j); DEVS.push(dev); saveDevList(); $('aPass').value=''; closeAdd(); startDev(dev,true); if(!SEL) selectDev(dev.id); toast('✅ '+dev.label+' (C5x) connected'); return; }
+    e.textContent='C5x login failed — check the IP, and the password (username must be empty for C5x). If it keeps failing, send me a screenshot.'; return;
   }
   const r=await devReq(dev,'GET','/restconf/data/mimosa-wifi-network:statistics/client-statistics');
-  if(r.status===401||r.status===403){ e.textContent = u? 'Wrong username or password.' : 'Login failed. For C5/C5c/C5x leave username empty; for C6x enter the username.'; return; }
+  if(r.status===401||r.status===403){ e.textContent='Wrong username or password.'; return; }
   if(r.status!==200){ e.textContent='Radio not reachable ('+r.status+'). Check the IP and make sure the phone is on the radio network.'; return; }
   DEVS.push(dev); saveDevList(); $('aPass').value=''; closeAdd();
   startDev(dev, true); if(!SEL) selectDev(dev.id);
