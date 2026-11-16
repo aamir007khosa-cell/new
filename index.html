@@ -551,16 +551,6 @@ details[open] summary::before{content:"－ "}
         <div class="err" id="aErr"></div>
       </div>
     </div>
-    <div class="card">
-      <h2><span class="ic">📡</span> Set channel (frequency / bandwidth)</h2>
-      <p class="hint" style="margin-top:-6px">Changes the radio's center frequency &amp; bandwidth. On a PTP link set the <b>same</b> on both radios. The link drops for a few seconds. (C6x radios — C5x channel change coming soon.)</p>
-      <div class="row">
-        <div><label>Center Frequency (MHz)</label><input id="chFreq" type="number" inputmode="decimal" value="5790"></div>
-        <div><label>Bandwidth</label><select id="chBw"><option value="20">20 MHz</option><option value="40">40 MHz</option><option value="80" selected>80 MHz</option><option value="160">160 MHz (C6x)</option></select></div>
-      </div>
-      <div class="btns" style="margin-top:10px"><button onclick="rdSendChan('isp')">Apply to ISP radio</button><button onclick="rdSendChan('client')">Apply to Client radio</button></div>
-      <div class="err" id="chErr"></div>
-    </div>
     <div class="card" id="rSum" style="display:none">
       <h2><span class="ic">🗺️</span> Where each radio is</h2>
       <div id="rmap" style="height:280px;border-radius:18px;overflow:hidden;background:var(--card2);margin-bottom:12px"></div>
@@ -1477,6 +1467,15 @@ function devCardHTML(dev){
     '<div class="kv" id="rk-'+id+'"></div>'+
     '<p class="hint" id="rloc-'+id+'" style="margin-top:10px;line-height:1.6"></p>'+
     '<details class="rdet" open onclick="event.stopPropagation()"><summary>📊 Full data</summary><div id="rdet-'+id+'"></div></details>'+
+    '<details class="rdet" onclick="event.stopPropagation()"><summary>📡 Set channel (frequency / bandwidth)</summary>'+
+      '<div class="row" style="margin-top:8px">'+
+        '<div><label>Freq (MHz)</label><input id="chF-'+id+'" type="number" inputmode="decimal" placeholder="5790"></div>'+
+        '<div><label>Bandwidth</label><select id="chB-'+id+'"><option value="20">20 MHz</option><option value="40">40 MHz</option><option value="80" selected>80 MHz</option><option value="160">160 MHz</option></select></div>'+
+      '</div>'+
+      '<button class="main" style="margin-top:10px" onclick="event.stopPropagation();setChan(\''+id+'\')">Apply to this radio</button>'+
+      '<p class="hint" style="margin-top:6px">Link drops a few seconds. On a PTP link set the same on both radios.</p>'+
+      '<div class="err" id="chE-'+id+'"></div>'+
+    '</details>'+
     '<div class="btns"><button class="beepBtn" onclick="event.stopPropagation();rdBeepToggle()">🔊 Beep</button><button onclick="event.stopPropagation();removeDev(\''+id+'\')">🗑️ Remove</button></div>'+
   '</div>';
 }
@@ -1634,6 +1633,7 @@ function paintDev(dev){
     ((D.clients>1?D.clients+' clients · ':'')+(v==null?'No link':(sg.via?'⚡ Live ('+sg.via+' beacon)':(sg.fast?'⚡ Live signal':'Signal (every second)')))) + speedTxt(dev);
   const c=D.cfg||{};
   $('rk-'+dev.id).innerHTML='<div><b>'+(D.model||'--')+'</b><span>Model</span></div><div><b>'+(c.freq||'--')+'</b><span>MHz / '+(c.bw||'--')+'</span></div><div><b>'+(c.tx!=null?c.tx:'--')+'</b><span>Tx dBm</span></div><div><b>'+(D.temp!=null?D.temp+'°':'--')+'</b><span>Temp</span></div>';
+  const cfIn=$('chF-'+dev.id); if(cfIn && !cfIn.value && document.activeElement!==cfIn && c.freq){ cfIn.value=c.freq; const cbIn=$('chB-'+dev.id); if(cbIn && c.bw && [20,40,80,160].indexOf(+c.bw)>=0) cbIn.value=c.bw; }
   const pos=devPos(dev); let li='📍 '+(pos? pos.p.lat.toFixed(5)+', '+pos.p.lon.toFixed(5)+' <span style="color:var(--mut)">('+pos.src+')</span>' : 'No location — save it to the radio');
   if(pos){
     const targets = devRole(dev)==='isp' ? DEVS.filter(d=>d.on&&devRole(d)==='client') : DEVS.filter(d=>d.on&&devRole(d)==='isp');
@@ -1746,6 +1746,28 @@ async function rdSendLoc(role){
   const r=await devReq(dev,'PATCH','/restconf/data/mimosa-device:device/config/location',body);
   if(r.status>=200 && r.status<300){ e.style.color='var(--lime)'; e.textContent='✅ '+dev.label+': coordinates saved.'; dev.tick=59; }
   else { e.textContent='Save failed ('+r.status+'): '+String(r.body||'').slice(0,160); }
+}
+
+let chanArm={};
+function setChan(id){
+  const dev=devById(id); if(!dev) return;
+  const e=$('chE-'+id); if(!e) return; e.style.color=''; e.textContent='';
+  if(dev.kind==='c5x'){ e.textContent='C5x channel change coming soon — abhi C5x dashboard se badlo.'; return; }
+  const f=parseFloat(($('chF-'+id)||{}).value), bw=+(($('chB-'+id)||{}).value);
+  if(isNaN(f)||f<1000||f>80000){ e.textContent='Frequency MHz mein daalo, jaise 5790'; return; }
+  const sig=f+'/'+bw;
+  if(chanArm[id]!==sig){ chanArm[id]=sig; e.style.color='var(--acc)'; e.textContent='⚠️ '+dev.label+' → '+f+' MHz / '+bw+' MHz. Link kuch second ke liye tootega. Apply dobara dabao.'; return; }
+  chanArm[id]=null;
+  applyChan(dev,f,bw,e);
+}
+async function applyChan(dev,f,bw,e){
+  const cfg=(dev.d&&dev.d.cfg&&dev.d.cfg.mode==='STA')?'mimosa-wifi-radio:client-configuration':'mimosa-wifi-radio:access-point-configuration';
+  const inner={name:'wifi0'}; inner[cfg]={"channel-configuration":{"frequency":f,"bandwidth":bw}};
+  const body=JSON.stringify({"ietf-interfaces:interface":[inner]});
+  e.innerHTML='<span class="spin"></span> Applying...';
+  const r=await devReq(dev,'PATCH','/restconf/data/ietf-interfaces:interfaces/interface=wifi0',body);
+  if(r.status>=200 && r.status<300){ e.style.color='var(--lime)'; e.textContent='✅ '+f+' MHz / '+bw+' MHz set.'; dev.tick=29; }
+  else { e.textContent='Failed ('+r.status+'): '+String(r.body||'').slice(0,160)+' — yeh error mujhe bhej do.'; }
 }
 
 let rdChanArm=null;
