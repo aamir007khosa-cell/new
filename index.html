@@ -368,16 +368,6 @@ details[open] summary::before{content:"－ "}
         <div class="btns"><button onclick="rdSendLoc('isp')">Send to ISP radio</button><button onclick="rdSendLoc('client')">Send to Client radio</button></div>
         <div class="err" id="locErr"></div>
       </div>
-      <div class="card">
-        <h2><span class="ic">📡</span> Set channel on radio</h2>
-        <p class="hint" style="margin-top:-6px">Changes the radio's center frequency &amp; bandwidth. On a PTP link set the <b>same</b> on both radios. The link drops for a few seconds while it changes.</p>
-        <div class="row">
-          <div><label>Center Frequency (MHz)</label><input id="chFreq" type="number" inputmode="decimal" value="5790"></div>
-          <div><label>Bandwidth</label><select id="chBw"><option value="20">20 MHz</option><option value="40">40 MHz</option><option value="80" selected>80 MHz</option><option value="160">160 MHz (C6x)</option></select></div>
-        </div>
-        <div class="btns" style="margin-top:10px"><button onclick="rdSendChan('isp')">Apply to ISP radio</button><button onclick="rdSendChan('client')">Apply to Client radio</button></div>
-        <div class="err" id="chErr"></div>
-      </div>
     </div>
   </section>
 
@@ -560,6 +550,16 @@ details[open] summary::before{content:"－ "}
         <div class="btns" style="margin-top:10px"><button class="main" onclick="addDevice()" style="flex:2">Connect</button><button onclick="closeAdd()" style="flex:1">Cancel</button></div>
         <div class="err" id="aErr"></div>
       </div>
+    </div>
+    <div class="card">
+      <h2><span class="ic">📡</span> Set channel (frequency / bandwidth)</h2>
+      <p class="hint" style="margin-top:-6px">Changes the radio's center frequency &amp; bandwidth. On a PTP link set the <b>same</b> on both radios. The link drops for a few seconds. (C6x radios — C5x channel change coming soon.)</p>
+      <div class="row">
+        <div><label>Center Frequency (MHz)</label><input id="chFreq" type="number" inputmode="decimal" value="5790"></div>
+        <div><label>Bandwidth</label><select id="chBw"><option value="20">20 MHz</option><option value="40">40 MHz</option><option value="80" selected>80 MHz</option><option value="160">160 MHz (C6x)</option></select></div>
+      </div>
+      <div class="btns" style="margin-top:10px"><button onclick="rdSendChan('isp')">Apply to ISP radio</button><button onclick="rdSendChan('client')">Apply to Client radio</button></div>
+      <div class="err" id="chErr"></div>
     </div>
     <div class="card" id="rSum" style="display:none">
       <h2><span class="ic">🗺️</span> Where each radio is</h2>
@@ -1137,6 +1137,7 @@ async function activate2(){
   if(!k){ e.textContent='Paste your key.'; return; }
   const r=await checkKey(k);
   if(!r.ok){ e.textContent=r.err; return; }
+  if(await isRevoked(r.iss)){ e.textContent='This license has been cancelled. Please contact the seller.'; return; }
   if(licExp && r.exp<=licExp){ e.textContent='This key does not extend your current license.'; return; }
   store('tdf_lic',k); showApp(r.exp); e.style.color='var(--lime)'; e.textContent='✅ License updated'; openLic();
 }
@@ -1164,7 +1165,9 @@ function showApp(exp){
 async function activate(){
   const k=$('licKey').value; if(!k.trim()){ $('licErr').textContent='Paste your key.'; return; }
   const r=await checkKey(k);
-  if(r.ok){ store('tdf_lic',k.trim()); showApp(r.exp); } else $('licErr').textContent=r.err;
+  if(!r.ok){ $('licErr').textContent=r.err; return; }
+  if(await isRevoked(r.iss)){ $('licErr').textContent='This license has been cancelled. Please contact the seller.'; return; }
+  store('tdf_lic',k.trim()); showApp(r.exp);
 }
 function copyCode(){ if(window.Android){ Android.copy(deviceCode()); toast('📋 Code copied'); return; } try{ navigator.clipboard.writeText(deviceCode()).then(()=>toast('📋 Code copied')).catch(()=>{}); }catch(_){} }
 async function boot(){
@@ -1179,6 +1182,12 @@ setInterval(async()=>{ const k=store('tdf_lic'); if(!k) return; const r=await ch
 
 // ===== Remote logout: seller ki block list (GitHub par) =====
 const REVOKE_URL='https://aamir007khosa-cell.github.io/new/revoked.json';
+async function isRevoked(iss){
+  try{ const j=await (await fetch(REVOKE_URL+'?t='+Date.now(),{cache:'no-store'})).json();
+    const me=deviceCode();
+    return !!(j&&j.list||[]).find(x=>x.d===me && x.t>=iss-60);
+  }catch(_){ return false; }   // offline: activation ko mat roko
+}
 async function checkRevoked(){
   const k=store('tdf_lic'); if(!k) return;
   let j=null; try{ j=await (await fetch(REVOKE_URL+'?t='+Date.now(),{cache:'no-store'})).json(); }catch(_){ return; }   // offline: kuch na karo
@@ -1744,6 +1753,7 @@ async function rdSendChan(role){
   const e=$('chErr'); e.style.color=''; e.textContent='';
   const dev=firstOf(role==='isp'?'isp':'client');
   if(!dev){ e.textContent='First add the '+(role==='isp'?'ISP':'Client')+' radio in the Radios tab.'; return; }
+  if(dev.kind==='c5x'){ e.textContent='C5x channel change is not supported yet — I can add it. For now change it from the C5x dashboard.'; return; }
   const f=num('chFreq'), bw=+($('chBw').value);
   if(f===null||f<1000||f>80000){ e.textContent='Enter the center frequency in MHz, e.g. 5790'; return; }
   if(rdChanArm!==role){ rdChanArm=role; e.style.color='var(--acc)'; e.textContent='⚠️ '+dev.label+' channel → '+f+' MHz / '+bw+' MHz. The link will drop for a few seconds. Press the same button again to apply.'; return; }
