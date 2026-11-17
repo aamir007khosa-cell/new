@@ -36,7 +36,13 @@ button.s{background:#1c1f21;color:#f4f6f5;border:1px solid #24282b;width:auto;pa
 #msg{color:#c8f135!important}
 #msg:empty{display:none}
 #msg{position:fixed;left:10px;right:10px;bottom:14px;z-index:9999;background:#0b0f0c;border:1px solid #c8f135;border-radius:12px;padding:12px 14px;font-size:14px!important;box-shadow:0 6px 24px #000a}
-</style></head><body><div class="w">
+</style><style id="nosel">
+body,button,.cl,.c,#msg,h2,p,label{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+input,textarea{-webkit-user-select:text;user-select:text}
+button,a{touch-action:manipulation}
+#msg{pointer-events:none}
+</style>
+</head><body><div class="w">
 <h2>License Generator</h2>
 <p class="warn">⚠️ Private — works only inside the License Generator app.</p>
 <div class="c">
