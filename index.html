@@ -405,6 +405,8 @@ body::after{background:#2fd5c1;bottom:-28vmax;right:-22vmax;opacity:.11;animatio
     <div class="btns"><button class="main" onclick="activate()">Activate</button></div>
     <div class="err" id="licErr"></div>
     <p class="hint" id="autoHint" style="color:var(--lime);display:none"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5"/></svg> After we confirm your payment, your key activates automatically — you don't need to paste it.</p>
+    <button class="main" id="chkNow" onclick="this.disabled=true;akSt('Checking…');autoKey(true).then(()=>{ if(window.__ak==='Checking…') akSt('Checked'); }).finally(()=>this.disabled=false)" style="margin-top:8px;padding:12px">🔄 Check for my key now</button>
+    <p class="hint" id="akSt" style="font-size:12px;opacity:.85"></p>
   </div>
 </div>
 
@@ -1320,7 +1322,7 @@ async function checkRevoked(){
   const r=await checkKey(k); if(!r.ok) return;
   const me=deviceCode();
   const hit=(j&&j.list||[]).find(x=>x.d===me && x.t>r.iss);
-  if(hit){ store('tdf_lic',''); showLock('This license has been cancelled. Please contact the seller.'); }
+  if(hit){ store('tdf_lic',''); licExp=null; lastCloudKey=''; showLock('This license has been cancelled. Please contact the seller.'); }
 }
 setTimeout(checkRevoked, 2000); setInterval(checkRevoked, 15000);  // fast remote logout (~20s)
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ checkRevoked(); autoKey(); } });
@@ -1329,24 +1331,27 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ checkRe
 const KEYS_URL='https://towerfinder-license.databasehes91.workers.dev/keys';
 const KEYS_URL2='https://towerfinder.online/keys.json';
 let lastCloudKey='';
-async function autoKey(){
+function akSt(m){ window.__ak=m; const e=document.getElementById('akSt'); if(e) e.textContent=m+' ('+new Date().toLocaleTimeString()+')'; }
+async function autoKey(force){
   let j=null;
-  try{ j=await getJ(KEYS_URL,KEYS_URL2); }catch(_){ return false; }
+  try{ j=await getJ(KEYS_URL,KEYS_URL2); }catch(_){ akSt('Network problem — could not reach server'); return false; }
   const me=deviceCode();
   const hit=((j&&j.list)||[]).filter(x=>x&&x.d===me).sort((a,b)=>(b.t||0)-(a.t||0))[0];
-  if(!hit||!hit.k) return false;
+  if(!hit||!hit.k){ akSt('No key published for this device yet ('+me+')'); return false; }
   const k=String(hit.k).trim();
-  if(k===lastCloudKey) return false;                 // isay pehle dekh chuke
   const have=(store('tdf_lic')||'').trim();
-  if(k===have){ lastCloudKey=k; return false; }       // pehle se laga hua
-  const r=await checkKey(k); lastCloudKey=k;
-  if(!r.ok) return false;
-  if(await isRevoked(r.iss)) return false;
-  if(licExp && r.exp<=licExp) return false;            // purani/same expiry — upgrade nahi
+  if(k===have){ akSt('Key already active'); return false; }
+  if(k===lastCloudKey && !force) return false;
+  const r=await checkKey(k);
+  if(!r.ok){ lastCloudKey=k; akSt('Key is not valid for this device'); return false; }
+  if(await isRevoked(r.iss)){ lastCloudKey=k; akSt('Key was cancelled'); return false; }
+  if(have && licExp && licExp>Date.now()/1000 && r.exp<=licExp){ lastCloudKey=k; akSt('Key does not extend your current license'); return false; }
+  lastCloudKey=k;
   store('tdf_lic',k);
   const wasLocked=$('lock').style.display!=='none';
   showApp(r.exp);
   if($('licSheet')) $('licSheet').style.display='none';
+  akSt('License activated');
   toast(wasLocked?'License activated':'License updated');
   return true;
 }
