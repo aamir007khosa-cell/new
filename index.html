@@ -1152,19 +1152,20 @@ async function checkKey(key){
 let USDT_RATE=282;   // PKR per 1 USDT (fallback until live rate loads)
 function pkgUsdt(pkr){ return Math.ceil(pkr/USDT_RATE*100)/100; }
 function pkgHTML(selId,priceId){
-  const fmt=n=>'Rs '+n.toLocaleString('en-PK'), d0=7, pkr0=d0*PRICE_PER_DAY, uId=selId+'U';
-  return '<div><span>Per day</span><b>'+fmt(PRICE_PER_DAY)+'</b><span>1 to 30 days</span></div>'+
+  const d0=7, pkr0=d0*PRICE_PER_DAY, uId=selId+'U';
+  return '<div><span>Per day</span><b id="'+selId+'PD">'+pkgUsdt(PRICE_PER_DAY).toFixed(2)+' USDT</b><span>1 to 30 days</span></div>'+
     '<div style="display:flex;flex-direction:column"><span>Choose package</span>'+
     '<select id="'+selId+'" onchange="updPkg(\''+selId+'\',\''+priceId+'\')" style="margin-top:6px;padding:9px 10px;font-size:14px;background:rgba(10,11,12,.18);border:1px solid rgba(10,11,12,.25);border-radius:10px;color:inherit;font-weight:700">'+
     PACKAGES.map(p=>'<option value="'+p.days+'"'+(p.days===d0?' selected':'')+'>'+p.days+' day'+(p.days>1?'s':'')+'</option>').join('')+'</select>'+
-    '<b id="'+priceId+'" style="margin-top:9px">'+fmt(pkr0)+'</b>'+
-    '<span id="'+uId+'" style="color:var(--ink);opacity:.72;font-weight:700">≈ '+pkgUsdt(pkr0).toFixed(2)+' USDT</span></div>';
+    '<b id="'+priceId+'" style="margin-top:9px">'+pkgUsdt(pkr0).toFixed(2)+' USDT</b>'+
+    '<span id="'+uId+'" style="color:var(--ink);opacity:.72;font-weight:700">'+d0+' days total</span></div>';
 }
 function updPkg(selId,priceId){
   const el=document.getElementById(selId); if(!el) return;
   const d=+el.value, pkr=d*PRICE_PER_DAY;
-  const pe=document.getElementById(priceId); if(pe) pe.textContent='Rs '+pkr.toLocaleString('en-PK');
-  const ue=document.getElementById(selId+'U'); if(ue) ue.textContent='≈ '+pkgUsdt(pkr).toFixed(2)+' USDT';
+  const pe=document.getElementById(priceId); if(pe) pe.textContent=pkgUsdt(pkr).toFixed(2)+' USDT';
+  const ue=document.getElementById(selId+'U'); if(ue) ue.textContent=d+' day'+(d>1?'s':'')+' total';
+  const pd=document.getElementById(selId+'PD'); if(pd) pd.textContent=pkgUsdt(PRICE_PER_DAY).toFixed(2)+' USDT';
 }
 async function loadPkgRate(){
   try{ const j=await (await fetch('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=pkr',{cache:'no-store'})).json();
