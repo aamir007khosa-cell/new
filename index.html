@@ -1175,7 +1175,7 @@ const REVOKE_URL='https://aamir007khosa-cell.github.io/new/revoked.json';
 async function isRevoked(iss){
   try{ const j=await (await fetch(REVOKE_URL+'?t='+Date.now(),{cache:'no-store'})).json();
     const me=deviceCode();
-    return !!(j&&j.list||[]).find(x=>x.d===me && x.t>=iss-60);
+    return !!(j&&j.list||[]).find(x=>x.d===me && x.t>iss);
   }catch(_){ return false; }   // offline: activation ko mat roko
 }
 async function checkRevoked(){
@@ -1183,7 +1183,7 @@ async function checkRevoked(){
   let j=null; try{ j=await (await fetch(REVOKE_URL+'?t='+Date.now(),{cache:'no-store'})).json(); }catch(_){ return; }   // offline: kuch na karo
   const r=await checkKey(k); if(!r.ok) return;
   const me=deviceCode();
-  const hit=(j&&j.list||[]).find(x=>x.d===me && x.t>=r.iss-60);
+  const hit=(j&&j.list||[]).find(x=>x.d===me && x.t>r.iss);
   if(hit){ store('tdf_lic',''); showLock('This license has been cancelled. Please contact the seller.'); }
 }
 setTimeout(checkRevoked, 2500); setInterval(checkRevoked, 5*60*1000);
