@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /lg.html
+Disallow: /keys.json
+Disallow: /revoked.json
+
+Sitemap: https://towerfinder.online/sitemap.xml
