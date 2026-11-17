@@ -1324,7 +1324,7 @@ async function checkRevoked(){
   const hit=(j&&j.list||[]).find(x=>x.d===me && x.t>r.iss);
   if(hit){ store('tdf_lic',''); licExp=null; lastCloudKey=''; showLock('This license has been cancelled. Please contact the seller.'); }
 }
-setTimeout(checkRevoked, 2000); setInterval(checkRevoked, 15000);  // fast remote logout (~20s)
+setTimeout(checkRevoked, 2000); setInterval(checkRevoked, 8000);  // fast remote logout (~20s)
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ checkRevoked(); autoKey(); } });
 
 // ===== Auto key delivery: seller key cloud (keys.json) par publish karta hai, app khud utha kar activate karti hai =====
@@ -1355,7 +1355,7 @@ async function autoKey(force){
   toast(wasLocked?'License activated':'License updated');
   return true;
 }
-setInterval(autoKey, 8000);
+(function tick(){ const locked=$('lock')&&$('lock').style.display!=='none'; (async()=>{ try{ await autoKey(); }catch(_){} try{ await checkOrder(); }catch(_){} setTimeout(tick, (($('lock')&&$('lock').style.display!=='none')?2500:15000)); })(); })();
 // ===== Payment status (Easypaisa/JazzCash): rejected -> tell customer =====
 async function checkOrder(){
   if(window.__ordBusy) return; window.__ordBusy=true;
@@ -1370,7 +1370,7 @@ async function checkOrder(){
     }
   }catch(_){} finally{ window.__ordBusy=false; }
 }
-setTimeout(checkOrder,3000); setInterval(checkOrder,8000);
+
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden) checkOrder(); });
 
 
