@@ -1189,22 +1189,24 @@ async function checkKey(key){
 
 // ===== Packages (shared) + License sheet =====
 let USDT_RATE=282;   // PKR per 1 USDT (fallback until live rate loads)
-function pkgUsdt(pkr){ return Math.ceil(pkr/USDT_RATE*100)/100; }
+const USDT_PER_DAY=3.5;   // fixed — must match the shop and the backend
+function pkgUsdt(pkr){ return Math.round(pkr/PRICE_PER_DAY*USDT_PER_DAY*100)/100; }
+function rs(n){ return 'Rs '+n.toLocaleString('en-PK'); }
 function pkgHTML(selId,priceId){
   const d0=7, pkr0=d0*PRICE_PER_DAY, uId=selId+'U';
-  return '<div><span>Per day</span><b id="'+selId+'PD">'+pkgUsdt(PRICE_PER_DAY).toFixed(2)+' USDT</b><span>1 to 30 days</span></div>'+
+  return '<div><span>Per day</span><b id="'+selId+'PD">'+rs(PRICE_PER_DAY)+'</b><span>or '+pkgUsdt(PRICE_PER_DAY).toFixed(2)+' USDT · 1 to 30 days</span></div>'+
     '<div style="display:flex;flex-direction:column"><span>Choose package</span>'+
     '<select id="'+selId+'" onchange="updPkg(\''+selId+'\',\''+priceId+'\')" style="margin-top:6px;padding:9px 10px;font-size:14px;background:rgba(10,11,12,.18);border:1px solid rgba(10,11,12,.25);border-radius:10px;color:inherit;font-weight:700">'+
     PACKAGES.map(p=>'<option value="'+p.days+'"'+(p.days===d0?' selected':'')+'>'+p.days+' day'+(p.days>1?'s':'')+'</option>').join('')+'</select>'+
-    '<b id="'+priceId+'" style="margin-top:9px">'+pkgUsdt(pkr0).toFixed(2)+' USDT</b>'+
-    '<span id="'+uId+'" style="color:var(--ink);opacity:.72;font-weight:700">'+d0+' days total</span></div>';
+    '<b id="'+priceId+'" style="margin-top:9px">'+rs(pkr0)+'</b>'+
+    '<span id="'+uId+'" style="color:var(--ink);opacity:.72;font-weight:700">'+d0+' days · '+pkgUsdt(pkr0).toFixed(2)+' USDT</span></div>';
 }
 function updPkg(selId,priceId){
   const el=document.getElementById(selId); if(!el) return;
   const d=+el.value, pkr=d*PRICE_PER_DAY;
-  const pe=document.getElementById(priceId); if(pe) pe.textContent=pkgUsdt(pkr).toFixed(2)+' USDT';
-  const ue=document.getElementById(selId+'U'); if(ue) ue.textContent=d+' day'+(d>1?'s':'')+' total';
-  const pd=document.getElementById(selId+'PD'); if(pd) pd.textContent=pkgUsdt(PRICE_PER_DAY).toFixed(2)+' USDT';
+  const pe=document.getElementById(priceId); if(pe) pe.textContent=rs(pkr);
+  const ue=document.getElementById(selId+'U'); if(ue) ue.textContent=d+' day'+(d>1?'s':'')+' · '+pkgUsdt(pkr).toFixed(2)+' USDT';
+  const pd=document.getElementById(selId+'PD'); if(pd) pd.textContent=rs(PRICE_PER_DAY);
 }
 async function loadPkgRate(){
   try{ const j=await (await fetch('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=pkr',{cache:'no-store'})).json();
@@ -1217,7 +1219,7 @@ function openLic(){
   $('licSheet').style.display='flex';
   $('lsCode').textContent=deviceCode();
   $('pkgList2').innerHTML=pkgHTML('pkDays2','pkPrice2'); loadPkgRate();
-  $('payInfo2').innerHTML='<button class="main" style="margin:4px 0 10px" onclick="buyOnline()"><svg class="i" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19"/></svg> Buy online (USDT crypto)</button>Pay with USDT on our website — your Device Code is filled in automatically. You will receive a new key.';
+  $('payInfo2').innerHTML='<button class="main" style="margin:4px 0 10px" onclick="buyOnline(\'pk\')">📱 Pay with Easypaisa / JazzCash</button><button class="main" style="margin:4px 0 10px" onclick="buyOnline()"><svg class="i" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19"/></svg> Buy online (USDT crypto)</button>Pay on our website — your Device Code is filled in automatically and your app unlocks by itself.';
   if(licExp){ const left=licExp-Date.now()/1000, dd=Math.floor(left/86400), hh=Math.floor(left%86400/3600);
     $('lsLeft').textContent= left>0 ? (dd>0? dd+'d '+hh+'h' : hh+'h') : 'Expired';
     $('lsExp').textContent='Expires '+new Date(licExp*1000).toLocaleString('en-PK'); }
@@ -1236,7 +1238,11 @@ async function activate2(){
 }
 
 const SHOP_URL='https://towerfinder.online/site/';
-function buyOnline(){ location.href=SHOP_URL+'?d='+encodeURIComponent(deviceCode())+'#buy'; }
+function buyOnline(m){
+  const el=document.getElementById('pkDays')||document.getElementById('pkDays2');
+  const d=el?+el.value:7;
+  location.href=SHOP_URL+'?d='+encodeURIComponent(deviceCode())+'&p='+d+(m==='pk'?'&m=pk':'')+'#buy';
+}
 function showLock(msg){
   $('app').style.display='none'; $('nav').style.display='none'; $('lock').style.display='';
   $('devCode').textContent=deviceCode();
@@ -1246,7 +1252,7 @@ function showLock(msg){
   if(false) $('pkgList').innerHTML='<div><span>1 day</span><b>'+fmt(PRICE_PER_DAY)+'</b><span>Rs 1,000 per day</span></div>'+
     '<div><span>Choose days</span><b id="pkPrice">'+fmt(7*PRICE_PER_DAY)+'</b><select id="pkDays" onchange="$(\'pkPrice\').textContent=\'Rs \'+(this.value*PRICE_PER_DAY).toLocaleString(\'en-PK\')" style="margin-top:6px;padding:8px 10px;font-size:14px;background:rgba(10,11,12,.15);border:none;color:inherit;font-weight:800">'+
     PACKAGES.map(p=>'<option value="'+p.days+'"'+(p.days===7?' selected':'')+'>'+p.days+' day'+(p.days>1?'s':'')+'</option>').join('')+'</select></div>';
-  $('payInfo').innerHTML='<button class="main" style="margin:4px 0 10px" onclick="buyOnline()"><svg class="i" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19"/></svg> Buy online (USDT crypto)</button>Pay with USDT on our website, then paste your key below.';
+  $('payInfo').innerHTML='<button class="main" style="margin:4px 0 10px" onclick="buyOnline(\'pk\')">📱 Pay with Easypaisa / JazzCash</button><button class="main" style="margin:4px 0 10px" onclick="buyOnline()"><svg class="i" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19"/></svg> Buy online (USDT crypto)</button>Pay on our website with Easypaisa, JazzCash or USDT — your app unlocks automatically.';
   if(msg) $('licErr').textContent=msg;
 }
 function showApp(exp){

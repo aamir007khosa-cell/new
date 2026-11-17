@@ -462,6 +462,7 @@ function ticket(kind){
 
 if(!SHOP.email) document.querySelectorAll('[onclick*="mail"]').forEach(b=>b.style.display='none');
 setNet(0); upd(); loadRate();
+if(/[?&]m=pk/.test(location.search+location.hash)) setMethod('pk');
 </script>
 </body>
 </html>
