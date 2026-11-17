@@ -1328,6 +1328,23 @@ async function autoKey(){
   return true;
 }
 setInterval(autoKey, 25000);
+// ===== Payment status (Easypaisa/JazzCash): rejected -> tell customer =====
+async function checkOrder(){
+  if(window.__ordBusy) return; window.__ordBusy=true;
+  try{
+    const r=await fetch(REVOKE_URL.replace('/revoked','/mystatus'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dev:deviceCode()})});
+    const j=await r.json(); if(!j||!j.ok||j.none) return;
+    if(j.status==='rejected' && (Date.now()/1000-j.t)<7*86400 && store('tdf_rej')!==j.id){
+      store('tdf_rej',j.id);
+      const o=document.createElement('div'); o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px';
+      o.innerHTML='<div style="background:#14181a;border:1px solid #ff6b6b;border-radius:16px;padding:22px;max-width:360px;color:#fff;font-family:inherit"><div style="font-size:18px;font-weight:700;margin-bottom:8px">❌ Payment not received</div><div style="font-size:14px;line-height:1.5;color:#cfd6d3">Your payment was not found, so your order was rejected. If you already sent the money, please contact the seller with your payment screenshot and your device code <b>'+deviceCode()+'</b>. You can also place a new order.</div><button id="rejOk" style="margin-top:16px;width:100%;padding:12px;border:0;border-radius:10px;background:#c8f135;font-weight:700;font-size:15px">OK</button></div>';
+      document.body.appendChild(o); o.querySelector('#rejOk').onclick=()=>o.remove();
+    }
+  }catch(_){} finally{ window.__ordBusy=false; }
+}
+setTimeout(checkOrder,3000); setInterval(checkOrder,30000);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) checkOrder(); });
+
 
 // Pichli values yaad rakho (sirf isi phone par)
 function save(){ try{ ['a','b','ga','ha','gb','hb','clut','ispH','freq','bw','busy','fmin','fmax','gA','gB','txp','loss'].forEach(k=>localStorage.setItem('tdf_'+k,$(k).value)); }catch(_){} }
