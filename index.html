@@ -55,6 +55,10 @@ body{min-height:100vh;overflow-x:hidden;overscroll-behavior-y:none}
 .card h2{font-size:15.5px;margin:0 0 15px;display:flex;align-items:center;gap:11px;font-weight:700;letter-spacing:-.2px}
 .ic{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;font-size:16px;background:linear-gradient(145deg,var(--card2),rgba(200,241,53,.05));border:1px solid var(--line);flex-shrink:0}
 .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.i{display:inline-block;width:1.1em;height:1.1em;vertical-align:-.19em;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.ic .i{width:19px;height:19px;color:var(--lime);vertical-align:0}
+button .i,summary .i{margin-right:5px}
+.taphint .i{color:var(--lime)}
 
 label{display:block;font-size:12px;color:var(--mut);margin:14px 0 7px;font-weight:600;letter-spacing:.01em}
 input,select{width:100%;background:var(--card2);border:1px solid var(--line);color:var(--txt);border-radius:var(--r-sm);padding:14px 15px;font-size:16px;font-family:inherit;transition:border-color .2s,box-shadow .2s,background .2s}
@@ -341,19 +345,19 @@ details[open] summary::before{content:"－ "}
     <p class="hint">Everything for WISP site surveys — in one app</p>
   </div>
   <div class="card">
-    <h2><span class="ic">💎</span> Packages</h2>
+    <h2><span class="ic"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M6 3h12l3 6-9 12L3 9z"/><path d="M3 9h18M12 21 8 9l2-6M12 21l4-12-2-6"/></svg></span> Packages</h2>
     <div class="pk" id="pkgList"></div>
     <p class="hint" style="margin-top:12px" id="payInfo"></p>
   </div>
   <div class="card">
-    <h2><span class="ic">📱</span> Your Device Code</h2>
+    <h2><span class="ic"><svg class="i" viewBox="0 0 24 24" fill="none"><rect x="6.5" y="2" width="11" height="20" rx="2.5"/><path d="M11 18h2"/></svg></span> Your Device Code</h2>
     <div class="code" id="devCode">–</div>
-    <div class="btns"><button onclick="copyCode()" style="width:100%">📋 Copy code</button></div>
+    <div class="btns"><button onclick="copyCode()" style="width:100%"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg> Copy code</button></div>
     <p class="hint">After payment, send this code — you will receive a license key.</p>
-    <p class="hint" id="webWarn" style="color:var(--acc)">⚠️ Clearing browser data or switching browsers changes this code. Use the app (APK) for a permanent license.</p>
+    <p class="hint" id="webWarn" style="color:var(--acc)"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M10.3 4 1.9 18a2 2 0 0 0 1.7 3h16.8a2 2 0 0 0 1.7-3L13.7 4a2 2 0 0 0-3.4 0z"/><path d="M12 9.5v4M12 17h.01"/></svg> Clearing browser data or switching browsers changes this code. Use the app (APK) for a permanent license.</p>
   </div>
   <div class="card">
-    <h2><span class="ic">🔑</span> Enter license key</h2>
+    <h2><span class="ic"><svg class="i" viewBox="0 0 24 24" fill="none"><circle cx="8" cy="15.5" r="4.8"/><path d="m11.4 12.1 8.6-8.6M16.5 5l2.5 2.5M14.5 7l2.5 2.5"/></svg></span> Enter license key</h2>
     <input id="licKey" placeholder="Paste your key here" autocomplete="off">
     <div class="btns"><button class="main" onclick="activate()">Activate</button></div>
     <div class="err" id="licErr"></div>
@@ -373,11 +377,11 @@ details[open] summary::before{content:"－ "}
     <div class="card">
       <h2><span class="dot" style="background:var(--a)"></span> ISP Tower</h2>
       <input id="a" placeholder="30.7565, 70.6357  or  30°45.38'N 70°38.14'E" autocomplete="off">
-      <div class="btns"><button class="gps" onclick="useGPS('a')">📍 Use my GPS</button></div>
+      <div class="btns"><button class="gps" onclick="useGPS('a')"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="2.7"/></svg> Use my GPS</button></div>
       <div class="err" id="aErr"></div>
       <h2 style="margin-top:16px"><span class="dot" style="background:var(--b)"></span> Client Tower</h2>
       <input id="b" placeholder="Client tower coordinates" autocomplete="off">
-      <div class="btns"><button class="gps" onclick="useGPS('b')">📍 Use my GPS</button></div>
+      <div class="btns"><button class="gps" onclick="useGPS('b')"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="2.7"/></svg> Use my GPS</button></div>
       <div class="err" id="bErr"></div>
       <div class="btns" style="margin-top:14px"><button class="main" onclick="calc()">Calculate</button></div>
       <div class="err" id="mainErr"></div>
@@ -398,13 +402,13 @@ details[open] summary::before{content:"－ "}
         </ul>
       </div>
       <div class="card">
-        <h2><span class="ic">🧭</span> Direction line <span class="hint" style="margin:0 0 0 auto">ISP tower → Client</span></h2>
+        <h2><span class="ic"><svg class="i" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9.3"/><path d="m15.4 8.6-2.2 5-5 2.2 2.2-5 5-2.2z"/></svg></span> Direction line <span class="hint" style="margin:0 0 0 auto">ISP tower → Client</span></h2>
         <svg id="map" viewBox="0 0 320 320" style="max-width:340px;margin:0 auto"></svg>
         <div class="turn" id="turn2" style="font-size:18px"></div>
         <p class="hint">The line = the <b>front</b> of your phone (top edge). Turn the phone until the <b>tower marker sits on the line</b> — the yellow arc shows how far and which way to turn.</p>
       </div>
       <div class="card">
-        <h2><span class="ic">📍</span> Send coordinates to Mimosa</h2>
+        <h2><span class="ic"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="2.7"/></svg></span> Send coordinates to Mimosa</h2>
         <p class="hint" style="margin-top:-6px">First add the radio in the <b>Radios</b> tab. Then:</p>
         <div class="btns"><button onclick="rdSendLoc('isp')">Send to ISP radio</button><button onclick="rdSendLoc('client')">Send to Client radio</button></div>
         <div class="err" id="locErr"></div>
@@ -428,7 +432,7 @@ details[open] summary::before{content:"－ "}
   </g>
 </svg><p>First enter both tower coordinates in the <b>Direction</b> tab.</p><button class="main" onclick="go('dir')">Open Direction</button></div>
     <div class="card hasres">
-      <h2><span class="ic">🗼</span> Tower height design</h2>
+      <h2><span class="ic"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M9 21l3-10 3 10M7.5 21h9M4.9 8.6a9 9 0 0 1 0-5.2M19.1 3.4a9 9 0 0 1 0 5.2M7.9 6.9a4.4 4.4 0 0 1 0-1.8M16.1 5.1a4.4 4.4 0 0 1 0 1.8"/><circle cx="12" cy="6" r="1.2"/></svg></span> Tower height design</h2>
       <p class="hint" style="margin-top:-6px">Uses satellite terrain along the path to tell you how tall each tower must be.</p>
       <div class="row">
         <div><label>Trees / buildings (ft)</label><input id="clut" type="number" inputmode="decimal" value="35"></div>
@@ -453,7 +457,7 @@ details[open] summary::before{content:"－ "}
         <p class="hint"><span style="color:#a16207">■</span> terrain &nbsp;<span style="color:#22c55e">■</span> trees &nbsp;<span style="color:var(--lime)">━</span> signal &nbsp;<span style="color:var(--a)">┄</span> Fresnel 60%</p>
       </div>
       <div class="card">
-        <h2><span class="ic">📋</span> Other options</h2>
+        <h2><span class="ic"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg></span> Other options</h2>
         <ul class="list" id="dTable" style="margin-top:0"></ul>
         <p class="hint" style="margin-top:10px">Terrain comes from satellite data (±5–10 m). Tree height is the number you entered — check the tallest tree during the survey. Add 5–10 ft as a margin.</p>
       </div>
@@ -490,7 +494,7 @@ details[open] summary::before{content:"－ "}
   </g>
 </svg><p>First enter both tower coordinates in the <b>Direction</b> tab.</p><button class="main" onclick="go('dir')">Open Direction</button></div>
     <div class="card hasres">
-      <h2><span class="ic">📡</span> Expected signal</h2>
+      <h2><span class="ic"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M12 12v9M8.5 16.5 12 13l3.5 3.5"/><path d="M5 9a9 9 0 0 1 0-4.5M19 4.5a9 9 0 0 1 0 4.5M8 7.2a4.3 4.3 0 0 1 0-1M16 6.2a4.3 4.3 0 0 1 0 1"/></svg></span> Expected signal</h2>
       <div class="row">
         <div><label>ISP dish</label><select id="gA"><option value="8">8 dBi (bina dish)</option><option value="12">12 dBi horn</option><option value="16">16 dBi horn</option><option value="20">20 dBi dish</option><option value="25" selected>25 dBi (N5-X25)</option><option value="30">30 dBi dish</option></select></div>
         <div><label>Client dish</label><select id="gB"><option value="8">8 dBi (bina dish)</option><option value="12">12 dBi horn</option><option value="16">16 dBi horn</option><option value="20">20 dBi dish</option><option value="25">25 dBi (N5-X25)</option><option value="30" selected>30 dBi dish</option></select></div>
@@ -509,7 +513,7 @@ details[open] summary::before{content:"－ "}
   <!-- PAGE 4: Frequency -->
   <section class="page" id="page-f">
     <div class="card">
-      <h2><span class="ic">📶</span> Frequency planner</h2>
+      <h2><span class="ic"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M4 20v-3M9 20v-7M14 20v-11M19 20V4"/></svg></span> Frequency planner</h2>
       <p class="hint" style="margin-top:-6px">In Mimosa Spectrum Analyzer press <b>Combined</b> — enter the ranges with tall peaks (above −80 dBm).</p>
       <label>Busy ranges (MHz)</label>
       <input id="busy" placeholder="5490-5530, 5660-5700, 6080-6150">
@@ -543,33 +547,33 @@ details[open] summary::before{content:"－ "}
       <div style="display:flex;align-items:center;gap:10px">
         <span style="font-size:13px;color:var(--mut);font-weight:700" id="stName">Radio</span>
         <b id="stRssi" style="font-size:26px;font-weight:900;font-variant-numeric:tabular-nums">--</b><span style="color:var(--mut);font-weight:700">dBm</span>
-        <button class="beepBtn" onclick="rdBeepToggle()" style="margin-left:auto">🔊 Beep</button>
+        <button class="beepBtn" onclick="rdBeepToggle()" style="margin-left:auto"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M11 5 6.5 9H3v6h3.5L11 19V5z"/><path d="M15.4 9.2a4 4 0 0 1 0 5.6M18.3 6.5a8 8 0 0 1 0 11"/></svg> Beep</button>
       </div>
       <div class="rbar" style="margin-top:8px"><i id="stBar"></i></div>
     </div>
     <div class="card hasres">
-      <h2><span class="ic">🧭</span> Live compass</h2>
+      <h2><span class="ic"><svg class="i" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9.3"/><path d="m15.4 8.6-2.2 5-5 2.2 2.2-5 5-2.2z"/></svg></span> Live compass</h2>
       <p class="hint" style="margin-top:-6px">Hold the phone flat (or upright like a camera). Stand 5–10 steps away from tower steel.</p>
       <div class="btns" id="liveStart"><button class="main" onclick="startLive()">Start live compass</button></div>
       <div class="err" id="liveErr"></div>
       <div id="live">
-        <div class="seg"><button id="tgB" class="on" onclick="setTarget('b',true)">🎯 Client tower</button><button id="tgA" onclick="setTarget('a',true)">🎯 ISP tower</button></div>
+        <div class="seg"><button id="tgB" class="on" onclick="setTarget('b',true)"><svg class="i" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.2"/><path d="M12 1.6V5M12 19v3.4M1.6 12H5M19 12h3.4"/></svg> Client tower</button><button id="tgA" onclick="setTarget('a',true)"><svg class="i" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.2"/><path d="M12 1.6V5M12 19v3.4M1.6 12H5M19 12h3.4"/></svg> ISP tower</button></div>
         <div class="turn" id="turn" style="margin:6px 0 2px">Turn the phone...</div>
         <p class="hint" id="fromTxt" style="text-align:center;margin:0"></p>
         <div class="ptr" id="ptr"><svg id="liveDial" viewBox="0 0 320 320"></svg></div>
         <div class="aimkv" style="justify-content:center"><span>Tower <b id="hTgt">--</b></span><span>Distance <b id="dTgt">--</b></span><span>Phone <b id="hNow">--</b></span></div>
         <p class="hint" id="mode" style="text-align:center"></p>
         <div id="mapBox"><div id="lmap"><div class="mapload"><span class="spin"></span>Map...</div></div>
-          <button class="mfab" id="fsBtn" onclick="toggleFs()" title="Full screen">⛶</button>
+          <button class="mfab" id="fsBtn" onclick="toggleFs()" title="Full screen"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M8 3H5.5A2.5 2.5 0 0 0 3 5.5V8M16 3h2.5A2.5 2.5 0 0 1 21 5.5V8M21 16v2.5a2.5 2.5 0 0 1-2.5 2.5H16M3 16v2.5A2.5 2.5 0 0 0 5.5 21H8"/></svg></button>
           <div class="fsui">
             <div class="fsturn" id="fsTurn">--</div>
-            <button class="mfab fsx" onclick="toggleFs()">✕</button>
-            <div class="fsbar"><button onclick="fitLine()">↔️ All</button><button onclick="followMe()">📍 Me</button><button onclick="toggleLayer()" id="layerBtn2">🛰️ Map</button></div>
+            <button class="mfab fsx" onclick="toggleFs()"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+            <div class="fsbar"><button onclick="fitLine()">↔️ All</button><button onclick="followMe()"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="2.7"/></svg> Me</button><button onclick="toggleLayer()" id="layerBtn2"><svg class="i" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9.3"/><path d="M2.7 12h18.6M12 2.7a13 13 0 0 1 0 18.6M12 2.7a13 13 0 0 0 0 18.6"/></svg> Map</button></div>
           </div>
-          <div class="taphint">👆 Tap the map to set a tower location</div>
+          <div class="taphint"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="m3 3 6.4 17 2.2-6.9L18.5 11 3 3z"/></svg> Tap the map to set a tower location</div>
         </div>
         <div class="btns" style="justify-content:center">
-          <button onclick="fitLine()">↔️ Show all</button><button onclick="followMe()">📍 My location</button><button id="layerBtn" onclick="toggleLayer()">🛰️ Clarity</button><button onclick="downloadArea()">⬇️ Area save</button><button id="flipBtn" onclick="toggleFlip()">↕️ Flip?</button>
+          <button onclick="fitLine()">↔️ Show all</button><button onclick="followMe()"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="2.7"/></svg> My location</button><button id="layerBtn" onclick="toggleLayer()"><svg class="i" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9.3"/><path d="M2.7 12h18.6M12 2.7a13 13 0 0 1 0 18.6M12 2.7a13 13 0 0 0 0 18.6"/></svg> Clarity</button><button onclick="downloadArea()"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M12 3v12M7.5 10.5 12 15l4.5-4.5M5 20h14"/></svg> Area save</button><button id="flipBtn" onclick="toggleFlip()">↕️ Flip?</button>
         </div>
         <p class="hint" id="meInfo" style="text-align:center"></p>
         <p class="hint" id="dlInfo" style="text-align:center"></p>
@@ -580,10 +584,10 @@ details[open] summary::before{content:"－ "}
   <!-- PAGE 6: Radios -->
   <section class="page" id="page-r">
     <div class="card">
-      <h2><span class="ic">📡</span> Mimosa radios</h2>
-      <p class="hint" style="margin-top:-6px">Add as many radios as you like. Each card updates live (⚡). Logins are stored securely on this phone.</p>
+      <h2><span class="ic"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M12 12v9M8.5 16.5 12 13l3.5 3.5"/><path d="M5 9a9 9 0 0 1 0-4.5M19 4.5a9 9 0 0 1 0 4.5M8 7.2a4.3 4.3 0 0 1 0-1M16 6.2a4.3 4.3 0 0 1 0 1"/></svg></span> Mimosa radios</h2>
+      <p class="hint" style="margin-top:-6px">Add as many radios as you like. Each card updates live (<svg class="i" viewBox="0 0 24 24" fill="none"><path d="M13 2 4.4 13.5H11l-1 8.5L19.6 10H13l0-8z"/></svg>). Logins are stored securely on this phone.</p>
       <div id="devList"></div>
-      <div class="btns" id="addBtn"><button class="main" onclick="openAdd()">➕ Add new radio</button></div>
+      <div class="btns" id="addBtn"><button class="main" onclick="openAdd()"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14"/></svg> Add new radio</button></div>
       <div id="addForm" style="display:none;margin-top:12px">
         <div class="row"><div><label>Name</label><input id="aLabel" placeholder="Client 2"></div><div><label>Type</label><select id="aType"><option value="client">Client (STA)</option><option value="isp">ISP (AP)</option></select></div></div>
         <div class="row"><div><label>IP</label><input id="aIp" placeholder="192.168.1.21" inputmode="decimal"></div><div><label>Username <span style="color:var(--mut);font-weight:400;font-size:11px">C5/C5c: empty</span></label><input id="aUser" placeholder="admin (empty for C5/C5c)" autocomplete="off"></div></div>
@@ -593,7 +597,7 @@ details[open] summary::before{content:"－ "}
       </div>
     </div>
     <div class="card" id="rSum" style="display:none">
-      <h2><span class="ic">🗺️</span> Where each radio is</h2>
+      <h2><span class="ic"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="m9 4-6 2.3v13.4L9 17l6 2.3 6-2.3V3.6L15 6 9 3.7z"/><path d="M9 4v13M15 6v13"/></svg></span> Where each radio is</h2>
       <div id="rmap" style="height:280px;border-radius:18px;overflow:hidden;background:var(--card2);margin-bottom:12px"></div>
       <div id="rSumBody"></div>
     </div>
@@ -602,12 +606,12 @@ details[open] summary::before{content:"－ "}
 
 <div id="licSheet" class="sheet" style="display:none" onclick="if(event.target===this)closeLic()">
   <div class="sheetBox">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><h2 style="margin:0;font-size:18px">🔑 License</h2><button onclick="closeLic()" style="margin-left:auto;width:38px;height:38px;padding:0;border-radius:50%">✕</button></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><h2 style="margin:0;font-size:18px"><svg class="i" viewBox="0 0 24 24" fill="none"><circle cx="8" cy="15.5" r="4.8"/><path d="m11.4 12.1 8.6-8.6M16.5 5l2.5 2.5M14.5 7l2.5 2.5"/></svg> License</h2><button onclick="closeLic()" style="margin-left:auto;width:38px;height:38px;padding:0;border-radius:50%"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
     <div class="big" style="margin-bottom:12px">
       <div class="stat"><div class="k">TIME LEFT</div><div class="v" id="lsLeft" style="font-size:24px">--</div><div class="s" id="lsExp"></div></div>
       <div class="stat"><div class="k">DEVICE CODE</div><div class="v" id="lsCode" style="font-size:20px;letter-spacing:2px;font-family:ui-monospace,Consolas,monospace">--</div><div class="s"><a href="#" onclick="event.preventDefault();copyCode()" style="color:var(--lime)">Copy code</a></div></div>
     </div>
-    <h2 style="font-size:15px;margin:6px 0 10px">💎 Renew / extend</h2>
+    <h2 style="font-size:15px;margin:6px 0 10px"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M6 3h12l3 6-9 12L3 9z"/><path d="M3 9h18M12 21 8 9l2-6M12 21l4-12-2-6"/></svg> Renew / extend</h2>
     <div class="pk" id="pkgList2"></div>
     <p class="hint" id="payInfo2" style="margin-top:10px"></p>
     <label>New license key</label>
@@ -698,7 +702,7 @@ function calc(){
   if(first){ o.classList.remove('pop'); void o.offsetWidth; o.classList.add('pop'); }
   countUp($('dist'), d<1000?d:d/1000, d<1000?0:2, d<1000?' m':' km');
   countUp($('brg'), br, 1, '°');
-  guards(); toast('✅ Done — also check the Height and Signal tabs');
+  guards(); toast('Done — also check the Height and Signal tabs');
   if(LM){ drawTowers(); centerMap(); }
 }
 
@@ -876,7 +880,7 @@ async function design(){
   const minFt = Math.max(ceil5(cliFt), ceil5(clutFt+10));
   if(cliFt>400){
     $('dCli').textContent='400+';
-    $('dNote').innerHTML='⚠️ The link is difficult at this ISP height. Raise the ISP tower — see the options below.';
+    $('dNote').innerHTML='<svg class="i" viewBox="0 0 24 24" fill="none"><path d="M10.3 4 1.9 18a2 2 0 0 0 1.7 3h16.8a2 2 0 0 0 1.7-3L13.7 4a2 2 0 0 0-3.4 0z"/><path d="M12 9.5v4M12 17h.01"/></svg> The link is difficult at this ISP height. Raise the ISP tower — see the options below.';
   } else {
     $('dCli').textContent=minFt;
     const wd=(res.worst.t*d);
@@ -989,7 +993,7 @@ function planFreq(){
   h+='<li><span>Recommended</span><b style="color:var(--ok)">'+rec+' MHz bandwidth</b></li></ul><p class="hint">'+why+'</p>';
   [160,80,40,20].forEach(bw=>{
     const p=best(bw);
-    h+='<h2 style="margin-top:12px">'+bw+' MHz'+(bw===rec?' ⭐':'')+'</h2><ul class="list">';
+    h+='<h2 style="margin-top:12px">'+bw+' MHz'+(bw===rec?' <svg class="i" viewBox="0 0 24 24" fill="none"><path d="m12 3 2.6 5.8 6.3.8-4.6 4.3 1.2 6.3L12 17.8 6.3 20.3l1.2-6.3L3 9.6l6.3-.8L12 3z"/></svg>':'')+'</h2><ul class="list">';
     if(!p.length) h+='<li><span>No clean channel</span><b>–</b></li>';
     p.forEach((x,i)=>{ h+='<li><span>'+(i===0?'Best: ':'')+'Center Frequency</span><b>'+x.f+' MHz <span style="color:var(--mut);font-weight:400">('+(x.f-bw/2)+'–'+(x.f+bw/2)+(busy.length?', '+(x.gap>=60?'60+':x.gap)+' MHz away':'')+')</span></b></li>'; });
     h+='</ul>';
@@ -1023,10 +1027,10 @@ function phoneHeading(a,b,g){
   if(Math.abs(b) > 50){ // phone khara (camera tower ki taraf)
     vx = -(cG*sA*sB + cA*sG);
     vy = -(sA*sG - cA*cG*sB);
-    $('mode').textContent='📷 Phone upright: point the back camera at the tower';
+    $('mode').textContent='Phone upright: point the back camera at the tower';
   } else {              // phone flat
     vx = -sA*cB; vy = cA*cB;
-    $('mode').textContent='📱 Phone flat: point the top edge at the tower';
+    $('mode').textContent='Phone flat: point the top edge at the tower';
   }
   return (toDeg(Math.atan2(vx,vy))+360)%360;
 }
@@ -1041,7 +1045,7 @@ function setTarget(k,manual){
   tgt=k; if(manual) tgtManual=true;
   $('tgB').classList.toggle('on',k==='b'); $('tgA').classList.toggle('on',k==='a');
   const tb=tgtBearing(); $('hTgt').textContent=tb.toFixed(0)+'°'; $('dTgt').textContent=fmtDist(distance(fromPoint(),tgtPoint()));
-  const ft = (k==='b' ? '📍 From ISP tower → Client tower' : '📍 From Client tower → ISP tower') + ' (from your coordinates)';
+  const ft = (k==='b' ? 'From ISP tower → Client tower' : 'From Client tower → ISP tower') + ' (from your coordinates)';
   const fe=$('fromTxt'); if(fe && fe.innerHTML!==ft) fe.innerHTML=ft;
   if(Math.abs((window._lastTb||-999)-tb)>0.5 || !$('liveDial').firstChild){ window._lastTb=tb; $('liveDial').innerHTML=dialMarkup(tb,['--','']); }
   if(hShow!==null) applyHeading(hShow);
@@ -1071,14 +1075,14 @@ function applyHeading(h){
     const top=$('liveDial').querySelector('.dtop'), sub=$('liveDial').querySelector('.dsub');
     const ht=h.toFixed(0)+'°'; if(top.textContent!==ht){ top.textContent=ht; sub.textContent=dir16(h); }
     top.setAttribute('fill', ok?'#c8f135':'#f4f6f5');
-    let txt; if(ok) txt='✅ Pointing at the tower'; else if(rel>0) txt='➡️ Turn right '+rel.toFixed(0)+'°'; else txt='⬅️ Turn left '+(-rel).toFixed(0)+'°';
+    let txt; if(ok) txt='Pointing at the tower'; else if(rel>0) txt='Turn right '+rel.toFixed(0)+'°'; else txt='Turn left '+(-rel).toFixed(0)+'°';
     if(txt!==lastTurn){ lastTurn=txt; const t=$('turn'); t.textContent=txt; t.style.color=ok?'var(--lime)':'var(--txt)'; const f=$('fsTurn'); if(f){ f.textContent=txt; f.style.color=t.style.color; } }
     const hn=h.toFixed(0)+'°'; if($('hNow').textContent!==hn) $('hNow').textContent=hn;
   }
   // Direction page
   if(result && $('turn2')){
     const rel=wrap180(result.br-h), ok=Math.abs(rel)<=3; setArc($('map'),rel);
-    const t2=ok?'✅ Pointing at Client tower':(rel>0?'➡️ Right '+rel.toFixed(0)+'°':'⬅️ Left '+(-rel).toFixed(0)+'°');
+    const t2=ok?'Pointing at Client tower':(rel>0?'Right '+rel.toFixed(0)+'°':'Left '+(-rel).toFixed(0)+'°');
     if($('turn2').textContent!==t2){ $('turn2').textContent=t2; $('turn2').style.color=ok?'var(--lime)':'var(--txt)'; }
   }
   const cone=document.getElementById('meCone'); if(cone) cone.style.transform='rotate('+h+'deg)';
@@ -1088,7 +1092,7 @@ function ensureCompass(){
   if(compassOn) return;
   if(window.Android && Android.startCompass){ try{ compassOn=!!Android.startCompass(); }catch(_){} }
 }
-window.nativeHeading=function(h,up){ setHeading(h); const m=$('mode'); const tx=up?'📷 Phone upright — back camera faces the tower':'📱 Phone flat — top edge faces the tower'; if(m.textContent!==tx) m.textContent=tx; };
+window.nativeHeading=function(h,up){ setHeading(h); const m=$('mode'); const tx=up?'Phone upright — back camera faces the tower':'Phone flat — top edge faces the tower'; if(m.textContent!==tx) m.textContent=tx; };
 window.nativeAcc=function(a){ const e=$('liveErr'); e.style.color='var(--acc)'; e.textContent = a<=1 ? 'Low compass accuracy — move the phone in a figure-8 motion 3–4 times.' : ''; };
 function startLive(){
   if(!result) return;
@@ -1156,7 +1160,7 @@ function openLic(){
   $('licSheet').style.display='flex';
   $('lsCode').textContent=deviceCode();
   $('pkgList2').innerHTML=pkgHTML('pkDays2','pkPrice2');
-  $('payInfo2').innerHTML='<button class="main" style="margin:4px 0 10px" onclick="buyOnline()">💳 Buy online (USDT crypto)</button>Pay with USDT on our website — your Device Code is filled in automatically. You will receive a new key.';
+  $('payInfo2').innerHTML='<button class="main" style="margin:4px 0 10px" onclick="buyOnline()"><svg class="i" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19"/></svg> Buy online (USDT crypto)</button>Pay with USDT on our website — your Device Code is filled in automatically. You will receive a new key.';
   if(licExp){ const left=licExp-Date.now()/1000, dd=Math.floor(left/86400), hh=Math.floor(left%86400/3600);
     $('lsLeft').textContent= left>0 ? (dd>0? dd+'d '+hh+'h' : hh+'h') : 'Expired';
     $('lsExp').textContent='Expires '+new Date(licExp*1000).toLocaleString('en-PK'); }
@@ -1170,7 +1174,7 @@ async function activate2(){
   if(!r.ok){ e.textContent=r.err; return; }
   if(await isRevoked(r.iss)){ e.textContent='This license has been cancelled. Please contact the seller.'; return; }
   if(licExp && r.exp<=licExp){ e.textContent='This key does not extend your current license.'; return; }
-  store('tdf_lic',k); showApp(r.exp); e.style.color='var(--lime)'; e.textContent='✅ License updated'; openLic();
+  store('tdf_lic',k); showApp(r.exp); e.style.color='var(--lime)'; e.textContent='License updated'; openLic();
 }
 
 const SHOP_URL='https://aamir007khosa-cell.github.io/new/site/';
@@ -1183,7 +1187,7 @@ function showLock(msg){
   if(false) $('pkgList').innerHTML='<div><span>1 day</span><b>'+fmt(PRICE_PER_DAY)+'</b><span>Rs 1,000 per day</span></div>'+
     '<div><span>Choose days</span><b id="pkPrice">'+fmt(7*PRICE_PER_DAY)+'</b><select id="pkDays" onchange="$(\'pkPrice\').textContent=\'Rs \'+(this.value*PRICE_PER_DAY).toLocaleString(\'en-PK\')" style="margin-top:6px;padding:8px 10px;font-size:14px;background:rgba(10,11,12,.15);border:none;color:inherit;font-weight:800">'+
     PACKAGES.map(p=>'<option value="'+p.days+'"'+(p.days===7?' selected':'')+'>'+p.days+' day'+(p.days>1?'s':'')+'</option>').join('')+'</select></div>';
-  $('payInfo').innerHTML='<button class="main" style="margin:4px 0 10px" onclick="buyOnline()">💳 Buy online (USDT crypto)</button>Pay with USDT on our website, then paste your key below.';
+  $('payInfo').innerHTML='<button class="main" style="margin:4px 0 10px" onclick="buyOnline()"><svg class="i" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19"/></svg> Buy online (USDT crypto)</button>Pay with USDT on our website, then paste your key below.';
   if(msg) $('licErr').textContent=msg;
 }
 function showApp(exp){
@@ -1200,7 +1204,7 @@ async function activate(){
   if(await isRevoked(r.iss)){ $('licErr').textContent='This license has been cancelled. Please contact the seller.'; return; }
   store('tdf_lic',k.trim()); showApp(r.exp);
 }
-function copyCode(){ if(window.Android){ Android.copy(deviceCode()); toast('📋 Code copied'); return; } try{ navigator.clipboard.writeText(deviceCode()).then(()=>toast('📋 Code copied')).catch(()=>{}); }catch(_){} }
+function copyCode(){ if(window.Android){ Android.copy(deviceCode()); toast('Code copied'); return; } try{ navigator.clipboard.writeText(deviceCode()).then(()=>toast('Code copied')).catch(()=>{}); }catch(_){} }
 async function boot(){
   const k=store('tdf_lic');
   if(!k){ showLock(); return; }
@@ -1288,10 +1292,10 @@ async function downloadArea(){
   }
   if(urls.length>4000){ info.textContent='Area too large ('+urls.length+' tiles).'; dlRunning=false; return; }
   let done=0, fail=0; const c=await caches.open(TILE_CACHE);
-  const work=async()=>{ while(urls.length){ const u=urls.pop(); try{ if(!(await c.match(u))){ const r=await fetch(u,{mode:'cors'}); if(r.ok) await c.put(u,r); else fail++; } }catch(_){ fail++; } done++; if(done%10===0) info.textContent='⬇️ Download: '+done+' tiles...'; } };
-  const total=urls.length; info.textContent='⬇️ Download shuru: '+total+' tiles';
+  const work=async()=>{ while(urls.length){ const u=urls.pop(); try{ if(!(await c.match(u))){ const r=await fetch(u,{mode:'cors'}); if(r.ok) await c.put(u,r); else fail++; } }catch(_){ fail++; } done++; if(done%10===0) info.textContent='Download: '+done+' tiles...'; } };
+  const total=urls.length; info.textContent='Download shuru: '+total+' tiles';
   await Promise.all([1,2,3,4,5,6].map(work));
-  info.textContent='✅ Area map saved ('+(total-fail)+' tiles). Works offline now.';
+  info.textContent='Area map saved ('+(total-fail)+' tiles). Works offline now.';
   dlRunning=false;
 }
 
@@ -1355,7 +1359,7 @@ function fitLine(silent){
 }
 function followMe(){ if(!LM) return; if(!mePos){ $('meInfo').textContent='Finding GPS...'; startWatch(); return; } mapFollow=true; LM.setView([mePos.lat,mePos.lon],Math.max(LM.getZoom(),16),{animate:false}); }
 function centerMap(){ fitLine(true); }
-const LAYER_ORDER=['sat','sat2','street'], LAYER_NAME={sat:'🛰️ Clarity',sat2:'🛰️ Satellite 2',street:'🗺️ Street'};
+const LAYER_ORDER=['sat','sat2','street'], LAYER_NAME={sat:'Clarity',sat2:'Satellite 2',street:'Street'};
 function toggleLayer(){
   if(!LM) return;
   LM.removeLayer(LMl[curLayer]); curLayer=LAYER_ORDER[(LAYER_ORDER.indexOf(curLayer)+1)%3]; LMl[curLayer].addTo(LM);
@@ -1509,8 +1513,8 @@ function devCardHTML(dev){
     '<p class="hint" id="rn-'+id+'" style="text-align:center"></p>'+
     '<div class="kv" id="rk-'+id+'"></div>'+
     '<p class="hint" id="rloc-'+id+'" style="margin-top:10px;line-height:1.6"></p>'+
-    '<details class="rdet" open onclick="event.stopPropagation()"><summary>📊 Full data</summary><div id="rdet-'+id+'"></div></details>'+
-    '<details class="rdet" onclick="event.stopPropagation()"><summary>📡 Set channel (frequency / bandwidth)</summary>'+
+    '<details class="rdet" open onclick="event.stopPropagation()"><summary><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M4 20h16M7 20v-7M12 20V8.5M17 20v-10"/></svg> Full data</summary><div id="rdet-'+id+'"></div></details>'+
+    '<details class="rdet" onclick="event.stopPropagation()"><summary><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M12 12v9M8.5 16.5 12 13l3.5 3.5"/><path d="M5 9a9 9 0 0 1 0-4.5M19 4.5a9 9 0 0 1 0 4.5M8 7.2a4.3 4.3 0 0 1 0-1M16 6.2a4.3 4.3 0 0 1 0 1"/></svg> Set channel (frequency / bandwidth)</summary>'+
       '<div class="row" style="margin-top:8px">'+
         '<div><label>Freq (MHz)</label><input id="chF-'+id+'" type="number" inputmode="decimal" placeholder="5790"></div>'+
         '<div><label>Bandwidth</label><select id="chB-'+id+'"><option value="20">20 MHz</option><option value="40">40 MHz</option><option value="80" selected>80 MHz</option><option value="160">160 MHz</option></select></div>'+
@@ -1519,7 +1523,7 @@ function devCardHTML(dev){
       '<p class="hint" style="margin-top:6px">Link drops a few seconds. On a PTP link set the same on both radios.</p>'+
       '<div class="err" id="chE-'+id+'"></div>'+
     '</details>'+
-    '<div class="btns"><button class="beepBtn" onclick="event.stopPropagation();rdBeepToggle()">🔊 Beep</button><button onclick="event.stopPropagation();removeDev(\''+id+'\')">🗑️ Remove</button></div>'+
+    '<div class="btns"><button class="beepBtn" onclick="event.stopPropagation();rdBeepToggle()"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M11 5 6.5 9H3v6h3.5L11 19V5z"/><path d="M15.4 9.2a4 4 0 0 1 0 5.6M18.3 6.5a8 8 0 0 1 0 11"/></svg> Beep</button><button onclick="event.stopPropagation();removeDev(\''+id+'\')"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9.5 7V4.5h5V7M6 7l1 12.6A2 2 0 0 0 9 21.5h6a2 2 0 0 0 2-1.9L18 7M10 11.5v6M14 11.5v6"/></svg> Remove</button></div>'+
   '</div>';
 }
 function mountDev(dev){
@@ -1549,7 +1553,7 @@ async function addDevice(){
   if(!u){
     if(!hasC5x()){ e.textContent='For C5/C5c/C5x install the latest APK (v2.9+). Old APK does not support them.'; return; }
     const j=await c5xReq(dev);
-    if(j && j.realtime){ dev.kind='c5x'; applyC5x(dev,j); DEVS.push(dev); saveDevList(); $('aPass').value=''; closeAdd(); startDev(dev,true); if(!SEL) selectDev(dev.id); toast('✅ '+dev.label+' (C5x) connected'); return; }
+    if(j && j.realtime){ dev.kind='c5x'; applyC5x(dev,j); DEVS.push(dev); saveDevList(); $('aPass').value=''; closeAdd(); startDev(dev,true); if(!SEL) selectDev(dev.id); toast(''+dev.label+' (C5x) connected'); return; }
     e.textContent='C5x login failed — check the IP, and the password (username must be empty for C5x). If it keeps failing, send me a screenshot.'; return;
   }
   const r=await devReq(dev,'GET','/restconf/data/mimosa-wifi-network:statistics/client-statistics');
@@ -1557,11 +1561,11 @@ async function addDevice(){
   if(r.status!==200){ e.textContent='Radio not reachable ('+r.status+'). Check the IP and make sure the phone is on the radio network.'; return; }
   DEVS.push(dev); saveDevList(); $('aPass').value=''; closeAdd();
   startDev(dev, true); if(!SEL) selectDev(dev.id);
-  toast('✅ '+dev.label+' connected');
+  toast(''+dev.label+' connected');
 }
 function removeDev(id){
   const dev=devById(id); if(!dev) return;
-  if(dev._rmArm!==true){ dev._rmArm=true; toast('Press 🗑️ again to remove'); setTimeout(()=>dev._rmArm=false,3000); return; }
+  if(dev._rmArm!==true){ dev._rmArm=true; toast('Press again to remove'); setTimeout(()=>dev._rmArm=false,3000); return; }
   dev.on=false; clearTimeout(dev.timer); clearTimeout(dev.btimer);
   DEVS.splice(DEVS.indexOf(dev),1); const c=$('dc-'+id); if(c) c.remove();
   if(SEL===id) SEL=DEVS[0]?DEVS[0].id:null; saveDevList(); renderAll(true); toast('Radio removed');
@@ -1578,7 +1582,7 @@ async function devLoop(dev){
   if(!dev.on) return;
   const t0=Date.now();
   try{ await devPoll(dev); }catch(_){ dev.d.ok=false; }
-  if(dev.d.ok){ if(dev.fails>=3){ devStatus(dev,'● Connected','var(--lime)'); toast('✅ '+dev.label+' reconnected'); } dev.fails=0; }
+  if(dev.d.ok){ if(dev.fails>=3){ devStatus(dev,'● Connected','var(--lime)'); toast(''+dev.label+' reconnected'); } dev.fails=0; }
   else { dev.fails=(dev.fails||0)+1; if(dev.fails===3) devStatus(dev,'● Offline — reconnecting','#fbbf24'); }
   paintDev(dev); renderAll();
   const wait = dev.fails>=3 ? 3000 : (dev.kind==='c5x' ? Math.max(1200, 2500-(Date.now()-t0)) : Math.max(150, 1000-(Date.now()-t0)));
@@ -1663,7 +1667,7 @@ function devPos(dev){
   return null;
 }
 function speedTxt(dev){
-  if(dev.oldApk) return ' · ⚠️ Install the latest APK for live signal';
+  if(dev.oldApk) return ' · Install the latest APK for live signal';
   const h=dev.hits||[], now=Date.now(); const recent=h.filter(t=>now-t<3000).length/3;
   const parts=[]; if(recent>0) parts.push(recent.toFixed(1)+'/s'); if(dev.lat!=null) parts.push(Math.round(dev.lat)+' ms'); if(dev.slat!=null) parts.push('stats '+dev.slat+' ms'); if(dev.errs) parts.push(dev.errs+' fail');
   return parts.length? ' · '+parts.join(' · ') : '';
@@ -1673,14 +1677,14 @@ function paintDev(dev){
   const D=dev.d, sg=devSignal(dev), v=sg.v;
   paintRssi($('rr-'+dev.id),$('rb-'+dev.id),v);
   $('rn-'+dev.id).textContent = dev.fails>=3 ? 'No contact with radio — retrying automatically' :
-    ((D.clients>1?D.clients+' clients · ':'')+(v==null?'No link':(sg.via?'⚡ Live ('+sg.via+' beacon)':(sg.fast?'⚡ Live signal':'Signal (every second)')))) + speedTxt(dev);
+    ((D.clients>1?D.clients+' clients · ':'')+(v==null?'No link':(sg.via?'Live ('+sg.via+' beacon)':(sg.fast?'Live signal':'Signal (every second)')))) + speedTxt(dev);
   const c=D.cfg||{};
   $('rk-'+dev.id).innerHTML='<div><b>'+(D.model||'--')+'</b><span>Model</span></div><div><b>'+(c.freq||'--')+'</b><span>MHz / '+(c.bw||'--')+'</span></div><div><b>'+(c.tx!=null?c.tx:'--')+'</b><span>Tx dBm</span></div><div><b>'+(D.temp!=null?D.temp+'°':'--')+'</b><span>Temp</span></div>';
   const cfIn=$('chF-'+dev.id); if(cfIn && !cfIn.value && document.activeElement!==cfIn && c.freq){ cfIn.value=c.freq; const cbIn=$('chB-'+dev.id); if(cbIn && c.bw && [20,40,80,160].indexOf(+c.bw)>=0) cbIn.value=c.bw; }
-  const pos=devPos(dev); let li='📍 '+(pos? pos.p.lat.toFixed(5)+', '+pos.p.lon.toFixed(5)+' <span style="color:var(--mut)">('+pos.src+')</span>' : 'No location — save it to the radio');
+  const pos=devPos(dev); let li='<svg class="i" viewBox="0 0 24 24" fill="none"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="2.7"/></svg> '+(pos? pos.p.lat.toFixed(5)+', '+pos.p.lon.toFixed(5)+' <span style="color:var(--mut)">('+pos.src+')</span>' : 'No location — save it to the radio');
   if(pos){
     const targets = devRole(dev)==='isp' ? DEVS.filter(d=>d.on&&devRole(d)==='client') : DEVS.filter(d=>d.on&&devRole(d)==='isp');
-    targets.forEach(t=>{ const tp=devPos(t); if(tp){ const br=bearing(pos.p,tp.p); li+='<br>🎯 '+(t.label)+' direction: <b style="color:var(--lime)">'+br.toFixed(1)+'° '+dir16(br)+'</b> · '+fmtDist(distance(pos.p,tp.p)); } });
+    targets.forEach(t=>{ const tp=devPos(t); if(tp){ const br=bearing(pos.p,tp.p); li+='<br><svg class="i" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.2"/><path d="M12 1.6V5M12 19v3.4M1.6 12H5M19 12h3.4"/></svg> '+(t.label)+' direction: <b style="color:var(--lime)">'+br.toFixed(1)+'° '+dir16(br)+'</b> · '+fmtDist(distance(pos.p,tp.p)); } });
   }
   $('rloc-'+dev.id).innerHTML=li;
 }
@@ -1758,11 +1762,11 @@ function renderStrip(){
   const dev = devById(SEL) && devById(SEL).on ? devById(SEL) : DEVS.find(d=>d.on);
   $('rStrip').style.display = dev ? '' : 'none'; if(!dev) return;
   const sg=devSignal(dev), v=sg.v;
-  paintRssi($('stRssi'),$('stBar'),v); const nm=dev.label+(sg.fast?' ⚡':''); if($('stName').textContent!==nm) $('stName').textContent=nm;
+  paintRssi($('stRssi'),$('stBar'),v); const nm=dev.label; if($('stName').textContent!==nm) $('stName').textContent=nm;
   if(rdBeep && v!=null && Date.now()-(window._lastBeep||0)>(sg.fast?200:600)){ window._lastBeep=Date.now(); rdTone(v); }
 }
 function rdBeepToggle(){
-  rdBeep=!rdBeep; document.querySelectorAll('.beepBtn').forEach(b=>b.textContent=rdBeep?'🔇 Beep off':'🔊 Beep');
+  rdBeep=!rdBeep; document.querySelectorAll('.beepBtn').forEach(b=>b.textContent=rdBeep?'Beep off':'Beep');
   if(rdBeep && !rdAudio){ try{ rdAudio=new (window.AudioContext||window.webkitAudioContext)(); }catch(_){} }
 }
 function rdTone(v){
@@ -1787,7 +1791,7 @@ async function rdSendLoc(role){
   const me = role==='isp'?result.a:result.b, other = role==='isp'?result.b:result.a;
   const body=JSON.stringify({"mimosa-device:location":{"local":{"latitude":+me.lat.toFixed(6),"longitude":+me.lon.toFixed(6)},"remote":{"latitude":+other.lat.toFixed(6),"longitude":+other.lon.toFixed(6)}}});
   const r=await devReq(dev,'PATCH','/restconf/data/mimosa-device:device/config/location',body);
-  if(r.status>=200 && r.status<300){ e.style.color='var(--lime)'; e.textContent='✅ '+dev.label+': coordinates saved.'; dev.tick=59; }
+  if(r.status>=200 && r.status<300){ e.style.color='var(--lime)'; e.textContent=''+dev.label+': coordinates saved.'; dev.tick=59; }
   else { e.textContent='Save failed ('+r.status+'): '+String(r.body||'').slice(0,160); }
 }
 
@@ -1799,7 +1803,7 @@ function setChan(id){
   const f=parseFloat(($('chF-'+id)||{}).value), bw=+(($('chB-'+id)||{}).value);
   if(isNaN(f)||f<1000||f>80000){ e.textContent='Frequency MHz mein daalo, jaise 5790'; return; }
   const sig=f+'/'+bw;
-  if(chanArm[id]!==sig){ chanArm[id]=sig; e.style.color='var(--acc)'; e.textContent='⚠️ '+dev.label+' → '+f+' MHz / '+bw+' MHz. Link kuch second ke liye tootega. Apply dobara dabao.'; return; }
+  if(chanArm[id]!==sig){ chanArm[id]=sig; e.style.color='var(--acc)'; e.textContent=''+dev.label+' → '+f+' MHz / '+bw+' MHz. Link kuch second ke liye tootega. Apply dobara dabao.'; return; }
   chanArm[id]=null;
   applyChan(dev,f,bw,e);
 }
@@ -1809,7 +1813,7 @@ async function applyChan(dev,f,bw,e){
   const body=JSON.stringify({"ietf-interfaces:interface":[inner]});
   e.innerHTML='<span class="spin"></span> Applying...';
   const r=await devReq(dev,'PATCH','/restconf/data/ietf-interfaces:interfaces/interface=wifi0',body);
-  if(r.status>=200 && r.status<300){ e.style.color='var(--lime)'; e.textContent='✅ '+f+' MHz / '+bw+' MHz set.'; dev.tick=29; }
+  if(r.status>=200 && r.status<300){ e.style.color='var(--lime)'; e.textContent=''+f+' MHz / '+bw+' MHz set.'; dev.tick=29; }
   else { e.textContent='Failed ('+r.status+'): '+String(r.body||'').slice(0,160)+' — yeh error mujhe bhej do.'; }
 }
 
@@ -1821,14 +1825,14 @@ async function rdSendChan(role){
   if(dev.kind==='c5x'){ e.textContent='C5x channel change is not supported yet — I can add it. For now change it from the C5x dashboard.'; return; }
   const f=num('chFreq'), bw=+($('chBw').value);
   if(f===null||f<1000||f>80000){ e.textContent='Enter the center frequency in MHz, e.g. 5790'; return; }
-  if(rdChanArm!==role){ rdChanArm=role; e.style.color='var(--acc)'; e.textContent='⚠️ '+dev.label+' channel → '+f+' MHz / '+bw+' MHz. The link will drop for a few seconds. Press the same button again to apply.'; return; }
+  if(rdChanArm!==role){ rdChanArm=role; e.style.color='var(--acc)'; e.textContent=''+dev.label+' channel → '+f+' MHz / '+bw+' MHz. The link will drop for a few seconds. Press the same button again to apply.'; return; }
   rdChanArm=null;
   const cfg = (dev.d && dev.d.cfg && dev.d.cfg.mode==='STA') ? 'mimosa-wifi-radio:client-configuration' : 'mimosa-wifi-radio:access-point-configuration';
   const inner={name:'wifi0'}; inner[cfg]={"channel-configuration":{"frequency":f,"bandwidth":bw}};
   const body=JSON.stringify({"ietf-interfaces:interface":[inner]});
   e.innerHTML='<span class="spin"></span> Applying...';
   const r=await devReq(dev,'PATCH','/restconf/data/ietf-interfaces:interfaces/interface=wifi0',body);
-  if(r.status>=200 && r.status<300){ e.style.color='var(--lime)'; e.textContent='✅ '+dev.label+': channel set to '+f+' MHz / '+bw+' MHz.'; dev.tick=29; }
+  if(r.status>=200 && r.status<300){ e.style.color='var(--lime)'; e.textContent=''+dev.label+': channel set to '+f+' MHz / '+bw+' MHz.'; dev.tick=29; }
   else { e.textContent='Failed ('+r.status+'): '+String(r.body||'').slice(0,200)+' — yeh error mujhe bhej do, main command theek kar dunga.'; }
 }
 // App khulte hi saved radios khud jodo (purane 2-radio login bhi le aao)
@@ -1870,7 +1874,7 @@ function pickTower(k,lat,lon){
     const t=toast; toast=()=>{}; calc(); toast=t;
     if(LM){ drawTowers(); if(!fs) fitLine(true); }
     setTarget(tgt);
-    toast((k==='a'?'ISP':'Client')+' tower set ✅');
+    toast((k==='a'?'ISP':'Client')+' tower set ');
   } else {
     toast((k==='a'?'ISP':'Client')+' set — now tap the other tower');
   }
