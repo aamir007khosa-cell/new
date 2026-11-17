@@ -150,12 +150,12 @@ let delArm=-1;
 async function del(i){
   if(delArm!==i){ delArm=i; $('msg').textContent='Press 🗑️ again to delete and log out this customer.'; return; }
   delArm=-1; const r=load()[i]; if(!r) return;
-  if(tok()){
-    $('msg').textContent='Blocking '+r.dev+'...';
-    try{ await blockDevice(r.dev); try{ await unpublishKey(r.dev); }catch(_){} $('msg').textContent='✅ '+r.name+' deleted — their app logs out within ~20 seconds, and the same key cannot log in again.'; }
-    catch(e){ $('msg').textContent='❌ Could not block online ('+e.message+'). Not deleted.'; return; }
-  } else { $('msg').textContent='Deleted from list only — set your admin password (Remote control) to log the customer out.'; }
-  const a=load().filter(x=>x.dev!==r.dev); saveL(a); render(); setTimeout(loadCloud,800);
+  if(!tok()){ saveL(load().filter(x=>x.dev!==r.dev)); render(); $('msg').textContent='Deleted from list only — set your admin password (Remote control) to log the customer out.'; return; }
+  const backup=load();
+  saveL(backup.filter(x=>x.dev!==r.dev)); window.CLOUDROWS=(window.CLOUDROWS||[]).filter(c=>c.d!==r.dev); render(); loadCloudRows();
+  $('msg').textContent='✅ '+r.name+' deleted — logging out now (app locks within seconds).';
+  try{ await Promise.all([blockDevice(r.dev), unpublishKey(r.dev)]); setTimeout(loadCloud,1500); }
+  catch(e){ saveL(backup); render(); $('msg').textContent='❌ Could not log out online ('+e.message+'). Restored.'; loadCloud(); }
 }
 function cp(v){ if(!v) return; if(window.Android){ Android.copy(v); $('msg').textContent='Copied ✅'; return; } try{ navigator.clipboard.writeText(v).then(()=>$('msg').textContent='Copied ✅'); }catch(_){} }
 function restore(){ try{ const a=JSON.parse($('rest').value); if(!Array.isArray(a)) throw 0; const cur=load(); const keys=new Set(cur.map(r=>r.key)); a.forEach(r=>{ if(r&&r.key&&!keys.has(r.key)) cur.push(r); }); saveL(cur); $('rest').value=''; $('msg').textContent='Restored ✅'; render(); }catch(_){ $('msg').textContent='Invalid backup.'; } }
