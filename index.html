@@ -444,7 +444,7 @@ details[open] summary::before{content:"－ "}
       <p class="hint" style="margin-top:-6px">Uses satellite terrain along the path to tell you how tall each tower must be.</p>
       <div class="row">
         <div><label>Trees / buildings (ft)</label><input id="clut" type="number" inputmode="decimal" value="35"></div>
-        <div><label>ISP tower (ft)</label><input id="ispH" type="number" inputmode="decimal" placeholder="jaise 50"></div>
+        <div><label>ISP tower (ft)</label><input id="ispH" type="number" inputmode="decimal" placeholder="e.g. 50"></div>
       </div>
       <div class="row">
         <div><label>Center Frequency (MHz)</label><input id="freq" type="number" inputmode="decimal" value="5790"></div>
@@ -1876,7 +1876,7 @@ function setChan(id){
   const e=$('chE-'+id); if(!e) return; e.style.color=''; e.textContent='';
   if(dev.kind==='c5x'){ e.textContent='C5x channel change coming soon — abhi C5x dashboard se badlo.'; return; }
   const f=parseFloat(($('chF-'+id)||{}).value), bw=+(($('chB-'+id)||{}).value);
-  if(isNaN(f)||f<1000||f>80000){ e.textContent='Frequency MHz mein daalo, jaise 5790'; return; }
+  if(isNaN(f)||f<1000||f>80000){ e.textContent='Enter frequency in MHz, e.g. 5790'; return; }
   const sig=f+'/'+bw;
   if(chanArm[id]!==sig){ chanArm[id]=sig; e.style.color='var(--acc)'; e.textContent=''+dev.label+' → '+f+' MHz / '+bw+' MHz. Link kuch second ke liye tootega. Apply dobara dabao.'; return; }
   chanArm[id]=null;
