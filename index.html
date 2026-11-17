@@ -1195,7 +1195,7 @@ async function activate2(){
   store('tdf_lic',k); showApp(r.exp); e.style.color='var(--lime)'; e.textContent='License updated'; openLic();
 }
 
-const SHOP_URL='https://aamir007khosa-cell.github.io/new/site/';
+const SHOP_URL='https://towerfinder.online/site/';
 function buyOnline(){ location.href=SHOP_URL+'?d='+encodeURIComponent(deviceCode())+'#buy'; }
 function showLock(msg){
   $('app').style.display='none'; $('nav').style.display='none'; $('lock').style.display='';
@@ -1234,7 +1234,7 @@ setInterval(async()=>{ const k=store('tdf_lic'); if(!k) return; const r=await ch
 
 
 // ===== Remote logout: seller ki block list (GitHub par) =====
-const REVOKE_URL='https://aamir007khosa-cell.github.io/new/revoked.json';
+const REVOKE_URL='https://towerfinder.online/revoked.json';
 async function isRevoked(iss){
   try{ const j=await (await fetch(REVOKE_URL+'?t='+Date.now(),{cache:'no-store'})).json();
     const me=deviceCode();
