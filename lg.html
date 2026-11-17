@@ -66,6 +66,12 @@ button.s{background:#1c1f21;color:#f4f6f5;border:1px solid #24282b;width:auto;pa
   <p id="ghMsg" style="font-size:13px;color:#8b9290"></p>
 </div>
 <div class="c">
+  <h2>📥 Easypaisa / JazzCash orders</h2>
+  <p style="color:#8b9290;font-size:13px">Check the payment and TID in your Easypaisa / JazzCash app first, then Approve. The key is sent to the customer app automatically.</p>
+  <button class="s" onclick="loadOrders()">↻ Refresh</button>
+  <div id="ordList"></div>
+</div>
+<div class="c">
   <h2>☁️ Cloud customers</h2>
   <p style="color:#8b9290;font-size:13px">Everyone who has a key online (auto-paid or generated here). Logout blocks the device in ~20 s; the same key can't log in again.</p>
   <button class="s" onclick="loadCloud()">↻ Refresh</button>
@@ -184,5 +190,26 @@ async function cloudAct(d,un){
   catch(e){ $('msg').textContent='❌ '+e.message; window.scrollTo(0,0); }
 }
 
-render(); setInterval(render,60000); loadCloud();
+// ===== Easypaisa / JazzCash orders =====
+function agoO(t){ const m=Math.max(0,Math.floor((Date.now()/1000-t)/60)); return m<60?m+' min ago':(m<1440?Math.floor(m/60)+' h ago':Math.floor(m/1440)+' d ago'); }
+async function loadOrders(){
+  const box=$('ordList');
+  if(!tok()){ box.innerHTML='<p style="color:#9aa3ae;font-size:13px">Save your admin password first (Remote control).</p>'; return; }
+  box.innerHTML='<p style="color:#8b9290;font-size:13px">Loading…</p>';
+  try{
+    const j=await wApi('/orders'); const L=j.orders||[];
+    box.innerHTML=L.length? L.map(o=>{
+      const st=o.status==='pending'?'<span class="soon">Pending</span>':(o.status==='approved'?'<span class="ok">Approved</span>':'<span class="bad">Rejected</span>');
+      const btn=o.status==='pending'?'<button class="s" onclick="ordAct(\''+o.id+'\',\'approve\')">✅ Approve</button><button class="s" onclick="ordAct(\''+o.id+'\',\'reject\')">Reject</button>':'';
+      return '<div class="cl"><div class="t"><span class="n">📱 '+esc(o.dev)+'</span>'+st+'</div><div class="m">'+o.days+' day'+(o.days>1?'s':'')+' · Rs '+(o.days*1000).toLocaleString('en-PK')+' · '+esc(o.method)+' · TID '+esc(o.txid)+'</div><div class="m">'+esc(o.name||'-')+' · '+esc(o.phone||'-')+' · '+agoO(o.t)+'</div>'+btn+'</div>';
+    }).join('') : '<p style="color:#9aa3ae;font-size:13px">No orders yet.</p>';
+  }catch(e){ box.innerHTML='<p style="color:#ff6b6b;font-size:13px">'+esc(e.message||e)+'</p>'; }
+}
+async function ordAct(id,act){
+  if(act==='reject' && !confirm('Reject this order?')) return;
+  try{ await wApi('/'+act,{id}); $('msg').textContent=act==='approve'?'✅ Approved — customer app will unlock automatically.':'Rejected.'; loadOrders(); setTimeout(loadCloud,800); }
+  catch(e){ $('msg').textContent='❌ '+e.message; window.scrollTo(0,0); }
+}
+
+render(); setInterval(render,60000); loadCloud(); loadOrders();
 </script></body></html>
