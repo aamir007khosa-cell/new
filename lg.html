@@ -121,6 +121,8 @@ function render(){
   let act=0,soon=0,ex=0;
   // har device ka sirf naya record gino
   const seen={}; a.forEach(r=>{ if(seen[r.dev]) return; seen[r.dev]=1; const s=r.e-Date.now()/1000; if(s<=0) ex++; else if(s<86400){soon++;act++;} else act++; });
+  const cloudOnly=(window.CLOUDROWS||[]).filter(r=>!seen[r.d]);
+  cloudOnly.forEach(r=>{ if(r.blocked) return; const s=r.exp-Date.now()/1000; if(s<=0) ex++; else if(s<86400){soon++;act++;} else act++; });
   $('nAct').textContent=act; $('nSoon').textContent=soon; $('nExp').textContent=ex;
   const rows=a.map((r,i)=>({r,i})).filter(x=>!q || x.r.name.toUpperCase().includes(q) || x.r.dev.includes(q))
     .sort((x,y)=>{ const lx=x.r.e-Date.now()/1000, ly=y.r.e-Date.now()/1000; if((lx>0)!==(ly>0)) return lx>0?-1:1; return lx>0? lx-ly : y.r.e-x.r.e; });
@@ -132,7 +134,15 @@ function render(){
       '<button class="s" onclick="cp(load()['+i+'].key)">📋 Key</button>'+
       '<button class="s" onclick="renew('+i+')">🔄 Renew</button>'+
       '<button class="s" onclick="del('+i+')">🗑️</button></div>';
-  }).join('') : '<p style="color:#9aa3ae;font-size:13px">No customers yet.</p>';
+  }).join('') : '';
+  const cq=cloudOnly.filter(r=>!q||r.d.includes(q)).map(r=>{
+    const s=r.exp-Date.now()/1000, l2=left(r.exp);
+    const st=r.blocked?'<span class="bad">Blocked</span>':(!l2?'<span class="bad">Expired</span>':(s<86400?'<span class="soon">'+l2+' left</span>':'<span class="ok">'+l2+' left</span>'));
+    const b=r.blocked?'<button class="s" onclick="cloudAct(\''+r.d+'\',true)">Re-enable</button><button class="s" onclick="cloudDel(\''+r.d+'\')">🗑 Delete</button>':'<button class="s" onclick="cloudAct(\''+r.d+'\',false)">🚪 Logout</button>';
+    return '<div class="cl"><div class="t"><span class="n">☁️ Online customer</span>'+st+'</div><div class="m">📱 '+r.d+' · '+(r.days||'?')+' days · Expires: '+(r.exp?new Date(r.exp*1000).toLocaleString('en-PK'):'—')+'</div>'+b+'</div>';
+  }).join('');
+  $('list').innerHTML=($('list').innerHTML||'')+cq;
+  if(!$('list').innerHTML) $('list').innerHTML='<p style="color:#9aa3ae;font-size:13px">No customers yet.</p>';
 }
 function esc(t){ return String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function renew(i){ const r=load()[i]; $('name').value=r.name; $('dev').value=r.dev; $('msg').textContent='Choose a package and press Generate key.'; }
@@ -140,14 +150,12 @@ let delArm=-1;
 async function del(i){
   if(delArm!==i){ delArm=i; $('msg').textContent='Press 🗑️ again to delete and log out this customer.'; return; }
   delArm=-1; const r=load()[i]; if(!r) return;
-  const others=load().filter((x,j)=>j!==i && x.dev===r.dev && x.e>Date.now()/1000);
-  if(others.length){ const a=load(); a.splice(i,1); saveL(a); render(); $('msg').textContent='Old entry removed. '+r.dev+' still has an active key, so it was not logged out.'; return; }
   if(tok()){
     $('msg').textContent='Blocking '+r.dev+'...';
     try{ await blockDevice(r.dev); try{ await unpublishKey(r.dev); }catch(_){} $('msg').textContent='✅ '+r.name+' deleted — their app logs out within ~20 seconds, and the same key cannot log in again.'; }
     catch(e){ $('msg').textContent='❌ Could not block online ('+e.message+'). Not deleted.'; return; }
   } else { $('msg').textContent='Deleted from list only — set your admin password (Remote control) to log the customer out.'; }
-  const a=load(); a.splice(i,1); saveL(a); render();
+  const a=load().filter(x=>x.dev!==r.dev); saveL(a); render(); setTimeout(loadCloud,800);
 }
 function cp(v){ if(!v) return; if(window.Android){ Android.copy(v); $('msg').textContent='Copied ✅'; return; } try{ navigator.clipboard.writeText(v).then(()=>$('msg').textContent='Copied ✅'); }catch(_){} }
 function restore(){ try{ const a=JSON.parse($('rest').value); if(!Array.isArray(a)) throw 0; const cur=load(); const keys=new Set(cur.map(r=>r.key)); a.forEach(r=>{ if(r&&r.key&&!keys.has(r.key)) cur.push(r); }); saveL(cur); $('rest').value=''; $('msg').textContent='Restored ✅'; render(); }catch(_){ $('msg').textContent='Invalid backup.'; } }
@@ -182,6 +190,7 @@ async function loadCloud(){
     const R=(rev&&rev.list)||[], now=Date.now()/1000, by={};
     ((keys&&keys.list)||[]).forEach(e=>{ if(e&&e.d&&(!by[e.d]||(e.t||0)>(by[e.d].t||0))) by[e.d]=e; });
     const rows=Object.keys(by).map(d=>{ const e=by[d], x=dk(e.k), iss=x.iss||e.t||0; const blocked=R.some(r=>r.d===d&&(r.t||0)>iss); return {d,x,t:e.t||0,blocked,exp:x.exp||0}; }).sort((a,c)=>c.t-a.t);
+    window.CLOUDROWS=rows.map(r=>({d:r.d,exp:r.exp,days:r.x.days,blocked:r.blocked})); try{ render(); }catch(_){}
     box.innerHTML=rows.length? rows.map(r=>{
       const st=r.blocked?'<span class="bad">Blocked</span>':(r.exp&&r.exp<now?'<span class="soon">Expired</span>':'<span class="ok">Active</span>');
       const btn=r.blocked?'<button class="s" onclick="cloudAct(\''+r.d+'\',true)">Re-enable</button><button class="s" onclick="cloudDel(\''+r.d+'\')">🗑 Delete</button>':'<button class="s" onclick="cloudAct(\''+r.d+'\',false)">🚪 Logout</button>';
