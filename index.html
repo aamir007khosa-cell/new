@@ -1282,30 +1282,33 @@ setInterval(async()=>{ const k=store('tdf_lic'); if(!k) return; const r=await ch
 
 
 // ===== Remote logout: seller ki block list (GitHub par) =====
-const REVOKE_URL='https://towerfinder.online/revoked.json';
+const REVOKE_URL='https://towerfinder-license.databasehes91.workers.dev/revoked';
+const REVOKE_URL2='https://towerfinder.online/revoked.json';
+async function getJ(u,u2){ try{ const r=await fetch(u+'?t='+Date.now(),{cache:'no-store'}); if(r.ok){ const j=await r.json(); if(j&&j.list) return j; } }catch(_){} return await (await fetch(u2+'?t='+Date.now(),{cache:'no-store'})).json(); }
 async function isRevoked(iss){
-  try{ const j=await (await fetch(REVOKE_URL+'?t='+Date.now(),{cache:'no-store'})).json();
+  try{ const j=await getJ(REVOKE_URL,REVOKE_URL2);
     const me=deviceCode();
     return !!(j&&j.list||[]).find(x=>x.d===me && x.t>iss);
   }catch(_){ return false; }   // offline: activation ko mat roko
 }
 async function checkRevoked(){
   const k=store('tdf_lic'); if(!k) return;
-  let j=null; try{ j=await (await fetch(REVOKE_URL+'?t='+Date.now(),{cache:'no-store'})).json(); }catch(_){ return; }   // offline: kuch na karo
+  let j=null; try{ j=await getJ(REVOKE_URL,REVOKE_URL2); }catch(_){ return; }   // offline: kuch na karo
   const r=await checkKey(k); if(!r.ok) return;
   const me=deviceCode();
   const hit=(j&&j.list||[]).find(x=>x.d===me && x.t>r.iss);
   if(hit){ store('tdf_lic',''); showLock('This license has been cancelled. Please contact the seller.'); }
 }
-setTimeout(checkRevoked, 2000); setInterval(checkRevoked, 20000);  // fast remote logout (~20s)
+setTimeout(checkRevoked, 2000); setInterval(checkRevoked, 15000);  // fast remote logout (~20s)
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ checkRevoked(); autoKey(); } });
 
 // ===== Auto key delivery: seller key cloud (keys.json) par publish karta hai, app khud utha kar activate karti hai =====
-const KEYS_URL='https://towerfinder.online/keys.json';
+const KEYS_URL='https://towerfinder-license.databasehes91.workers.dev/keys';
+const KEYS_URL2='https://towerfinder.online/keys.json';
 let lastCloudKey='';
 async function autoKey(){
   let j=null;
-  try{ j=await (await fetch(KEYS_URL+'?t='+Date.now(),{cache:'no-store'})).json(); }catch(_){ return false; }
+  try{ j=await getJ(KEYS_URL,KEYS_URL2); }catch(_){ return false; }
   const me=deviceCode();
   const hit=((j&&j.list)||[]).filter(x=>x&&x.d===me).sort((a,b)=>(b.t||0)-(a.t||0))[0];
   if(!hit||!hit.k) return false;
