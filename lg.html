@@ -85,8 +85,14 @@ async function gen(){
   const sig=Android.sign(p); if(!sig){ $('msg').textContent='Key generation failed — try again.'; return; }
   const key=p+'.'+sig;
   $('out').value=key;
-  $('msg').textContent='✅ '+name+' — '+days+'-day key created. Expires: '+new Date(e*1000).toLocaleString('en-PK');
+  const base='✅ '+name+' — '+days+'-day key created. Expires: '+new Date(e*1000).toLocaleString('en-PK');
+  $('msg').textContent=base;
   const a=load(); a.unshift({name,dev,days,c:now,e,key}); saveL(a); render();
+  if(tok()){
+    $('msg').textContent=base+' · Sending to cloud…';
+    try{ await publishKey(dev,key); $('msg').textContent=base+' · Sent to cloud — customer app will auto-activate.'; }
+    catch(err){ $('msg').textContent=base+' · Cloud send failed ('+err.message+') — send the key manually.'; }
+  }
 }
 function left(e){
   const s=e-Date.now()/1000; if(s<=0) return null;
@@ -148,6 +154,33 @@ async function blockDevice(dev){
   const x=await ghGet(); const now=Math.floor(Date.now()/1000);
   x.data.list=(x.data.list||[]).filter(e=>e.d!==dev); x.data.list.push({d:dev,t:now});
   await ghPut(x.data,x.sha,'Block '+dev);
+  try{ await unpublishKey(dev); }catch(_){}   // cloud se bhi key hata do
+}
+
+// ===== Cloud key delivery (keys.json par key publish — customer app khud utha leti hai) =====
+const KEYS_PATH='keys.json';
+async function ghReadKeys(){
+  const r=await fetch('https://api.github.com/repos/'+GH.owner+'/'+GH.repo+'/contents/'+KEYS_PATH+'?t='+Date.now(),{headers:{Authorization:'Bearer '+tok(),Accept:'application/vnd.github+json'},cache:'no-store'});
+  if(r.status===404) return {sha:null,data:{list:[]}};
+  if(!r.ok){ let m=''; try{ m=(await r.json()).message||''; }catch(_){} throw new Error('read '+r.status+(m?': '+m:'')); }
+  const j=await r.json(); return {sha:j.sha, data:JSON.parse(decodeURIComponent(escape(atob(j.content.replace(/\n/g,'')))))};
+}
+async function ghWriteKeys(data,sha,msg){
+  const body={message:msg, content:btoa(unescape(encodeURIComponent(JSON.stringify(data)+'\n')))}; if(sha) body.sha=sha;
+  const r=await fetch('https://api.github.com/repos/'+GH.owner+'/'+GH.repo+'/contents/'+KEYS_PATH,{method:'PUT',headers:{Authorization:'Bearer '+tok(),Accept:'application/vnd.github+json','Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!r.ok){ let m=''; try{ m=(await r.json()).message||''; }catch(_){} throw new Error('write '+r.status+(m?': '+m:'')+(r.status===403?' — token needs Contents: Read and write on repo "new"':'')); }
+}
+async function publishKey(dev,key){
+  const x=await ghReadKeys();
+  x.data.list=(x.data.list||[]).filter(e=>e.d!==dev);
+  x.data.list.push({d:dev,k:key,t:Math.floor(Date.now()/1000)});
+  if(x.data.list.length>800) x.data.list=x.data.list.slice(-800);
+  await ghWriteKeys(x.data,x.sha,'Publish key '+dev);
+}
+async function unpublishKey(dev){
+  const x=await ghReadKeys(); const before=(x.data.list||[]).length;
+  x.data.list=(x.data.list||[]).filter(e=>e.d!==dev);
+  if(x.data.list.length!==before) await ghWriteKeys(x.data,x.sha,'Remove key '+dev);
 }
 
 render(); setInterval(render,60000);

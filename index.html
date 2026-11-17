@@ -361,6 +361,7 @@ details[open] summary::before{content:"－ "}
     <input id="licKey" placeholder="Paste your key here" autocomplete="off">
     <div class="btns"><button class="main" onclick="activate()">Activate</button></div>
     <div class="err" id="licErr"></div>
+    <p class="hint" id="autoHint" style="color:var(--lime);display:none"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5"/></svg> After we confirm your payment, your key activates automatically — you don't need to paste it.</p>
   </div>
 </div>
 
@@ -1183,6 +1184,7 @@ function openLic(){
     $('lsLeft').textContent= left>0 ? (dd>0? dd+'d '+hh+'h' : hh+'h') : 'Expired';
     $('lsExp').textContent='Expires '+new Date(licExp*1000).toLocaleString('en-PK'); }
   $('licErr2').textContent=''; $('licKey2').value='';
+  autoKey();   // sheet khulte hi cloud se key check karo
 }
 function closeLic(){ $('licSheet').style.display='none'; }
 async function activate2(){
@@ -1200,6 +1202,7 @@ function buyOnline(){ location.href=SHOP_URL+'?d='+encodeURIComponent(deviceCode
 function showLock(msg){
   $('app').style.display='none'; $('nav').style.display='none'; $('lock').style.display='';
   $('devCode').textContent=deviceCode();
+  var ah=$('autoHint'); if(ah) ah.style.display='';
   if(window.Android) $('webWarn').style.display='none';
   $('pkgList').innerHTML=pkgHTML('pkDays','pkPrice'); loadPkgRate();
   if(false) $('pkgList').innerHTML='<div><span>1 day</span><b>'+fmt(PRICE_PER_DAY)+'</b><span>Rs 1,000 per day</span></div>'+
@@ -1225,9 +1228,9 @@ async function activate(){
 function copyCode(){ if(window.Android){ Android.copy(deviceCode()); toast('Code copied'); return; } try{ navigator.clipboard.writeText(deviceCode()).then(()=>toast('Code copied')).catch(()=>{}); }catch(_){} }
 async function boot(){
   const k=store('tdf_lic');
-  if(!k){ showLock(); return; }
-  const r=await checkKey(k);
-  if(r.ok) showApp(r.exp); else showLock(r.err);
+  if(k){ const r=await checkKey(k); if(r.ok){ showApp(r.exp); return; } showLock(r.err); }
+  else showLock();
+  autoKey();   // lock dikhane ke baad cloud se key laane ki koshish
 }
 boot();
 setInterval(async()=>{ const k=store('tdf_lic'); if(!k) return; const r=await checkKey(k); if(!r.ok) showLock(r.err); }, 60000);
@@ -1250,7 +1253,33 @@ async function checkRevoked(){
   if(hit){ store('tdf_lic',''); showLock('This license has been cancelled. Please contact the seller.'); }
 }
 setTimeout(checkRevoked, 2500); setInterval(checkRevoked, 5*60*1000);
-document.addEventListener('visibilitychange',()=>{ if(!document.hidden) checkRevoked(); });
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ checkRevoked(); autoKey(); } });
+
+// ===== Auto key delivery: seller key cloud (keys.json) par publish karta hai, app khud utha kar activate karti hai =====
+const KEYS_URL='https://towerfinder.online/keys.json';
+let lastCloudKey='';
+async function autoKey(){
+  let j=null;
+  try{ j=await (await fetch(KEYS_URL+'?t='+Date.now(),{cache:'no-store'})).json(); }catch(_){ return false; }
+  const me=deviceCode();
+  const hit=((j&&j.list)||[]).filter(x=>x&&x.d===me).sort((a,b)=>(b.t||0)-(a.t||0))[0];
+  if(!hit||!hit.k) return false;
+  const k=String(hit.k).trim();
+  if(k===lastCloudKey) return false;                 // isay pehle dekh chuke
+  const have=(store('tdf_lic')||'').trim();
+  if(k===have){ lastCloudKey=k; return false; }       // pehle se laga hua
+  const r=await checkKey(k); lastCloudKey=k;
+  if(!r.ok) return false;
+  if(await isRevoked(r.iss)) return false;
+  if(licExp && r.exp<=licExp) return false;            // purani/same expiry — upgrade nahi
+  store('tdf_lic',k);
+  const wasLocked=$('lock').style.display!=='none';
+  showApp(r.exp);
+  if($('licSheet')) $('licSheet').style.display='none';
+  toast(wasLocked?'License activated':'License updated');
+  return true;
+}
+setInterval(autoKey, 25000);
 
 // Pichli values yaad rakho (sirf isi phone par)
 function save(){ try{ ['a','b','ga','ha','gb','hb','clut','ispH','freq','bw','busy','fmin','fmax','gA','gB','txp','loss'].forEach(k=>localStorage.setItem('tdf_'+k,$(k).value)); }catch(_){} }

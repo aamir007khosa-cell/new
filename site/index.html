@@ -186,6 +186,8 @@ footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--mut);fon
       <p class="note" style="margin:0 0 8px">After sending, copy the TXID / hash from your wallet or exchange (Binance: Wallet → History → Withdrawal → TxID).</p>
       <input type="text" id="txid" placeholder="Transaction hash" autocomplete="off" style="font-family:ui-monospace,Consolas,monospace">
       <div style="margin-top:8px"><a id="explorer" class="note" href="#" target="_blank" rel="noopener" style="display:none">🔎 View this transaction on the explorer</a></div>
+      <label style="margin-top:10px;display:block">Your email (optional — for reply)</label>
+      <input type="text" id="ordEmail" placeholder="you@email.com" autocomplete="off">
     </div>
     <div class="step">
       <h3>Send proof &amp; get your key</h3>
@@ -225,7 +227,10 @@ footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--mut);fon
 
   <div class="card" style="margin-top:14px">
     <h3 style="margin:0 0 4px">🎫 Open a support ticket</h3>
-    <label>Your name</label><input type="text" id="tName" placeholder="Name">
+    <div class="row2">
+      <div><label>Your name</label><input type="text" id="tName" placeholder="Name"></div>
+      <div><label>Your email (for reply)</label><input type="text" id="tEmail" placeholder="you@email.com" autocomplete="off"></div>
+    </div>
     <div class="row2">
       <div><label>Device Code (if any)</label><input type="text" id="tDev" placeholder="Device Code" style="text-transform:uppercase"></div>
       <div><label>Topic</label><select id="tTopic"><option>License / key</option><option>Payment</option><option>Install problem</option><option>Mimosa radio</option><option>Bug / not working</option><option>Feature request</option><option>Other</option></select></div>
@@ -328,13 +333,15 @@ $('dev').oninput=()=>{ $('dev').value=$('dev').value.toUpperCase().replace(/[^A-
 $('txid').oninput=updExplorer;
 function updExplorer(){ const t=$('txid').value.trim(); const a=$('explorer'); if(t.length>=20){ a.href=net.explorer+t; a.style.display='inline'; } else a.style.display='none'; }
 
-function openChat(kind,text,subject){
+function openChat(kind,text,subject,replyto){
   if(kind==='mail'){
     toast('Sending…');
+    const payload={_subject:subject||'Tower Finder',_template:'box',_captcha:'false',message:text};
+    if(replyto && /.+@.+\..+/.test(replyto)) payload._replyto=replyto;
     fetch('https://formsubmit.co/ajax/'+SHOP.email,{
       method:'POST',
       headers:{'Content-Type':'application/json',Accept:'application/json'},
-      body:JSON.stringify({_subject:subject||'Tower Finder',_template:'box',_captcha:'false',message:text})
+      body:JSON.stringify(payload)
     }).then(r=>r.json()).then(d=>{
       if(d && (d.success===true || d.success==='true')) toast('✅ Sent — we will reply by email.');
       else { copy(text,'Could not send — message copied, email us at '+SHOP.email); }
@@ -348,20 +355,23 @@ function openChat(kind,text,subject){
 }
 function sendProof(kind){
   const dev=$('dev').value.trim(), tx=$('txid').value.trim(), d=+days.value;
+  const em=($('ordEmail').value||'').trim();
   if(dev.length<6){ toast('Enter your Device Code'); $('dev').focus(); return; }
   if(tx.length<20){ toast('Paste the Transaction ID'); $('txid').focus(); return; }
   const text='Tower Finder — license order\n'+
-    'Device Code: '+dev+'\nPackage: '+d+(d>1?' days':' day')+' (Rs '+fmt(curPkr())+')\n'+
-    'Paid: '+curUsdt().toFixed(2)+' USDT via '+net.short+'\nTXID: '+tx+'\nCheck: '+net.explorer+tx;
-  openChat(kind,text,'License order '+dev);
+    'Device Code: '+dev+'\nPackage: '+d+(d>1?' days':' day')+'\n'+
+    'Paid: '+curUsdt().toFixed(2)+' USDT via '+net.short+'\nTXID: '+tx+'\nCheck: '+net.explorer+tx+
+    (em?'\nEmail: '+em:'');
+  openChat(kind,text,'License order '+dev,em);
 }
 function ticket(kind){
   const msg=$('tMsg').value.trim(); if(msg.length<5){ toast('Describe the problem'); $('tMsg').focus(); return; }
+  const em=($('tEmail').value||'').trim();
   const id='T'+Date.now().toString(36).toUpperCase().slice(-6);
-  const text='Support ticket '+id+'\nName: '+($('tName').value.trim()||'-')+'\nDevice Code: '+($('tDev').value.trim().toUpperCase()||'-')+
+  const text='Support ticket '+id+'\nName: '+($('tName').value.trim()||'-')+'\nEmail: '+(em||'-')+'\nDevice Code: '+($('tDev').value.trim().toUpperCase()||'-')+
     '\nTopic: '+$('tTopic').value+'\n\n'+msg;
   $('tId').innerHTML='Your ticket number: <b class="ok">'+id+'</b> — keep it for reference.';
-  openChat(kind,text,'Support '+id+' — '+$('tTopic').value);
+  openChat(kind,text,'Support '+id+' — '+$('tTopic').value,em);
 }
 
 if(!SHOP.email) document.querySelectorAll('[onclick*="mail"]').forEach(b=>b.style.display='none');
