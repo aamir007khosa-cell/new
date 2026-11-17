@@ -330,8 +330,15 @@ function updExplorer(){ const t=$('txid').value.trim(); const a=$('explorer'); i
 
 function openChat(kind,text,subject){
   if(kind==='mail'){
-    copy('To: '+SHOP.email+'\n'+(subject?'Subject: '+subject+'\n':'')+'\n'+text, 'Copied — email to '+SHOP.email);
-    location.href='mailto:'+SHOP.email+'?subject='+encodeURIComponent(subject||'')+'&body='+encodeURIComponent(text);
+    toast('Sending…');
+    fetch('https://formsubmit.co/ajax/'+SHOP.email,{
+      method:'POST',
+      headers:{'Content-Type':'application/json',Accept:'application/json'},
+      body:JSON.stringify({_subject:subject||'Tower Finder',_template:'box',_captcha:'false',message:text})
+    }).then(r=>r.json()).then(d=>{
+      if(d && (d.success===true || d.success==='true')) toast('✅ Sent — we will reply by email.');
+      else { copy(text,'Could not send — message copied, email us at '+SHOP.email); }
+    }).catch(_=>{ copy(text,'Could not send — message copied, email us at '+SHOP.email); });
     return;
   }
   let url;
