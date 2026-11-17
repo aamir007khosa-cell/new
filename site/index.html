@@ -197,8 +197,10 @@ footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--mut);fon
           <div class="mono" style="font-size:14px;word-break:break-all">PK06JCMA1511923432139878</div>
           <button class="btn sm" style="margin:6px 0 0" onclick="copy('PK06JCMA1511923432139878','JazzCash IBAN copied')">📋 Copy IBAN</button>
         </div>
-        <label style="margin-top:14px;display:block">Paid with</label>
-        <select id="pkMethod" style="width:100%"><option value="easypaisa">Easypaisa</option><option value="jazzcash">JazzCash</option></select>
+        <label style="margin-top:14px;display:block">I sent the money to</label>
+        <select id="pkMethod" style="width:100%"><option value="easypaisa">Easypaisa account</option><option value="jazzcash">JazzCash account</option></select>
+        <label style="margin-top:10px;display:block">I paid from (my bank / wallet)</label>
+        <select id="pkBank" style="width:100%"><option>Easypaisa</option><option>JazzCash</option><option>HBL</option><option>UBL</option><option>MCB</option><option>Meezan Bank</option><option>Allied Bank</option><option>Bank Alfalah</option><option>Askari Bank</option><option>Faysal Bank</option><option>Habib Metro</option><option>Standard Chartered</option><option>Bank of Punjab</option><option>NBP</option><option>Soneri Bank</option><option>Bank Islami</option><option>Dubai Islamic</option><option>Samba</option><option>Silk Bank</option><option>SadaPay</option><option>NayaPay</option><option>Other bank</option></select>
         <label style="margin-top:10px;display:block">Transaction ID (TID) from the SMS</label>
         <input type="text" id="pkTx" placeholder="e.g. 41234567890" autocomplete="off" style="font-family:ui-monospace,Consolas,monospace">
         <label style="margin-top:10px;display:block">Your name (optional)</label>
@@ -380,7 +382,7 @@ async function submitPk(){
   if(dev.length<6){ toast('Enter your Device Code'); $('dev').focus(); window.scrollTo({top:$('dev').getBoundingClientRect().top+scrollY-80,behavior:'smooth'}); return; }
   if(tx.length<6){ toast('Enter the Transaction ID'); $('pkTx').focus(); return; }
   s.style.color='var(--mut)'; s.textContent='Sending…';
-  const body={dev,days:d,method:$('pkMethod').value,txid:tx,name:$('pkName').value.trim(),phone:$('pkPhone').value.trim()};
+  const body={dev,days:d,method:$('pkMethod').value,txid:tx,name:($('pkBank').value+' · '+$('pkName').value.trim()).replace(/ · $/,''),phone:$('pkPhone').value.trim()};
   try{
     const r=await fetch(SHOP.worker+'/order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const j=await r.json();
