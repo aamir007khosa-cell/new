@@ -201,8 +201,10 @@ footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--mut);fon
         <select id="pkMethod" style="width:100%"><option value="easypaisa">Easypaisa account</option><option value="jazzcash">JazzCash account</option></select>
         <label style="margin-top:10px;display:block">I paid from (my bank / wallet)</label>
         <select id="pkBank" style="width:100%"><option>Easypaisa</option><option>JazzCash</option><option>HBL</option><option>UBL</option><option>MCB</option><option>Meezan Bank</option><option>Allied Bank</option><option>Bank Alfalah</option><option>Askari Bank</option><option>Faysal Bank</option><option>Habib Metro</option><option>Standard Chartered</option><option>Bank of Punjab</option><option>NBP</option><option>Soneri Bank</option><option>Bank Islami</option><option>Dubai Islamic</option><option>Samba</option><option>Silk Bank</option><option>SadaPay</option><option>NayaPay</option><option>Other bank</option></select>
-        <label style="margin-top:10px;display:block">Transaction ID (TID) from the SMS</label>
-        <input type="text" id="pkTx" placeholder="e.g. 41234567890" autocomplete="off" style="font-family:ui-monospace,Consolas,monospace">
+        <label style="margin-top:10px;display:block">Payment screenshot</label>
+        <input type="file" id="pkFile" accept="image/*" style="width:100%">
+        <img id="pkPrev" alt="" style="display:none;max-width:100%;max-height:220px;border-radius:10px;margin-top:8px">
+        <p class="note" style="margin:6px 0 0">Upload the screenshot of your Easypaisa / JazzCash / bank payment (it must show the amount and Transaction ID). If the button does not open, open this page in Chrome.</p>
         <label style="margin-top:10px;display:block">Your name (optional)</label>
         <input type="text" id="pkName" placeholder="Your name" autocomplete="off">
         <label style="margin-top:10px;display:block">Your phone / WhatsApp (optional)</label>
@@ -376,20 +378,23 @@ function setMethod(m){
   if(m==='card') setNet(Math.max(0,SHOP.wallets.findIndex(w=>w.id==='trc20')));
   upd();
 }
+let pkShot='';
+function shrinkImg(f){return new Promise((res,rej)=>{const img=new Image(),u=URL.createObjectURL(f);img.onload=()=>{let w=img.width,h=img.height;const m=1000;if(Math.max(w,h)>m){const k=m/Math.max(w,h);w=Math.round(w*k);h=Math.round(h*k);}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);URL.revokeObjectURL(u);let q=.72,d=c.toDataURL('image/jpeg',q);while(d.length>330000&&q>.3){q-=.1;d=c.toDataURL('image/jpeg',q);}res(d);};img.onerror=()=>rej(new Error('bad image'));img.src=u;});}
+$('pkFile').onchange=async e=>{ const f=e.target.files[0]; pkShot=''; $('pkPrev').style.display='none'; if(!f) return; try{ pkShot=await shrinkImg(f); $('pkPrev').src=pkShot; $('pkPrev').style.display='block'; }catch(_){ toast('Could not read that image'); } };
 async function submitPk(){
-  const dev=$('dev').value.trim().toUpperCase(), tx=$('pkTx').value.trim().replace(/\s+/g,''), d=+days.value;
+  const dev=$('dev').value.trim().toUpperCase(), d=+days.value;
   const s=$('pkStatus');
   if(dev.length<6){ toast('Enter your Device Code'); $('dev').focus(); window.scrollTo({top:$('dev').getBoundingClientRect().top+scrollY-80,behavior:'smooth'}); return; }
-  if(tx.length<6){ toast('Enter the Transaction ID'); $('pkTx').focus(); return; }
+  if(!pkShot){ toast('Upload your payment screenshot'); $('pkFile').focus(); return; }
   s.style.color='var(--mut)'; s.textContent='Sending…';
-  const body={dev,days:d,method:$('pkMethod').value,txid:tx,name:($('pkBank').value+' · '+$('pkName').value.trim()).replace(/ · $/,''),phone:$('pkPhone').value.trim()};
+  const body={dev,days:d,method:$('pkMethod').value,shot:pkShot,name:($('pkBank').value+' · '+$('pkName').value.trim()).replace(/ · $/,''),phone:$('pkPhone').value.trim()};
   try{
     const r=await fetch(SHOP.worker+'/order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const j=await r.json();
     if(j&&j.ok){
       s.style.color='var(--lime)';
-      s.innerHTML='✅ Order received (#'+j.id+'). We are confirming your payment — your app will unlock on its own, usually within a few minutes. Open Tower Finder after a short while.';
-      try{ fetch('https://formsubmit.co/ajax/'+SHOP.email,{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({_subject:'New PK order '+dev,_template:'box',_captcha:'false',message:'Order '+j.id+'\nDevice: '+dev+'\nDays: '+d+'\nAmount: Rs '+curPkr()+'\nVia: '+body.method+'\nTID: '+tx+'\nName: '+(body.name||'-')+'\nPhone: '+(body.phone||'-')})}); }catch(_){}
+      s.innerHTML='✅ Order received (#'+j.id+'). We are checking your payment — your app will unlock on its own, usually within a few minutes. Open Tower Finder after a short while.';
+      try{ fetch('https://formsubmit.co/ajax/'+SHOP.email,{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({_subject:'New PK order '+dev,_template:'box',_captcha:'false',message:'Order '+j.id+'\nDevice: '+dev+'\nDays: '+d+'\nAmount: Rs '+curPkr()+'\nTo: '+body.method+'\nFrom/Name: '+(body.name||'-')+'\nPhone: '+(body.phone||'-')+'\n(Screenshot: open admin page)'})}); }catch(_){}
     } else { s.style.color='var(--red)'; s.textContent='❌ '+((j&&j.error)||'Could not send. Try again.'); }
   }catch(e){ s.style.color='var(--red)'; s.textContent='Network error — try again, or contact us on Telegram.'; }
 }

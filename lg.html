@@ -191,6 +191,15 @@ async function cloudAct(d,un){
 }
 
 // ===== Easypaisa / JazzCash orders =====
+const wApiX=wApi;
+function viewShot(id){
+  wApiX('/shot',{id}).then(j=>{
+    const o=document.createElement('div'); o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:99999;display:flex;align-items:center;justify-content:center;padding:10px';
+    o.onclick=()=>o.remove();
+    const i=document.createElement('img'); i.src=j.shot; i.style.cssText='max-width:100%;max-height:100%;border-radius:8px'; o.appendChild(i); document.body.appendChild(o);
+  }).catch(e=>alert(e.message||e));
+}
+
 function agoO(t){ const m=Math.max(0,Math.floor((Date.now()/1000-t)/60)); return m<60?m+' min ago':(m<1440?Math.floor(m/60)+' h ago':Math.floor(m/1440)+' d ago'); }
 async function loadOrders(){
   const box=$('ordList');
@@ -201,7 +210,7 @@ async function loadOrders(){
     box.innerHTML=L.length? L.map(o=>{
       const st=o.status==='pending'?'<span class="soon">Pending</span>':(o.status==='approved'?'<span class="ok">Approved</span>':'<span class="bad">Rejected</span>');
       const btn=o.status==='pending'?'<button class="s" onclick="ordAct(\''+o.id+'\',\'approve\')">✅ Approve</button><button class="s" onclick="ordAct(\''+o.id+'\',\'reject\')">Reject</button>':'';
-      return '<div class="cl"><div class="t"><span class="n">📱 '+esc(o.dev)+'</span>'+st+'</div><div class="m">'+o.days+' day'+(o.days>1?'s':'')+' · Rs '+(o.days*1000).toLocaleString('en-PK')+' · '+esc(o.method)+' · TID '+esc(o.txid)+'</div><div class="m">'+esc(o.name||'-')+' · '+esc(o.phone||'-')+' · '+agoO(o.t)+'</div>'+btn+'</div>';
+      return '<div class="cl"><div class="t"><span class="n">📱 '+esc(o.dev)+'</span>'+st+'</div><div class="m">'+o.days+' day'+(o.days>1?'s':'')+' · Rs '+(o.days*1000).toLocaleString('en-PK')+' · '+esc(o.method)+(o.shot?' · <a href="#" onclick="viewShot(\''+o.id+'\');return false" style="color:#c8f135">🖼 View screenshot</a>':' · TID '+esc(o.txid))+'</div><div class="m">'+esc(o.name||'-')+' · '+esc(o.phone||'-')+' · '+agoO(o.t)+'</div>'+btn+'</div>';
     }).join('') : '<p style="color:#9aa3ae;font-size:13px">No orders yet.</p>';
   }catch(e){ box.innerHTML='<p style="color:#ff6b6b;font-size:13px">'+esc(e.message||e)+'</p>'; }
 }
