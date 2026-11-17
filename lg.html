@@ -87,6 +87,7 @@ async function gen(){
   $('out').value=key;
   $('msg').textContent='✅ '+name+' — '+days+'-day key created. Expires: '+new Date(e*1000).toLocaleString('en-PK');
   const a=load(); a.unshift({name,dev,days,c:now,e,key}); saveL(a); render();
+  if(tok()){ try{ const un=await unblockDevice(dev); if(un) $('msg').textContent+=' · device un-blocked online ✅'; }catch(ex){ $('msg').textContent+=' · (could not un-block online: '+ex.message+')'; } }
 }
 function left(e){
   const s=e-Date.now()/1000; if(s<=0) return null;
@@ -148,6 +149,12 @@ async function blockDevice(dev){
   const x=await ghGet(); const now=Math.floor(Date.now()/1000);
   x.data.list=(x.data.list||[]).filter(e=>e.d!==dev); x.data.list.push({d:dev,t:now});
   await ghPut(x.data,x.sha,'Block '+dev);
+}
+async function unblockDevice(dev){
+  const x=await ghGet(); const before=(x.data.list||[]).length;
+  x.data.list=(x.data.list||[]).filter(e=>e.d!==dev);
+  if(x.data.list.length!==before){ await ghPut(x.data,x.sha,'Unblock '+dev); return true; }
+  return false;
 }
 
 render(); setInterval(render,60000);
