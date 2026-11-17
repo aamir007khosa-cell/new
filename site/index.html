@@ -329,10 +329,14 @@ $('txid').oninput=updExplorer;
 function updExplorer(){ const t=$('txid').value.trim(); const a=$('explorer'); if(t.length>=20){ a.href=net.explorer+t; a.style.display='inline'; } else a.style.display='none'; }
 
 function openChat(kind,text,subject){
+  if(kind==='mail'){
+    copy('To: '+SHOP.email+'\n'+(subject?'Subject: '+subject+'\n':'')+'\n'+text, 'Copied — email to '+SHOP.email);
+    location.href='mailto:'+SHOP.email+'?subject='+encodeURIComponent(subject||'')+'&body='+encodeURIComponent(text);
+    return;
+  }
   let url;
   if(kind==='wa') url='https://wa.me/'+SHOP.whatsapp+'?text='+encodeURIComponent(text);
-  else if(kind==='tg'){ copy(text,'Message copied — paste it in Telegram'); url='https://t.me/'+SHOP.telegram; }
-  else url='mailto:'+SHOP.email+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(text);
+  else { copy(text,'Message copied — paste it in Telegram'); url='https://t.me/'+SHOP.telegram; }
   if(inApp) location.href=url; else window.open(url,'_blank');
 }
 function sendProof(kind){
