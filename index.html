@@ -321,6 +321,29 @@ details[open] summary::before{content:"－ "}
 .rdev.sel{border-color:var(--lime);box-shadow:0 0 0 1px var(--lime) inset,0 8px 28px -12px rgba(200,241,53,.3)}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 </style>
+<style id="polish">
+/* ===== polish: animated theme ===== */
+body::before,body::after{content:"";position:fixed;z-index:-1;width:60vmax;height:60vmax;border-radius:50%;filter:blur(90px);opacity:.16;pointer-events:none}
+body::before{background:#c8f135;top:-25vmax;left:-20vmax;animation:blobA 18s ease-in-out infinite alternate}
+body::after{background:#2fd5c1;bottom:-28vmax;right:-22vmax;opacity:.11;animation:blobB 22s ease-in-out infinite alternate}
+@keyframes blobA{to{transform:translate(18vmax,14vmax) scale(1.15)}}
+@keyframes blobB{to{transform:translate(-16vmax,-12vmax) scale(1.2)}}
+.card,.feat{animation:cardIn .6s cubic-bezier(.2,.8,.2,1) both;transition:transform .25s,border-color .25s,box-shadow .25s}
+.card:hover{transform:translateY(-3px);border-color:rgba(200,241,53,.45);box-shadow:0 14px 34px -16px rgba(200,241,53,.35)}
+@keyframes cardIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+.btn.main,button.main{position:relative;overflow:hidden;animation:pulseG 2.6s ease-in-out infinite}
+.btn.main::after,button.main::after{content:"";position:absolute;top:0;left:-70%;width:45%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-20deg);animation:shine 3.4s ease-in-out infinite}
+@keyframes shine{0%,55%{left:-70%}100%{left:130%}}
+@keyframes pulseG{0%,100%{box-shadow:0 6px 18px -8px rgba(200,241,53,.45)}50%{box-shadow:0 8px 28px -4px rgba(200,241,53,.75)}}
+.hero h1 span{background:linear-gradient(90deg,#c8f135,#5ff0d0,#c8f135);background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:gradMove 5s linear infinite}
+@keyframes gradMove{to{background-position:200% center}}
+.step:before{animation:pop 2.8s ease-in-out infinite}
+@keyframes pop{0%,100%{transform:scale(1)}50%{transform:scale(1.09)}}
+.feat .ic{display:inline-block;animation:floaty 3.6s ease-in-out infinite}
+@keyframes floaty{50%{transform:translateY(-5px)}}
+.tabs button{transition:all .2s}.tabs button.on{box-shadow:0 0 0 1px var(--lime),0 6px 18px -8px rgba(200,241,53,.6)}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
 </head>
 <body>
 <div class="aurora"><i></i><i></i><i></i></div>
