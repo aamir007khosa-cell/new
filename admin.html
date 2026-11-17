@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Tower Finder — Admin</title>
+<link rel="icon" href="favicon.svg">
+<style>
+  :root{ --bg:#0b0f10; --card:#141a1c; --line:#243034; --txt:#e7f0ee; --mut:#8aa0a0; --lime:#c8f135; --red:#ff5a5a; --amber:#ffb84d; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:'Plus Jakarta Sans',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;-webkit-text-size-adjust:100%}
+  .wrap{max-width:900px;margin:0 auto;padding:18px 14px 60px}
+  h1{font-size:20px;margin:0;display:flex;align-items:center;gap:9px}
+  .logo{width:30px;height:30px;border-radius:8px;background:#0e1416;border:1px solid var(--line);display:grid;place-items:center}
+  .logo svg{width:18px;height:18px;stroke:var(--lime)}
+  .sub{color:var(--mut);font-size:12.5px;margin:3px 0 0 39px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-top:14px}
+  label{display:block;font-size:12px;color:var(--mut);margin:0 0 5px}
+  input[type=text],input[type=password]{width:100%;background:#0e1416;border:1px solid var(--line);border-radius:11px;color:var(--txt);
+    padding:12px 13px;font-size:15px;outline:none}
+  input:focus{border-color:var(--lime)}
+  .row{display:flex;gap:9px;flex-wrap:wrap}
+  .row>*{flex:1;min-width:150px}
+  button{cursor:pointer;border:none;border-radius:11px;font-weight:700;font-size:14px;padding:12px 15px;font-family:inherit}
+  .btn-lime{background:var(--lime);color:#0b0f10}
+  .btn-ghost{background:#0e1416;color:var(--txt);border:1px solid var(--line)}
+  .btn-red{background:transparent;color:var(--red);border:1px solid #4a2626}
+  .btn-sm{padding:8px 12px;font-size:13px;border-radius:9px}
+  .btn-grn{background:transparent;color:var(--lime);border:1px solid #2f4418}
+  .muted{color:var(--mut);font-size:12.5px}
+  table{width:100%;border-collapse:collapse;margin-top:6px}
+  th,td{text-align:left;padding:10px 8px;font-size:13.5px;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{color:var(--mut);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.4px}
+  td.dev{font-family:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;font-weight:700;letter-spacing:1px}
+  .pill{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:700}
+  .p-act{background:rgba(200,241,53,.14);color:var(--lime)}
+  .p-rev{background:rgba(255,90,90,.14);color:var(--red)}
+  .p-exp{background:rgba(255,184,77,.14);color:var(--amber)}
+  .right{text-align:right}
+  .top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  #msg{font-size:13px;margin-top:10px;min-height:18px}
+  .ok{color:var(--lime)} .err{color:var(--red)}
+  .hide{display:none!important}
+  .count{font-size:12px;color:var(--mut)}
+  @media(max-width:560px){ th.hcol,td.hcol{display:none} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>
+    <span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v13M8 22h8M5 7a9 9 0 0 1 14 0M8 9.5a5 5 0 0 1 8 0"/><circle cx="12" cy="7" r="1.3" fill="#c8f135" stroke="none"/></svg></span>
+    Tower Finder — Admin
+  </h1>
+  <div class="sub">Manage licenses · instant remote logout</div>
+
+  <!-- PASSWORD GATE -->
+  <div id="gate" class="card">
+    <label>Admin password</label>
+    <div class="row">
+      <input id="pass" type="password" placeholder="Enter admin password" autocomplete="off">
+      <button class="btn-lime" style="flex:0 0 auto" onclick="savePass()">Unlock</button>
+    </div>
+    <div class="muted" style="margin-top:9px">Yeh wahi password hai jo tumne Cloudflare mein <b>ADMIN_KEY</b> set kiya. Browser mein save ho jata hai.</div>
+  </div>
+
+  <!-- PANEL -->
+  <div id="panel" class="hide">
+
+    <div class="card">
+      <div class="top">
+        <div>
+          <b>Customers</b>
+          <span id="count" class="count"></span>
+        </div>
+        <div class="row" style="flex:0 0 auto">
+          <button class="btn-ghost btn-sm" onclick="load()">↻ Refresh</button>
+          <button class="btn-ghost btn-sm" onclick="lock()">Lock</button>
+        </div>
+      </div>
+      <input id="search" type="text" placeholder="Search device code…" oninput="render()" style="margin-top:11px">
+      <div style="overflow-x:auto">
+        <table id="tbl">
+          <thead><tr>
+            <th>Device</th><th class="hcol">Package</th><th>Expiry</th><th class="hcol">Issued</th><th>Status</th><th class="right">Action</th>
+          </tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <div id="empty" class="muted hide" style="padding:16px 4px">Koi customer nahi mila.</div>
+    </div>
+
+    <div class="card">
+      <label>Manual logout — koi bhi device code daal kar block karo (local / physical deals)</label>
+      <div class="row">
+        <input id="mdev" type="text" placeholder="e.g. AB12CD34" maxlength="8" style="text-transform:uppercase;font-family:'JetBrains Mono',monospace;letter-spacing:1px">
+        <button class="btn-red" style="flex:0 0 auto" onclick="manual()">Logout / Block</button>
+      </div>
+      <div class="muted" style="margin-top:8px">App us device ko agle few seconds mein (ya jab customer app kholay) khud logout kar degi.</div>
+    </div>
+
+    <div id="msg"></div>
+  </div>
+
+</div>
+
+<script>
+/* ===== CONFIG ===== */
+var WORKER = 'https://towerfinder-license.databasehes91.workers.dev';
+var KEYS_URL = 'https://towerfinder.online/keys.json';
+var REV_URL  = 'https://towerfinder.online/revoked.json';
+
+/* ===== helpers ===== */
+var $=function(id){return document.getElementById(id)};
+function pass(){ return localStorage.getItem('tf_admin')||''; }
+function b64u(s){ s=String(s).replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4)s+='='; try{return atob(s)}catch(_){return ''} }
+function decode(k){ try{ var p=JSON.parse(b64u(String(k).split('.')[0])); return {days:+p.p||0, exp:+p.e||0, iss:(+p.e||0)-((+p.p||0)*86400)}; }catch(_){ return null; } }
+function fdate(ts){ if(!ts) return '—'; var d=new Date(ts*1000); return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); }
+function esc(s){ return String(s).replace(/[<>&]/g,function(c){return {'<':'&lt;','>':'&gt;','&':'&amp;'}[c]}); }
+
+var DATA=[]; // combined rows
+
+function savePass(){
+  var v=$('pass').value.trim();
+  if(!v){ return; }
+  localStorage.setItem('tf_admin', v);
+  $('gate').classList.add('hide'); $('panel').classList.remove('hide');
+  load();
+}
+function lock(){ $('panel').classList.add('hide'); $('gate').classList.remove('hide'); $('pass').value=''; }
+
+function setMsg(t, ok){ var m=$('msg'); m.textContent=t||''; m.className=ok?'ok':(t?'err':''); }
+
+async function load(){
+  setMsg('Loading…', true);
+  try{
+    var bust='?t='+Date.now();
+    var kr = await fetch(KEYS_URL+bust,{cache:'no-store'});
+    var keys = kr.ok ? await kr.json() : {list:[]};
+    var rr = await fetch(REV_URL+bust,{cache:'no-store'}).catch(function(){return null});
+    var rev = (rr&&rr.ok) ? await rr.json() : {list:[]};
+    var revList = (rev&&rev.list)||[];
+    var now = Date.now()/1000;
+
+    var list = (keys&&keys.list)||[];
+    // latest entry per device
+    var byDev={};
+    list.forEach(function(e){ if(!e||!e.d) return; if(!byDev[e.d] || (e.t||0)>(byDev[e.d].t||0)) byDev[e.d]=e; });
+
+    DATA = Object.keys(byDev).map(function(dev){
+      var e=byDev[dev]; var d=decode(e.k)||{};
+      var iss = d.iss || e.t || 0;
+      var revoked = revList.some(function(x){ return x.d===dev && (x.t||0) > iss; });
+      var status = revoked ? 'revoked' : ((d.exp && d.exp<now) ? 'expired' : 'active');
+      return { dev:dev, days:d.days||0, exp:d.exp||0, iss:iss, issued:e.t||iss, status:status };
+    });
+    // also any revoked device not present in keys.json (pure manual blocks)
+    revList.forEach(function(x){
+      if(!x||!x.d) return;
+      if(!DATA.some(function(r){return r.dev===x.d})) DATA.push({dev:x.d,days:0,exp:0,iss:0,issued:x.t||0,status:'revoked'});
+    });
+    DATA.sort(function(a,b){ return (b.issued||0)-(a.issued||0); });
+    render();
+    setMsg('', true);
+  }catch(e){ setMsg('Load failed: '+e, false); }
+}
+
+function render(){
+  var q=($('search').value||'').trim().toUpperCase();
+  var rows=$('rows'); rows.innerHTML='';
+  var shown=DATA.filter(function(r){ return !q || r.dev.indexOf(q)>=0; });
+  $('count').textContent='· '+DATA.length+' total';
+  $('empty').classList.toggle('hide', shown.length>0);
+  shown.forEach(function(r){
+    var tr=document.createElement('tr');
+    var pill = r.status==='active' ? '<span class="pill p-act">Active</span>'
+             : r.status==='revoked' ? '<span class="pill p-rev">Blocked</span>'
+             : '<span class="pill p-exp">Expired</span>';
+    var act = r.status==='revoked'
+      ? '<button class="btn-grn btn-sm" data-dev="'+r.dev+'" data-un="1">Re-enable</button>'
+      : '<button class="btn-red btn-sm" data-dev="'+r.dev+'" data-un="0">Logout</button>';
+    tr.innerHTML =
+      '<td class="dev">'+esc(r.dev)+'</td>'+
+      '<td class="hcol">'+(r.days?r.days+' day'+(r.days>1?'s':''):'—')+'</td>'+
+      '<td>'+fdate(r.exp)+'</td>'+
+      '<td class="hcol">'+fdate(r.issued)+'</td>'+
+      '<td>'+pill+'</td>'+
+      '<td class="right">'+act+'</td>';
+    rows.appendChild(tr);
+  });
+  Array.prototype.forEach.call(rows.querySelectorAll('button[data-dev]'), function(b){
+    b.onclick=function(){ revoke(b.getAttribute('data-dev'), b.getAttribute('data-un')==='1', b); };
+  });
+}
+
+async function revoke(dev, un, btn){
+  if(!un && !confirm('Logout / block device '+dev+'?\nYeh app foran logout kar degi.')) return;
+  if(btn){ btn.disabled=true; btn.textContent='…'; }
+  setMsg('Working…', true);
+  try{
+    var r=await fetch(WORKER+(un?'/unrevoke':'/revoke'),{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ admin:pass(), dev:dev })
+    });
+    var j=await r.json().catch(function(){return {}});
+    if(!r.ok || !j.ok){
+      setMsg((j&&j.error)||('Failed ('+r.status+')'), false);
+      if(r.status===401){ setMsg('Wrong admin password. Lock karke dobara daalo.', false); }
+      if(btn){ btn.disabled=false; btn.textContent=un?'Re-enable':'Logout'; }
+      return;
+    }
+    setMsg(un?('✓ '+dev+' re-enabled'):('✓ '+dev+' logged out & blocked'), true);
+    setTimeout(load, 700);
+  }catch(e){
+    setMsg('Error: '+e, false);
+    if(btn){ btn.disabled=false; btn.textContent=un?'Re-enable':'Logout'; }
+  }
+}
+
+function manual(){
+  var d=($('mdev').value||'').trim().toUpperCase();
+  if(!/^[A-Z0-9]{8}$/.test(d)){ setMsg('Device code 8 characters ka hona chahiye (A-Z, 0-9).', false); return; }
+  $('mdev').value='';
+  revoke(d, false, null);
+}
+
+/* boot */
+if(pass()){ $('gate').classList.add('hide'); $('panel').classList.remove('hide'); load(); }
+$('pass').addEventListener('keydown',function(e){ if(e.key==='Enter') savePass(); });
+$('mdev').addEventListener('keydown',function(e){ if(e.key==='Enter') manual(); });
+</script>
+</body>
+</html>
