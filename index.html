@@ -404,6 +404,8 @@ details[open] summary::before{content:"－ "}
           <li id="tiltRow" style="display:none"><span>Dish tilt at ISP</span><b id="tiltA"></b></li>
           <li id="tiltRowB" style="display:none"><span>Dish tilt at Client</span><b id="tiltB"></b></li>
           <li><span>Fresnel zone (mid-path)</span><b id="fres"></b></li>
+          <li><span>ISP area</span><b id="areaA">–</b></li>
+          <li><span>Client area</span><b id="areaB">–</b></li>
         </ul>
       </div>
       <div class="card">
@@ -686,6 +688,7 @@ function calc(){
   if(d < 1){ $('mainErr').textContent='Both locations are the same. Check the Client tower coordinates.'; return; }
   const br = bearing(a,b), rv = bearing(b,a);
   result = {a,b,d,br};
+  showAreas(a,b);
   save();
 
   $('dist').textContent = fmtDist(d);
@@ -781,6 +784,21 @@ function setArc(svg, rel){
 const DIRS16=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
 function dir16(h){ return DIRS16[Math.round(h/22.5)%16]; }
 
+async function revGeo(p){
+  try{
+    const r=await fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=13&lat='+p.lat+'&lon='+p.lon,{headers:{Accept:'application/json'}});
+    if(!r.ok) return null; const j=await r.json(); const a=j.address||{};
+    const name=a.village||a.town||a.suburb||a.city_district||a.neighbourhood||a.hamlet||a.city||a.municipality||a.county||'';
+    const area=a.city||a.county||a.state_district||a.state||'';
+    const out=[name,area].filter(Boolean).filter((v,i,arr)=>arr.indexOf(v)===i).join(', ');
+    return out || ((j.display_name||'').split(',').slice(0,2).join(',').trim()) || null;
+  }catch(_){ return null; }
+}
+async function showAreas(a,b){
+  if($('areaA')) $('areaA').textContent='…'; if($('areaB')) $('areaB').textContent='…';
+  const na=await revGeo(a); if($('areaA')) $('areaA').textContent=na||'—';
+  const nb=await revGeo(b); if($('areaB')) $('areaB').textContent=nb||'—';
+}
 function drawMap(br,d){
   $('map').innerHTML = dialMarkup(br, [br.toFixed(0)+'°', fmtDist(d)]);
   if(hShow!==null) applyHeading(hShow);
