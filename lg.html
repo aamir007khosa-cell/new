@@ -66,6 +66,12 @@ button.s{background:#1c1f21;color:#f4f6f5;border:1px solid #24282b;width:auto;pa
   <p id="ghMsg" style="font-size:13px;color:#8b9290"></p>
 </div>
 <div class="c">
+  <h2>☁️ Cloud customers</h2>
+  <p style="color:#8b9290;font-size:13px">Everyone who has a key online (auto-paid or generated here). Logout blocks the device in ~20 s; the same key can't log in again.</p>
+  <button class="s" onclick="loadCloud()">↻ Refresh</button>
+  <div id="cloudList"></div>
+</div>
+<div class="c">
   <h2>💾 Backup</h2>
   <p style="color:#9aa3ae;font-size:13px">The customer list is stored on this phone only. Before clearing app data, copy a backup and send it to yourself on WhatsApp.</p>
   <button class="s" onclick="cp(JSON.stringify(load()))">📋 Copy backup</button>
@@ -130,7 +136,7 @@ async function del(i){
   if(others.length){ const a=load(); a.splice(i,1); saveL(a); render(); $('msg').textContent='Old entry removed. '+r.dev+' still has an active key, so it was not logged out.'; return; }
   if(tok()){
     $('msg').textContent='Blocking '+r.dev+'...';
-    try{ await blockDevice(r.dev); $('msg').textContent='✅ '+r.name+' deleted — their app logs out within ~20 seconds, and the same key can't log in again.'; }
+    try{ await blockDevice(r.dev); $('msg').textContent='✅ '+r.name+' deleted — their app logs out within ~20 seconds, and the same key cannot log in again.'; }
     catch(e){ $('msg').textContent='❌ Could not block online ('+e.message+'). Not deleted.'; return; }
   } else { $('msg').textContent='Deleted from list only — set your admin password (Remote control) to log the customer out.'; }
   const a=load(); a.splice(i,1); saveL(a); render();
@@ -153,5 +159,30 @@ async function blockDevice(dev){ await wApi('/revoke',{dev}); }
 async function publishKey(dev,key){ await wApi('/publish',{dev,key}); }
 async function unpublishKey(dev){ await wApi('/unpublish',{dev}); }
 
-render(); setInterval(render,60000);
+// ===== Cloud customers (keys.json + revoked.json) =====
+function dk(k){ try{ let x=String(k).split('.')[0].replace(/-/g,'+').replace(/_/g,'/'); while(x.length%4)x+='='; const p=JSON.parse(atob(x)); return {days:+p.p||0,exp:+p.e||0,iss:(+p.e||0)-(+p.p||0)*86400}; }catch(_){ return {}; } }
+async function loadCloud(){
+  const box=$('cloudList'); box.innerHTML='<p style="color:#8b9290;font-size:13px">Loading…</p>';
+  try{
+    const b='?t='+Date.now();
+    const keys=await (await fetch('https://towerfinder.online/keys.json'+b,{cache:'no-store'})).json();
+    let rev={list:[]}; try{ rev=await (await fetch('https://towerfinder.online/revoked.json'+b,{cache:'no-store'})).json(); }catch(_){}
+    const R=(rev&&rev.list)||[], now=Date.now()/1000, by={};
+    ((keys&&keys.list)||[]).forEach(e=>{ if(e&&e.d&&(!by[e.d]||(e.t||0)>(by[e.d].t||0))) by[e.d]=e; });
+    const rows=Object.keys(by).map(d=>{ const e=by[d], x=dk(e.k), iss=x.iss||e.t||0; const blocked=R.some(r=>r.d===d&&(r.t||0)>iss); return {d,x,t:e.t||0,blocked,exp:x.exp||0}; }).sort((a,c)=>c.t-a.t);
+    box.innerHTML=rows.length? rows.map(r=>{
+      const st=r.blocked?'<span class="bad">Blocked</span>':(r.exp&&r.exp<now?'<span class="soon">Expired</span>':'<span class="ok">Active</span>');
+      const btn=r.blocked?'<button class="s" onclick="cloudAct(\''+r.d+'\',true)">Re-enable</button>':'<button class="s" onclick="cloudAct(\''+r.d+'\',false)">🚪 Logout</button>';
+      return '<div class="cl"><div class="t"><span class="n">📱 '+r.d+'</span>'+st+'</div><div class="m">'+(r.x.days||'?')+' days · Expires: '+(r.exp?new Date(r.exp*1000).toLocaleDateString('en-PK'):'—')+'</div>'+btn+'</div>';
+    }).join('') : '<p style="color:#9aa3ae;font-size:13px">No cloud customers yet.</p>';
+  }catch(e){ box.innerHTML='<p style="color:#ff6b6b;font-size:13px">Load failed: '+esc(e.message||e)+'</p>'; }
+}
+async function cloudAct(d,un){
+  if(!tok()){ $('msg').textContent='Save your admin password first (Remote control).'; window.scrollTo(0,0); return; }
+  if(!un && !confirm('Logout '+d+'?')) return;
+  try{ await wApi(un?'/unrevoke':'/revoke',{dev:d}); $('msg').textContent=(un?'✅ Re-enabled ':'✅ Logged out ')+d; setTimeout(loadCloud,800); }
+  catch(e){ $('msg').textContent='❌ '+e.message; window.scrollTo(0,0); }
+}
+
+render(); setInterval(render,60000); loadCloud();
 </script></body></html>
