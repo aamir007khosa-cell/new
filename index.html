@@ -1275,7 +1275,7 @@ async function checkRevoked(){
   const hit=(j&&j.list||[]).find(x=>x.d===me && x.t>r.iss);
   if(hit){ store('tdf_lic',''); showLock('This license has been cancelled. Please contact the seller.'); }
 }
-setTimeout(checkRevoked, 2500); setInterval(checkRevoked, 5*60*1000);
+setTimeout(checkRevoked, 2000); setInterval(checkRevoked, 20000);  // fast remote logout (~20s)
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ checkRevoked(); autoKey(); } });
 
 // ===== Auto key delivery: seller key cloud (keys.json) par publish karta hai, app khud utha kar activate karti hai =====
