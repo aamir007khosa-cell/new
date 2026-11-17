@@ -191,6 +191,7 @@ footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--mut);fon
       <h3>Send proof &amp; get your key</h3>
       <div class="contact">
         <button class="btn main" onclick="sendProof('tg')">✈️ Send on Telegram</button>
+        <button class="btn" onclick="sendProof('mail')">✉️ Send by email</button>
       </div>
       <p class="note" style="margin-top:10px">Your key is sent after the payment is confirmed on the blockchain — usually within a few minutes to a few hours. Open the app → <b>License</b> → paste the key → Activate.</p>
     </div>
@@ -213,7 +214,7 @@ footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--mut);fon
 
 <section id="support" class="wrap">
   <h2>Customer support</h2>
-  <p class="sub">Quick answers first. Still stuck? Open a ticket — we reply on Telegram.</p>
+  <p class="sub">Quick answers first. Still stuck? Open a ticket — we reply on Telegram or email.</p>
   <details><summary>Where do I find my Device Code?</summary><p>Open the app. If you have no license, the lock screen shows it. If you already have one, open the License sheet. Tap “Copy code”.</p></details>
   <details><summary>How long until I get my key?</summary><p>After the USDT transaction is confirmed on the blockchain and the proof is received — usually minutes, at most a few hours.</p></details>
   <details><summary>My key says “wrong device”.</summary><p>Each key works only on the phone whose Device Code was sent. Check the code you sent matches the one in the app, then contact support.</p></details>
@@ -232,6 +233,7 @@ footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--mut);fon
     <label>Describe the problem</label><textarea id="tMsg" rows="4" placeholder="What happened? What did you expect?"></textarea>
     <div class="contact" style="margin-top:12px">
       <button class="btn main" onclick="ticket('tg')">✈️ Send on Telegram</button>
+      <button class="btn" onclick="ticket('mail')">✉️ Email</button>
     </div>
     <p class="note" id="tId" style="margin-top:10px"></p>
   </div>
@@ -248,7 +250,7 @@ const SHOP = {
   pricePerDay: 1000,                 // Rs per day
   whatsapp: '923493942102',          // international format, no + or spaces
   telegram: 'Toweralignment',        // without @
-  email:    '',                       // empty = email buttons hidden
+  email:    'databasehes91@gmail.com', // support emails arrive here
   wallets: [                         // remove a line to hide that network
     { id:'trc20', name:'USDT · TRON (TRC20)', short:'TRC20', addr:'TARezKnmnzeaWewvap9EEpuhnZMMHVbbru', explorer:'https://tronscan.org/#/transaction/' },
     { id:'bep20', name:'USDT · BNB Smart Chain (BEP20)', short:'BEP20', addr:'0xF2F9C8586E2D9180e75B825Bed53f1F2fF6E31E8', explorer:'https://bscscan.com/tx/' }
