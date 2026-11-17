@@ -56,6 +56,48 @@ input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:22px;hei
 .leaflet-container{ background:#0b1220; font-family:inherit; }
 ::-webkit-scrollbar{ width:8px;height:8px; } ::-webkit-scrollbar-thumb{ background:var(--line);border-radius:8px; }
 body:not(.ready) header, body:not(.ready) main, body:not(.ready) nav{ display:none; }
+
+/* ---- transplanted radio tab styling (scoped, new theme) ---- */
+:root{ --lime:#10B981; --acc:#F59E0B; --card2:#1a2433; }
+html.light{ --card2:#EEF2F7; }
+#tab-radios .card{ background:var(--card); border:1px solid var(--line); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); border-radius:18px; padding:16px; margin-bottom:14px; }
+#tab-radios h2{ font-size:16px; font-weight:800; display:flex; align-items:center; gap:8px; margin:0 0 6px; }
+#tab-radios .ic{ color:var(--cyan); display:inline-flex; }
+#tab-radios .hint{ color:var(--mut); font-size:12.5px; margin:6px 0; line-height:1.5; }
+#tab-radios label{ color:var(--mut); font-size:12px; font-weight:600; display:block; margin-bottom:4px; }
+#tab-radios input, #tab-radios select{ width:100%; background:rgba(2,6,23,.35); border:1px solid var(--line); color:var(--txt); border-radius:12px; padding:11px 12px; font-size:14px; font-family:inherit; }
+html.light #tab-radios input, html.light #tab-radios select{ background:#F1F5F9; }
+#tab-radios input:focus, #tab-radios select:focus{ outline:none; border-color:var(--cyan); }
+#tab-radios .row{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:8px; }
+#tab-radios .btns{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+#tab-radios button{ background:var(--card-solid); border:1px solid var(--line); color:var(--txt); border-radius:12px; padding:10px 14px; font-weight:700; font-size:13.5px; font-family:inherit; cursor:pointer; display:inline-flex; align-items:center; gap:6px; justify-content:center; }
+#tab-radios button.main{ background:var(--cyan); color:#02131a; border:none; }
+#tab-radios .err{ color:var(--danger); font-size:12.5px; margin-top:6px; }
+#tab-radios .seg{ display:flex; gap:8px; }
+.dot{ width:10px; height:10px; border-radius:50%; display:inline-block; }
+.rssi{ display:flex; align-items:baseline; justify-content:center; gap:6px; margin:4px 0 8px; }
+.rssi .rv{ font-family:'JetBrains Mono',monospace; font-size:52px; font-weight:800; letter-spacing:-2px; color:var(--lime); font-variant-numeric:tabular-nums; transition:color .3s; }
+.rssi .ru{ color:var(--mut); font-weight:800; }
+.rbar{ position:relative; height:14px; border-radius:999px; background:var(--card2); overflow:hidden; }
+.rbar i{ position:absolute; left:0; top:0; bottom:0; width:0; border-radius:999px; background:linear-gradient(90deg,#EF4444,#F59E0B 45%,#10B981); transition:width .4s cubic-bezier(.2,.8,.2,1); }
+.rbar b{ position:absolute; top:-2px; bottom:-2px; width:3px; background:#fff; border-radius:2px; display:none; }
+.tblw{ margin-top:14px; } .tblw h3{ font-size:12px; margin:0 0 6px; color:var(--mut); font-weight:800; text-transform:uppercase; letter-spacing:.3px; }
+.tbl{ width:100%; border-collapse:collapse; font-size:12.5px; font-family:'JetBrains Mono',monospace; }
+.tbl th{ color:var(--mut); font-weight:700; text-align:left; padding:6px 4px; border-bottom:1px solid var(--line); font-size:11px; }
+.tbl td{ padding:7px 4px; border-bottom:1px solid var(--line); font-weight:700; }
+.tbl td:first-child{ color:var(--mut); font-weight:600; }
+.tbl tr:last-child td{ border-bottom:none; }
+.kv{ display:grid; grid-template-columns:repeat(4,1fr); gap:7px; margin-top:14px; }
+.kv div{ background:var(--card2); border:1px solid var(--line); border-radius:12px; padding:10px 6px; text-align:center; }
+.kv b{ display:block; font-family:'JetBrains Mono',monospace; font-size:15px; font-weight:700; }
+.kv span{ font-size:10px; color:var(--mut); font-weight:600; margin-top:1px; display:block; }
+.rdev{ border:1px solid var(--line); border-radius:16px; padding:16px; margin-bottom:12px; background:var(--card); }
+.rdev.sel{ border-color:var(--cyan); box-shadow:0 0 0 1px var(--cyan) inset; }
+.rdet{ margin-top:10px; border-top:1px solid var(--line); padding-top:8px; }
+.rdet summary{ cursor:pointer; color:var(--cyan); font-weight:800; font-size:13px; list-style:none; }
+.rdet summary::before{ content:'▾ '; } .rdet:not([open]) summary::before{ content:'▸ '; }
+#tab-radios .spin{ width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--cyan);border-radius:50%;display:inline-block;animation:sp .7s linear infinite;vertical-align:-2px; }
+
 </style>
 </head>
 <body class="min-h-screen pb-24">
@@ -254,24 +296,31 @@ body:not(.ready) header, body:not(.ready) main, body:not(.ready) nav{ display:no
 
 <!-- TAB 6: RADIOS -->
 <section class="tabpane" id="tab-radios">
-  <div class="glass rounded-2xl p-4 mb-4">
-    <div class="flex items-center gap-2 mb-1"><i data-lucide="router" class="w-4 h-4" style="color:var(--cyan)"></i><h2 class="font-bold text-sm">Radio Management</h2></div>
-    <p class="text-[12px]" style="color:var(--mut)">Add your Mimosa radios to read live signal, MIMO and throughput.</p>
-  </div>
-  <div class="glass rounded-2xl p-4 mb-4">
-    <div class="flex gap-2 mb-3">
-      <button class="seg on flex-1 chip rounded-xl py-2 text-sm font-bold" id="segAp" onclick="segRole('ap')">ISP · AP</button>
-      <button class="seg flex-1 chip rounded-xl py-2 text-sm font-bold" id="segSta" onclick="segRole('sta')">Client · STA</button>
+<div class="card" id="rStrip" style="display:none;padding:12px 16px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:13px;color:var(--mut);font-weight:700" id="stName">Radio</span>
+        <b id="stRssi" style="font-size:26px;font-weight:900;font-variant-numeric:tabular-nums">--</b><span style="color:var(--mut);font-weight:700">dBm</span>
+        <button class="beepBtn" onclick="rdBeepToggle()" style="margin-left:auto"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M11 5 6.5 9H3v6h3.5L11 19V5z"/><path d="M15.4 9.2a4 4 0 0 1 0 5.6M18.3 6.5a8 8 0 0 1 0 11"/></svg> Beep</button>
+      </div>
+      <div class="rbar" style="margin-top:8px"><i id="stBar"></i></div>
+<div class="card">
+      <h2><span class="ic"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M12 12v9M8.5 16.5 12 13l3.5 3.5"/><path d="M5 9a9 9 0 0 1 0-4.5M19 4.5a9 9 0 0 1 0 4.5M8 7.2a4.3 4.3 0 0 1 0-1M16 6.2a4.3 4.3 0 0 1 0 1"/></svg></span> Mimosa radios</h2>
+      <p class="hint" style="margin-top:-6px">Add as many radios as you like. Each card updates live (<svg class="i" viewBox="0 0 24 24" fill="none"><path d="M13 2 4.4 13.5H11l-1 8.5L19.6 10H13l0-8z"/></svg>). Logins are stored securely on this phone.</p>
+      <div id="devList"></div>
+      <div class="btns" id="addBtn"><button class="main" onclick="openAdd()"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14"/></svg> Add new radio</button></div>
+      <div id="addForm" style="display:none;margin-top:12px">
+        <div class="row"><div><label>Name</label><input id="aLabel" placeholder="Client 2"></div><div><label>Type</label><select id="aType"><option value="client">Client (STA)</option><option value="isp">ISP (AP)</option></select></div></div>
+        <div class="row"><div><label>IP</label><input id="aIp" placeholder="192.168.1.21" inputmode="decimal"></div><div><label>Username <span style="color:var(--mut);font-weight:400;font-size:11px">C5/C5c: empty</span></label><input id="aUser" placeholder="admin (empty for C5/C5c)" autocomplete="off"></div></div>
+        <label>Password</label><input id="aPass" type="password" placeholder="Radio password" autocomplete="off">
+        <div class="btns" style="margin-top:10px"><button class="main" onclick="addDevice()" style="flex:2">Connect</button><button onclick="closeAdd()" style="flex:1">Cancel</button></div>
+        <div class="err" id="aErr"></div>
+      </div>
     </div>
-    <label class="text-[12px] font-semibold" style="color:var(--mut)">Label</label>
-    <input id="rLabel" class="field rounded-xl px-3 py-2.5 text-sm w-full mt-1 mb-2" placeholder="Tower-01 AP">
-    <div class="grid grid-cols-2 gap-2">
-      <div><label class="text-[12px] font-semibold" style="color:var(--mut)">IP address</label><input id="rIp" class="field rounded-xl px-3 py-2.5 mono text-sm w-full mt-1" placeholder="192.168.1.20"></div>
-      <div><label class="text-[12px] font-semibold" style="color:var(--mut)">Password</label><input id="rPw" type="password" class="field rounded-xl px-3 py-2.5 mono text-sm w-full mt-1" placeholder="••••••"></div>
+    <div class="card" id="rSum" style="display:none">
+      <h2><span class="ic"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="m9 4-6 2.3v13.4L9 17l6 2.3 6-2.3V3.6L15 6 9 3.7z"/><path d="M9 4v13M15 6v13"/></svg></span> Where each radio is</h2>
+      <div id="rmap" style="height:280px;border-radius:18px;overflow:hidden;background:var(--card2);margin-bottom:12px"></div>
+      <div id="rSumBody"></div>
     </div>
-    <button onclick="addRadio()" class="w-full mt-3 rounded-xl py-2.5 font-bold active:scale-[.98] transition" style="background:var(--cyan);color:#02131a">+ Add radio</button>
-  </div>
-  <div id="radioList" class="space-y-3"></div>
 </section>
 
 </main>
@@ -307,6 +356,7 @@ function toggleTheme(){ applyTheme(document.documentElement.classList.contains('
 
 /* ---------- tabs ---------- */
 function go(name){
+  window.curTab=(name==="radios"?"r":name); if(name==="radios"){ try{ renderAll(true); }catch(_){} }
   document.querySelectorAll('.tabpane').forEach(p=>p.classList.toggle('on',p.id==='tab-'+name));
   document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('on',b.dataset.go===name));
   if(name==='dir' && result && map) setTimeout(()=>map.invalidateSize(),100);
@@ -492,25 +542,473 @@ function startLive(){
   else attach();
 }
 
-/* ---------- Tab 6: radios (preview: local list) ---------- */
-let rRole='ap';
-function segRole(r){ rRole=r; $('segAp').classList.toggle('on',r==='ap'); $('segSta').classList.toggle('on',r==='sta'); }
-function loadRadios(){ try{ return JSON.parse(localStorage.getItem('tf_radios')||'[]'); }catch(_){ return []; } }
-function saveRadios(a){ try{ localStorage.setItem('tf_radios',JSON.stringify(a)); }catch(_){} }
-function addRadio(){ const label=$('rLabel').value.trim(), ip=$('rIp').value.trim(); if(!ip){ toast('Enter IP'); return; }
-  const a=loadRadios(); a.unshift({role:rRole,label:label||('Radio '+(a.length+1)),ip,t:Date.now()}); saveRadios(a); $('rLabel').value='';$('rIp').value='';$('rPw').value=''; renderRadios(); toast('Radio added'); }
-function delRadio(i){ const a=loadRadios(); a.splice(i,1); saveRadios(a); renderRadios(); }
-function renderRadios(){ const a=loadRadios();
-  $('radioList').innerHTML = a.length? a.map((r,i)=>{
-    const sig=-(45+Math.floor(Math.random()*25)); const bars=sig>-55?'var(--emerald)':(sig>-68?'var(--amber)':'var(--danger)');
-    return '<div class="glass rounded-2xl p-4 flex items-center gap-3">'
-      +'<div class="w-10 h-10 rounded-xl grid place-items-center shrink-0 chip"><i data-lucide="'+(r.role==='ap'?'radio-tower':'satellite-dish')+'" class="w-5 h-5" style="color:var(--cyan)"></i></div>'
-      +'<div class="flex-1 min-w-0"><div class="font-bold text-sm truncate">'+r.label+'</div><div class="mono text-[12px]" style="color:var(--mut)">'+r.ip+' · '+(r.role==='ap'?'AP':'STA')+'</div></div>'
-      +'<div class="text-right"><div class="mono font-bold text-sm" style="color:'+bars+'">'+sig+'</div><div class="text-[10px]" style="color:var(--mut)">dBm*</div></div>'
-      +'<button onclick="delRadio('+i+')" class="ml-1 w-8 h-8 grid place-items-center chip rounded-lg active:scale-95"><i data-lucide="trash-2" class="w-4 h-4" style="color:var(--danger)"></i></button></div>';
-  }).join('')+'<p class="text-[11px] text-center mt-1" style="color:var(--mut)">* live values appear in the installed app connected to the radio.</p>'
-  : '<div class="glass rounded-2xl p-6 text-center text-[13px]" style="color:var(--mut)">No radios yet. Add one above.</div>';
-  lucide.createIcons();
+/* ---------- Tab 6: radios: transplanted from production (proven code) ---------- */
+let curTab="dir";
+function loadLeaflet(){ return Promise.resolve(); }
+function cachedLayer(tpl,opt){ return L.tileLayer(tpl,opt); }
+function hasBridge(){ return !!(window.Android && Android.radio); }
+let rdSeq=0; const rdPend={}; let rdBeep=false, rdAudio=null;
+window.rdCb=function(id,json){ const f=rdPend[id]; delete rdPend[id]; if(f){ try{ f(JSON.parse(json)); }catch(_){ f({status:-1,body:''}); } } };
+function devReq(dev,method,path,body,prio){
+  // Har radio par ek waqt mein zyada se zyada 2 request (radio aur phone dono par bojh kam)
+  return new Promise(res=>{ (dev.q=dev.q||[])[prio?'unshift':'push']({method,path,body,res}); pumpQ(dev); });
+}
+function pumpQ(dev){
+  dev.inflight=dev.inflight||0;
+  while(dev.inflight<2 && dev.q && dev.q.length){
+    const j=dev.q.shift(); dev.inflight++;
+    rawReq(dev,j.method,j.path,j.body).then(r=>{ dev.inflight--; if(r.status<0 && r.status!==-3) dev.errs=(dev.errs||0)+1; j.res(r); pumpQ(dev); });
+  }
+}
+function rawReq(dev,method,path,body){
+  return new Promise(res=>{
+    if(Android.radioAsync){ const id=++rdSeq; rdPend[id]=res; Android.radioAsync(id,method,dev.ip,dev.auth,path,body||''); setTimeout(()=>{ if(rdPend[id]){ delete rdPend[id]; res({status:-1,body:'timeout'}); } },4000); }
+    else setTimeout(()=>{ try{ res(JSON.parse(Android.radio(method,dev.ip,dev.auth,path,body||''))); }catch(_){ res({status:-1,body:''}); } },0);
+  });
+}
+async function devGet(dev,path){ const r=await devReq(dev,'GET',path); if(r.status!==200) return null; try{ return JSON.parse(r.body); }catch(_){ return null; } }
+function hasC5x(){ return !!(window.Android && Android.c5xAsync); }
+function c5xReq(dev){
+  return new Promise(res=>{
+    if(!hasC5x()){ res(null); return; }
+    const id=++rdSeq; rdPend[id]=r=>{ try{ if(r.status!==200){ res(null); return; } const j=JSON.parse(r.body); if(r.rssi!=null && r.rssi!=='') { const n=parseFloat(r.rssi); if(!isNaN(n)) j._rssi=n; } res(j); }catch(_){ res(null); } };
+    try{ Android.c5xAsync(id, dev.ip, dev.pw); }catch(_){ delete rdPend[id]; res(null); return; }
+    setTimeout(()=>{ if(rdPend[id]){ delete rdPend[id]; res(null); } }, 7000);
+  });
+}
+function c5xNum(v){ const n=parseFloat(v); return isNaN(n)?null:n; }
+function applyC5x(dev,j){
+  const rt=j.realtime||{}, sm=rt.signalmeter||{}, ri=rt.remote_info||{}, cn=rt.connection||{};
+  let sig=null;
+  if(typeof j._rssi==='number' && !isNaN(j._rssi) && j._rssi<0) sig=Math.round(j._rssi*10)/10;
+  else if(ri.chan_info){ const m=String(ri.chan_info).match(/_(-\d{2,3})_/); if(m) sig=parseInt(m[1],10); }
+  const bwm=String(sm.BandWidth||'').match(/(\d+)\s*$/);
+  const fm=String(sm.Chains_1_2||'').match(/\d+/);
+  const D=dev.d; D.kind='c5x'; D.ok=true; D.model='C5x';
+  D.c5={ sig:sig, noise:c5xNum(sm.noise), evm:c5xNum(String(sm.evm||'').split(/\s+/)[0]), tx:c5xNum(sm.tx_power),
+    per:c5xNum(ri.Remote_PER), avail:c5xNum(ri.r_link_availability), temp:c5xNum(ri.Temperature),
+    peerMac:ri.remote_mac||ri.Mac5_0||'', peerIp:ri.IPAddress||'', mode:ri.DeviceMode||'',
+    connected:c5xNum(cn.connected), bearing:c5xNum(ri.bearing), dist:cn.distance||'' };
+  D.cfg={ freq: fm?fm[0]:null, bw: bwm?+bwm[1]:null, tx:D.c5.tx, mode:(ri.DeviceMode==='Station'?'STA':'AP') };
+  D.temp=D.c5.temp;
+  if(ri.DeviceMode==='Station') dev.type='client'; else if(ri.DeviceMode) dev.type='isp';
+}
+async function c5xPoll(dev){
+  const tq=Date.now(); const j=await c5xReq(dev); dev.slat=Date.now()-tq;
+  if(j && j.realtime){ applyC5x(dev,j); dev.d.ok=true; } else { dev.d.ok=false; }
+}
+function c5xTableHTML(dev){
+  const c=dev.d.c5||{}, cf=dev.d.cfg||{};
+  const row=(k,v)=>'<li><span>'+k+'</span><b>'+(v==null||v===''?'--':v)+'</b></li>';
+  return '<div class="tblw"><h3>C5x link</h3><ul class="list" style="margin:0">'+
+    row('Signal', c.sig!=null?c.sig+' dBm':null)+
+    row('Noise', c.noise!=null?c.noise.toFixed(1)+' dBm':null)+
+    row('EVM', c.evm!=null?c.evm+' dB':null)+
+    row('TX power', c.tx!=null?c.tx+' dBm':null)+
+    row('PER', c.per!=null?c.per+' %':null)+
+    row('Availability', c.avail!=null?c.avail.toFixed(1)+' %':null)+
+    row('Frequency', cf.freq?cf.freq+' MHz':null)+
+    row('Bandwidth', cf.bw?cf.bw+' MHz':null)+
+    row('Mode', c.mode)+
+    row('Distance', c.dist)+
+    row('Bearing', c.bearing!=null?c.bearing+'°':null)+
+    row('Temperature', c.temp!=null?c.temp+' °C':null)+
+    row('Peer MAC', c.peerMac)+
+    row('Peer IP', c.peerIp)+
+    '</ul></div>';
+}
+// Mimosa ke binary stats parhne wale helpers
+function rdB(b64){ return Uint8Array.from(atob(b64),c=>c.charCodeAt(0)); }
+function rdI32(b,o,n){ return [...new Int32Array(b.slice(o,o+4*n).buffer)]; }
+function rdU32(b,o){ return new Uint32Array(b.slice(o,o+4).buffer)[0]; }
+function rdI16(b,o){ return new Int16Array(b.slice(o,o+2).buffer)[0]; }
+function rdNode(b64){
+  try{
+    const b=rdB(b64), m=rdU32(b,364), tm=rdU32(b,492), pd=rdU32(b,640);
+    const mcs=v=>((v>>12)&15)+String(v&127).padStart(2,'0');
+    return {rssi:rdI32(b,60,10), evm:rdI32(b,228,8),
+      rxMcs:mcs(m), rxBw:[20,40,80,160][(m>>10)&3], rxPhy:rdU32(b,432),
+      txMcs:mcs(tm), txBw:[20,40,80,160][(tm>>10)&3], txPhy:rdU32(b,652),
+      per: pd? 100*rdU32(b,548)/pd : 0};
+  }catch(_){ return null; }
+}
+function rdSelf(b64){ try{ const b=rdB(b64); return {txPower:rdI16(b,20)/10, noise:rdI32(b,56,1)[0]/10}; }catch(_){ return null; } }
+// Mimosa ka formula: dono polarization ka signal jor kar
+function rdRssi(e){
+  if(!e||!e.length) return null;
+  const P=x=>Math.pow(10,x/100);
+  const n=10*Math.log10(P(e[0])+P(e[2])+P(e[4])+P(e[6])), i=10*Math.log10(P(e[1])+P(e[3])+P(e[5])+P(e[7]));
+  const r=10*Math.log10(Math.pow(10,n/10)+Math.pow(10,i/10));
+  return isFinite(r)&&r>-100 ? r : null;
+}
+function rdSnr(e){ if(!e||!e.length) return null; const t=(e[0]+e[1])/2; return t===0?null:Math.abs(t/10); }
+const f1=(v,d)=> v==null||isNaN(v) ? '--' : Number(v).toFixed(d==null?1:d);
+const fPhy=v=> v==null||v<6.5 ? '--' : v;
+
+// GPS ya location ka JSON jo bhi shakal ka ho, us mein lat/lon dhoondo
+function findLatLon(o){
+  let lat=null, lon=null;
+  (function walk(x){ if(!x||typeof x!=='object') return; for(const k in x){ const v=x[k];
+    if(v&&typeof v==='object') walk(v);
+    else if(lat===null && /lat/i.test(k) && !isNaN(parseFloat(v))) lat=parseFloat(v);
+    else if(lon===null && /(lon|lng)/i.test(k) && !isNaN(parseFloat(v))) lon=parseFloat(v); } })(o);
+  return (lat!==null && lon!==null && !(lat===0 && lon===0)) ? {lat,lon} : null;
+}
+
+// DEVS: {id,label,type:'isp'|'client'|'auto',ip,u,pw,auth,on,d,...}
+const DEVS=[]; let SEL=null;
+function devRole(dev){ const m=dev.d&&dev.d.cfg&&dev.d.cfg.mode; if(m==='AP') return 'isp'; if(m==='STA') return 'client'; return dev.type==='isp'?'isp':'client'; }
+function devById(id){ return DEVS.find(d=>d.id===id); }
+function firstOf(role){ return DEVS.find(d=>d.on && devRole(d)===role) || null; }
+function saveDevList(){
+  const list=DEVS.map(d=>({id:d.id,label:d.label,type:d.type,ip:d.ip,u:d.u,pw:d.pw,kind:d.kind||''}));
+  try{ if(Android.saveSecret) Android.saveSecret('rd_list', JSON.stringify(list)); }catch(_){}
+  try{ localStorage.setItem('tdf_devs', JSON.stringify(list.map(x=>({id:x.id,label:x.label,type:x.type,ip:x.ip,u:x.u})))); }catch(_){}
+}
+function devCardHTML(dev){
+  const id=dev.id;
+  return '<div class="rdev" id="dc-'+id+'" onclick="selectDev(\''+id+'\')">'+
+    '<h2 style="margin-bottom:8px"><span class="dot" id="dd-'+id+'"></span> <span id="dl-'+id+'"></span> <span class="hint" id="rst-'+id+'" style="margin:0 0 0 auto"></span></h2>'+
+    '<div class="rssi" style="margin:0"><div class="rv" id="rr-'+id+'" style="font-size:42px">--</div><div class="ru">dBm</div></div>'+
+    '<div class="rbar"><i id="rb-'+id+'"></i></div>'+
+    '<p class="hint" id="rn-'+id+'" style="text-align:center"></p>'+
+    '<div class="kv" id="rk-'+id+'"></div>'+
+    '<p class="hint" id="rloc-'+id+'" style="margin-top:10px;line-height:1.6"></p>'+
+    '<details class="rdet" open onclick="event.stopPropagation()"><summary><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M4 20h16M7 20v-7M12 20V8.5M17 20v-10"/></svg> Full data</summary><div id="rdet-'+id+'"></div></details>'+
+    '<details class="rdet" onclick="event.stopPropagation()"><summary><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M12 12v9M8.5 16.5 12 13l3.5 3.5"/><path d="M5 9a9 9 0 0 1 0-4.5M19 4.5a9 9 0 0 1 0 4.5M8 7.2a4.3 4.3 0 0 1 0-1M16 6.2a4.3 4.3 0 0 1 0 1"/></svg> Set channel (frequency / bandwidth)</summary>'+
+      '<div class="row" style="margin-top:8px">'+
+        '<div><label>Freq (MHz)</label><input id="chF-'+id+'" type="number" inputmode="decimal" placeholder="5790"></div>'+
+        '<div><label>Bandwidth</label><select id="chB-'+id+'"><option value="20">20 MHz</option><option value="40">40 MHz</option><option value="80" selected>80 MHz</option><option value="160">160 MHz</option></select></div>'+
+      '</div>'+
+      '<button class="main" style="margin-top:10px" onclick="event.stopPropagation();setChan(\''+id+'\')">Apply to this radio</button>'+
+      '<p class="hint" style="margin-top:6px">Link drops a few seconds. On a PTP link set the same on both radios.</p>'+
+      '<div class="err" id="chE-'+id+'"></div>'+
+    '</details>'+
+    '<div class="btns"><button class="beepBtn" onclick="event.stopPropagation();rdBeepToggle()"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M11 5 6.5 9H3v6h3.5L11 19V5z"/><path d="M15.4 9.2a4 4 0 0 1 0 5.6M18.3 6.5a8 8 0 0 1 0 11"/></svg> Beep</button><button onclick="event.stopPropagation();removeDev(\''+id+'\')"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9.5 7V4.5h5V7M6 7l1 12.6A2 2 0 0 0 9 21.5h6a2 2 0 0 0 2-1.9L18 7M10 11.5v6M14 11.5v6"/></svg> Remove</button></div>'+
+  '</div>';
+}
+function mountDev(dev){
+  if(!$('dc-'+dev.id)){ $('devList').insertAdjacentHTML('beforeend', devCardHTML(dev)); }
+  paintHeader(dev);
+}
+function paintHeader(dev){
+  const role=devRole(dev);
+  $('dl-'+dev.id).textContent=(dev.label||dev.ip)+' · '+(role==='isp'?'ISP (AP)':'Client (STA)');
+  $('dd-'+dev.id).style.background= role==='isp'?'#ffffff':'#ff6b6b';
+  $('dc-'+dev.id).classList.toggle('sel', SEL===dev.id);
+}
+function selectDev(id){ SEL=id; DEVS.forEach(d=>{ if($('dc-'+d.id)) $('dc-'+d.id).classList.toggle('sel', d.id===id); }); const d=devById(id); if(d){ d.beaconOff=0; startBeacon(d); } renderAll(true); }
+function devStatus(dev,txt,col){ const e=$('rst-'+dev.id); if(e){ e.textContent=txt; e.style.color=col||''; } }
+
+// ---- Add form ----
+function openAdd(){ $('addForm').style.display=''; $('addBtn').style.display='none'; $('aLabel').value='Radio '+(DEVS.length+1); $('aErr').textContent=''; }
+function closeAdd(){ $('addForm').style.display='none'; $('addBtn').style.display=''; }
+async function addDevice(){
+  const e=$('aErr'); e.textContent='';
+  if(!hasBridge()){ e.textContent='This feature only works in the Tower Finder app (APK).'; return; }
+  const ip=$('aIp').value.trim(), u=$('aUser').value.trim(), pw=$('aPass').value;
+  if(!ip||!pw){ e.textContent='Enter IP and password (username can be empty for C5/C5c).'; return; }
+  if(DEVS.some(d=>d.ip===ip)){ e.textContent='This IP is already added.'; return; }
+  const dev={id:'d'+Date.now().toString(36), label:$('aLabel').value.trim()||ip, type:$('aType').value, ip, u, pw, auth:btoa(u+':'+pw), d:{}};
+  e.innerHTML='<span class="spin"></span> Connecting...';
+  if(!u){
+    if(!hasC5x()){ e.textContent='For C5/C5c/C5x install the latest APK (v2.9+). Old APK does not support them.'; return; }
+    const j=await c5xReq(dev);
+    if(j && j.realtime){ dev.kind='c5x'; applyC5x(dev,j); DEVS.push(dev); saveDevList(); $('aPass').value=''; closeAdd(); startDev(dev,true); if(!SEL) selectDev(dev.id); toast(''+dev.label+' (C5x) connected'); return; }
+    e.textContent='C5x login failed — check the IP, and the password (username must be empty for C5x). If it keeps failing, send me a screenshot.'; return;
+  }
+  const r=await devReq(dev,'GET','/restconf/data/mimosa-wifi-network:statistics/client-statistics');
+  if(r.status===401||r.status===403){ e.textContent='Wrong username or password.'; return; }
+  if(r.status!==200){ e.textContent='Radio not reachable ('+r.status+'). Check the IP and make sure the phone is on the radio network.'; return; }
+  DEVS.push(dev); saveDevList(); $('aPass').value=''; closeAdd();
+  startDev(dev, true); if(!SEL) selectDev(dev.id);
+  toast(''+dev.label+' connected');
+}
+function removeDev(id){
+  const dev=devById(id); if(!dev) return;
+  if(dev._rmArm!==true){ dev._rmArm=true; toast('Press again to remove'); setTimeout(()=>dev._rmArm=false,3000); return; }
+  dev.on=false; clearTimeout(dev.timer); clearTimeout(dev.btimer);
+  DEVS.splice(DEVS.indexOf(dev),1); const c=$('dc-'+id); if(c) c.remove();
+  if(SEL===id) SEL=DEVS[0]?DEVS[0].id:null; saveDevList(); renderAll(true); toast('Radio removed');
+}
+function startDev(dev, ok){
+  dev.on=true; dev.tick=0; dev.fails= ok?0:3; dev.d=dev.d||{};
+  mountDev(dev);
+  if(ok) devStatus(dev,'● Connected','var(--lime)'); else devStatus(dev,'● Offline — reconnecting','#fbbf24');
+  clearTimeout(dev.timer); devLoop(dev);
+  startBeacon(dev);
+}
+// ---- Stats loop: har ~1 second (radio bhi itna hi naya karta hai) ----
+async function devLoop(dev){
+  if(!dev.on) return;
+  const t0=Date.now();
+  try{ await devPoll(dev); }catch(_){ dev.d.ok=false; }
+  if(dev.d.ok){ if(dev.fails>=3){ devStatus(dev,'● Connected','var(--lime)'); toast(''+dev.label+' reconnected'); } dev.fails=0; }
+  else { dev.fails=(dev.fails||0)+1; if(dev.fails===3) devStatus(dev,'● Offline — reconnecting','#fbbf24'); }
+  paintDev(dev); renderAll();
+  const wait = dev.fails>=3 ? 3000 : (dev.kind==='c5x' ? Math.max(1200, 2500-(Date.now()-t0)) : Math.max(150, 1000-(Date.now()-t0)));
+  if(dev.on) dev.timer=setTimeout(()=>devLoop(dev), wait);
+}
+async function devPoll(dev){
+  if(dev.kind==='c5x') return c5xPoll(dev);
+  const t=++dev.tick, D=dev.d;
+  // Pehle sirf zaroori request; baqi kabhi kabhi (radio par bojh kam)
+  const tq=Date.now(); const cs=await devGet(dev,'/restconf/data/mimosa-wifi-network:statistics/client-statistics');
+  dev.slat = Date.now()-tq;
+  D.ok=!!cs; if(!cs) return;
+  let best=null, n=0; try{ const L=cs['mimosa-wifi-network:statistics']['client-statistics']||[]; n=L.length;
+    L.forEach(c=>{ const x=rdNode(c['raw-statistics']); if(x && (!best || (rdRssi(x.rssi)||-200)>(rdRssi(best.rssi)||-200))){ best=x; D.staMac=c.name; } }); }catch(_){}
+  D.node=best; D.clients=n;
+  const sv = best? rdRssi(best.rssi) : null;
+  if(sv!=null && D.bema!=null && D.beacon && Date.now()-D.beacon.t<2500){ const off=sv-D.bema; D.boff = D.boff==null ? off : D.boff*0.7 + off*0.3; }
+  const peer=peerOf(dev);
+  if(sv!=null && peer && peer.d.bema!=null && peer.d.beacon && Date.now()-peer.d.beacon.t<2500){ const xo=sv-peer.d.bema; D.xoff = D.xoff==null ? xo : D.xoff*0.7 + xo*0.3; }
+  const heavy=[];
+  if(t%2===1) heavy.push(devGet(dev,'/restconf/data/mimosa-wifi-radio:statistics/radio-statistics').then(rs=>{ if(rs){ try{ D.self=rdSelf(rs['mimosa-wifi-radio:statistics']['radio-statistics'][0]['raw-statistics']); }catch(_){} } }));
+  if(t%5===1 && devRole(dev)==='client') heavy.push(devGet(dev,'/restconf/data/mimosa-ap-info:ap-info/status').then(ap=>{ if(!ap) return; try{ const st=ap['mimosa-ap-info:ap-info'].status;
+      D.rem=rdNode(JSON.parse(st.cli_stats)['mimosa-wifi-network:statistics']['client-statistics'][0]['raw-statistics']);
+      D.remSelf=rdSelf(JSON.parse(st.radio_stats)['mimosa-wifi-radio:statistics']['radio-statistics'][0]['raw-statistics']);
+      D.remName=st.device_name; D.remTemp=st.temp; const rl=findLatLon({latitude:st.latitude,longitude:st.longitude}); if(rl) D.remLoc=rl; }catch(_){} }));
+  if(t%30===1) heavy.push(devGet(dev,'/restconf/data/ietf-interfaces:interfaces').then(ifs=>{ if(!ifs) return; try{ const w=ifs['ietf-interfaces:interfaces'].interface.find(i=>i.name==='wifi0'); const st=w['mimosa-wifi-radio:state']||{};
+      const cc=st['current-channel-configuration']||{}, cp=st['current-power-configuration']||{};
+      D.cfg={freq:cc.frequency, bw:cc.bandwidth, tx:cp['transmit-power'], mode: w['mimosa-wifi-radio:access-point-configuration']?'AP':(w['mimosa-wifi-radio:client-configuration']?'STA':'')}; paintHeader(dev); }catch(_){} }));
+  if(t%60===1) heavy.push(devGet(dev,'/restconf/data/ietf-system:system-state').then(sys=>{ if(!sys) return; try{ const pl=sys['ietf-system:system-state'].platform; D.model=pl.machine; D.temp=pl['mimosa-device:temperature']; }catch(_){} }));
+  if(t%60===2) heavy.push(devGet(dev,'/restconf/data/mimosa-gps:gps').then(g=>{ const x=g&&findLatLon(g); if(x){ D.loc=x; D.locSrc='GPS'; } }));
+  if(t%60===3) heavy.push(devGet(dev,'/restconf/data/mimosa-device:device/config/location').then(l=>{ if(!l||D.locSrc==='GPS') return; try{ const o=l['mimosa-device:location']||l; const x=findLatLon(o.local||o); if(x){ D.loc=x; D.locSrc='Radio setting'; } }catch(_){} }));
+  if(heavy.length) await Promise.all(heavy);
+}
+function peerOf(dev){ const r=devRole(dev); return DEVS.find(d=>d!==dev && d.on && devRole(d)!==r) || null; }
+// ---- Tez beacon: sirf chune hue radio par ----
+function startBeacon(dev){ if(dev.kind==='c5x') return; if(!dev.bOn){ dev.bOn=true; beaconLoop(dev); } }
+async function beaconLoop(dev){
+  if(!dev.on || !dev.bOn){ dev.bOn=false; return; }
+  if(dev.beaconOff && Date.now()<dev.beaconOff){ dev.btimer=setTimeout(()=>beaconLoop(dev),5000); return; }
+  const t0=Date.now(), isAP=devRole(dev)==='isp';
+  const path = isAP ? (dev.d.staMac ? '/client/'+dev.d.staMac+'/beacon-rssi' : null) : '/beacon-rssi';
+  if(!path){ dev.btimer=setTimeout(()=>beaconLoop(dev),1000); return; }
+  const tq=Date.now(); const r=await devReq(dev,'GET',path,'',true); let ok=false;
+  if(r.status===-3){ dev.oldApk=true; dev.bOn=false; paintDev(dev); return; }
+  dev.lat = dev.lat==null ? (Date.now()-tq) : dev.lat*0.8 + (Date.now()-tq)*0.2;
+  if(r.status===200){ try{ const j=JSON.parse(r.body); if(j.status==='success' && typeof j.rssi==='number' && j.rssi<0){ ok=true; const B=dev.d;
+      B.bema = B.bema==null ? j.rssi : B.bema*0.85 + j.rssi*0.15; B.bfast = B.bfast==null ? j.rssi : B.bfast*0.55 + j.rssi*0.45; B.beacon={v:B.bfast,t:Date.now()}; (dev.hits=dev.hits||[]).push(Date.now()); if(dev.hits.length>20) dev.hits.shift(); fastPaint(dev); } }catch(_){} }
+  if(ok) dev.bfail=0; else { dev.bfail=(dev.bfail||0)+1; if(dev.bfail>=3){ dev.beaconOff=Date.now()+30000; dev.bfail=0; } }
+  dev.btimer=setTimeout(()=>beaconLoop(dev), Math.max(60, 160-(Date.now()-t0)));
+}
+function devSignal(dev){
+  if(dev.kind==='c5x'){ const c=dev.d.c5||{}; return {v:(c.sig!=null?c.sig:null), fast:false}; }
+  const D=dev.d, sv=D.node? rdRssi(D.node.rssi) : null;
+  if(D.beacon && Date.now()-D.beacon.t<2000){
+    if(D.boff!=null) return {v:Math.round((D.beacon.v + D.boff)*10)/10, fast:true};
+    if(sv!=null) return {v:sv, fast:false};
+    return {v:D.beacon.v, fast:true};
+  }
+  const peer=peerOf(dev);
+  if(peer && D.xoff!=null && peer.d.beacon && Date.now()-peer.d.beacon.t<2000) return {v:Math.round((peer.d.beacon.v + D.xoff)*10)/10, fast:true, via:peer.label};
+  return {v:sv, fast:false};
+}
+function paintRssi(el,bar,v){
+  if(!el) return;
+  el.textContent = v==null?'--':Number(v).toFixed(1);
+  el.style.color = v==null?'var(--mut)':(v>=-60?'var(--lime)':(v>=-70?'#fbbf24':'#ff6b6b'));
+  if(bar) bar.style.width = v==null?'0':Math.max(0,Math.min(100,(v+90)/50*100))+'%';
+}
+function fastPaint(dev){
+  const s=devSignal(dev); paintRssi($('rr-'+dev.id),$('rb-'+dev.id),s.v);
+  renderAll();
+  const peer=peerOf(dev); if(peer){ const so=devSignal(peer); if(so.via) paintRssi($('rr-'+peer.id),$('rb-'+peer.id),so.v); }
+  renderStrip();
+}
+// ---- Location / direction ----
+function devPos(dev){
+  if(dev.d.loc) return {p:dev.d.loc, src:dev.d.locSrc};
+  const role=devRole(dev);
+  if(role==='client'){ const ap=firstOf('isp'); if(ap && ap.d.remLoc) {} }
+  if(role==='isp'){ const c=DEVS.find(d=>d.on&&devRole(d)==='client'&&d.d.remLoc); if(c) return {p:c.d.remLoc, src:'from Client radio'}; }
+  if(result){ if(role==='isp') return {p:result.a, src:'App coordinates'}; if(dev===DEVS.find(d=>devRole(d)==='client')) return {p:result.b, src:'App coordinates'}; }
+  return null;
+}
+function speedTxt(dev){
+  if(dev.oldApk) return ' · Install the latest APK for live signal';
+  const h=dev.hits||[], now=Date.now(); const recent=h.filter(t=>now-t<3000).length/3;
+  const parts=[]; if(recent>0) parts.push(recent.toFixed(1)+'/s'); if(dev.lat!=null) parts.push(Math.round(dev.lat)+' ms'); if(dev.slat!=null) parts.push('stats '+dev.slat+' ms'); if(dev.errs) parts.push(dev.errs+' fail');
+  return parts.length? ' · '+parts.join(' · ') : '';
+}
+function paintDev(dev){
+  if(!$('dc-'+dev.id)) return;
+  const D=dev.d, sg=devSignal(dev), v=sg.v;
+  paintRssi($('rr-'+dev.id),$('rb-'+dev.id),v);
+  $('rn-'+dev.id).textContent = dev.fails>=3 ? 'No contact with radio — retrying automatically' :
+    ((D.clients>1?D.clients+' clients · ':'')+(v==null?'No link':(sg.via?'Live ('+sg.via+' beacon)':(sg.fast?'Live signal':'Signal (every second)')))) + speedTxt(dev);
+  const c=D.cfg||{};
+  $('rk-'+dev.id).innerHTML='<div><b>'+(D.model||'--')+'</b><span>Model</span></div><div><b>'+(c.freq||'--')+'</b><span>MHz / '+(c.bw||'--')+'</span></div><div><b>'+(c.tx!=null?c.tx:'--')+'</b><span>Tx dBm</span></div><div><b>'+(D.temp!=null?D.temp+'°':'--')+'</b><span>Temp</span></div>';
+  const cfIn=$('chF-'+dev.id); if(cfIn && !cfIn.value && document.activeElement!==cfIn && c.freq){ cfIn.value=c.freq; const cbIn=$('chB-'+dev.id); if(cbIn && c.bw && [20,40,80,160].indexOf(+c.bw)>=0) cbIn.value=c.bw; }
+  const pos=devPos(dev); let li='<svg class="i" viewBox="0 0 24 24" fill="none"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="2.7"/></svg> '+(pos? pos.p.lat.toFixed(5)+', '+pos.p.lon.toFixed(5)+' <span style="color:var(--mut)">('+pos.src+')</span>' : 'No location — save it to the radio');
+  if(pos){
+    const targets = devRole(dev)==='isp' ? DEVS.filter(d=>d.on&&devRole(d)==='client') : DEVS.filter(d=>d.on&&devRole(d)==='isp');
+    targets.forEach(t=>{ const tp=devPos(t); if(tp){ const br=bearing(pos.p,tp.p); li+='<br><svg class="i" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.2"/><path d="M12 1.6V5M12 19v3.4M1.6 12H5M19 12h3.4"/></svg> '+(t.label)+' direction: <b style="color:var(--lime)">'+br.toFixed(1)+'° '+dir16(br)+'</b> · '+fmtDist(distance(pos.p,tp.p)); } });
+  }
+  $('rloc-'+dev.id).innerHTML=li;
+}
+let rLastRender=0;
+function renderAll(force){
+  renderStrip();
+  if(curTab!=='r' && !force) return;            // Radios tab band ho to bhaari kaam nahi
+  const now=Date.now(); if(!force && now-rLastRender<500) return; rLastRender=now;
+  renderLinkSummary();
+}
+
+// Har radio ka apna poora data (uske card mein)
+function devTablesHTML(dev){
+  if(dev.kind==='c5x') return c5xTableHTML(dev);
+  const loc=dev.d.node; if(!loc) return '<p class="hint">Waiting for data...</p>';
+  const role=devRole(dev), peer=peerOf(dev);
+  // remote side: Client ke liye AP ka data (ap-info), AP ke liye jure hue Client radio ka data
+  const R = role==='client' ? (dev.d.rem||null) : (peer && peer.d.node ? peer.d.node : null);
+  const rSelf = role==='client' ? dev.d.remSelf : (peer? peer.d.self : null);
+  const ls=dev.d.self;
+  const mine=devSignal(dev).v ?? rdRssi(loc.rssi);
+  const other = peer ? (devSignal(peer).v ?? (R?rdRssi(R.rssi):null)) : (R?rdRssi(R.rssi):null);
+  const hdr = role==='client' ? 'Link Statistics (UL / DL)' : 'Link Statistics (DL / UL)';
+  const cinr=i=> loc.evm&&loc.evm[i] ? Math.abs(loc.evm[i]/10) : null;
+  const freq=(dev.d.cfg&&dev.d.cfg.freq)||'--';
+  let h='<div class="tblw"><h3>'+hdr+'</h3><table class="tbl">'+
+    '<tr><td>RSSI (dBm)</td><td>'+f1(other,2)+' / '+f1(mine,2)+'</td></tr>'+
+    '<tr><td>PHY Rate (Mbps)</td><td>'+fPhy(loc.txPhy)+' / '+fPhy(loc.rxPhy)+'</td></tr>'+
+    '<tr><td>MCS</td><td>'+loc.txMcs+' / '+loc.rxMcs+'</td></tr>'+
+    '<tr><td>PER (%)</td><td>'+f1(loc.per,2)+' / '+f1(R?R.per:null,2)+'</td></tr>'+
+    '<tr><td>SNR (dB)</td><td>'+f1(R?rdSnr(R.evm):null,2)+' / '+f1(rdSnr(loc.evm),2)+'</td></tr>'+
+    '<tr><td>Noise Level</td><td>'+f1(rSelf?rSelf.noise:null)+' / '+f1(ls?ls.noise:null)+'</td></tr></table></div>';
+  h+='<div class="tblw"><h3>MIMO Status</h3><table class="tbl"><tr><th>Chain</th><th>Rx Power</th><th>Rx Noise</th><th>CINR</th><th>Freq</th><th>Pol</th></tr>'+
+    [0,1].map(i=>'<tr><td>'+(i+1)+'</td><td>'+f1(loc.rssi[i]/10)+'</td><td>'+f1(ls?ls.noise:null)+'</td><td>'+f1(cinr(i))+'</td><td>'+freq+'</td><td>'+(i?'V':'H')+'</td></tr>').join('')+'</table></div>';
+  h+='<div class="tblw"><h3>Streams</h3><table class="tbl"><tr><th>#</th><th>Tx MCS</th><th>Tx W</th><th>Tx PHY</th><th>Rx MCS</th><th>Rx W</th><th>Rx PHY</th><th>Rx SNR</th></tr>'+
+    [0,1].map(i=>'<tr><td>'+(i+1)+'</td><td>'+loc.txMcs+'</td><td>'+loc.txBw+'</td><td>'+fPhy(loc.txPhy)+'</td><td>'+loc.rxMcs+'</td><td>'+loc.rxBw+'</td><td>'+fPhy(loc.rxPhy)+'</td><td>'+f1(cinr(i))+'</td></tr>').join('')+'</table></div>';
+  return h;
+}
+
+function renderLinkSummary(){
+  const on=DEVS.filter(d=>d.on); $('rSum').style.display=on.length?'':'none'; if(!on.length) return;
+  on.forEach(dev=>{ const el=$('rdet-'+dev.id); if(!el) return; const det=el.parentNode; if(det && !det.open) return;
+    const h=devTablesHTML(dev); if(el.innerHTML!==h) el.innerHTML=h; });
+  if($('rSumBody').innerHTML) $('rSumBody').innerHTML='';
+  drawRadioMap();
+}
+let RM=null, RMg=null;
+async function drawRadioMap(){
+  const pts=DEVS.filter(d=>d.on).map(d=>({d, pos:devPos(d)})).filter(x=>x.pos);
+  if(!pts.length) return;
+  if(!RM){
+    try{ await loadLeaflet(); }catch(_){ return; }
+    $('rmap').innerHTML='';
+    RM=L.map('rmap',{zoomControl:false,attributionControl:true,tap:false}); RM.attributionControl.setPrefix(false);
+    cachedLayer('https://clarity.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:17,maxZoom:20,attribution:'Esri Clarity'}).addTo(RM);
+  }
+  const key=pts.map(x=>x.d.id+x.pos.p.lat.toFixed(5)+x.pos.p.lon.toFixed(5)).join('|');
+  if(RM._key===key) return; RM._key=key;
+  if(RMg) RM.removeLayer(RMg);
+  const layers=[]; const isp=pts.find(x=>devRole(x.d)==='isp');
+  pts.forEach(x=>{
+    const ll=[x.pos.p.lat,x.pos.p.lon], role=devRole(x.d);
+    if(isp && role==='client'){ const a=[isp.pos.p.lat,isp.pos.p.lon]; layers.push(L.polyline([a,ll],{color:'#c8f135',weight:4,dashArray:'10 10',className:'flow',interactive:false})); }
+    let lbl=x.d.label;
+    if(isp && role==='client') lbl+=' → '+bearing(x.pos.p,isp.pos.p).toFixed(0)+'°';
+    if(role==='isp'){ const c=pts.filter(y=>devRole(y.d)==='client'); if(c.length===1) lbl+=' → '+bearing(x.pos.p,c[0].pos.p).toFixed(0)+'°'; }
+    layers.push(L.circleMarker(ll,{radius:10,color:'#0a0b0c',weight:3,fillColor:role==='isp'?'#ffffff':'#ff6b6b',fillOpacity:1}).bindTooltip(lbl,{permanent:true,direction:'top',offset:[0,-10],className:'tt'}));
+  });
+  RMg=L.layerGroup(layers).addTo(RM);
+  RM.invalidateSize();
+  if(pts.length===1) RM.setView([pts[0].pos.p.lat,pts[0].pos.p.lon],15,{animate:false});
+  else RM.fitBounds(L.latLngBounds(pts.map(x=>[x.pos.p.lat,x.pos.p.lon])).pad(0.25),{animate:false,maxZoom:17});
+}
+function renderStrip(){
+  const dev = devById(SEL) && devById(SEL).on ? devById(SEL) : DEVS.find(d=>d.on);
+  $('rStrip').style.display = dev ? '' : 'none'; if(!dev) return;
+  const sg=devSignal(dev), v=sg.v;
+  paintRssi($('stRssi'),$('stBar'),v); const nm=dev.label; if($('stName').textContent!==nm) $('stName').textContent=nm;
+  if(rdBeep && v!=null && Date.now()-(window._lastBeep||0)>(sg.fast?200:600)){ window._lastBeep=Date.now(); rdTone(v); }
+}
+function rdBeepToggle(){
+  rdBeep=!rdBeep; document.querySelectorAll('.beepBtn').forEach(b=>b.textContent=rdBeep?'Beep off':'Beep');
+  if(rdBeep && !rdAudio){ try{ rdAudio=new (window.AudioContext||window.webkitAudioContext)(); }catch(_){} }
+}
+function rdTone(v){
+  if(!rdAudio) return;
+  try{
+    const o=rdAudio.createOscillator(), g=rdAudio.createGain(), t=rdAudio.currentTime;
+    o.frequency.value=300+Math.max(0,Math.min(1,(v+90)/50))*1400; o.type='sine';
+    g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.3,t+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t+0.12);
+    o.connect(g).connect(rdAudio.destination); o.start(t); o.stop(t+0.13);
+  }catch(_){}
+}
+
+
+let rdLocArm=null;
+async function rdSendLoc(role){
+  const e=$('locErr'); e.style.color=''; e.textContent='';
+  const dev=firstOf(role==='isp'?'isp':'client');
+  if(!dev){ e.textContent='First add the '+(role==='isp'?'ISP':'Client')+' radio in the Radios tab.'; return; }
+  if(!result) return;
+  if(rdLocArm!==role){ rdLocArm=role; e.style.color='var(--acc)'; e.textContent=dev.label+' location will be changed. Sure? Press the same button again.'; return; }
+  rdLocArm=null;
+  const me = role==='isp'?result.a:result.b, other = role==='isp'?result.b:result.a;
+  const body=JSON.stringify({"mimosa-device:location":{"local":{"latitude":+me.lat.toFixed(6),"longitude":+me.lon.toFixed(6)},"remote":{"latitude":+other.lat.toFixed(6),"longitude":+other.lon.toFixed(6)}}});
+  const r=await devReq(dev,'PATCH','/restconf/data/mimosa-device:device/config/location',body);
+  if(r.status>=200 && r.status<300){ e.style.color='var(--lime)'; e.textContent=''+dev.label+': coordinates saved.'; dev.tick=59; }
+  else { e.textContent='Save failed ('+r.status+'): '+String(r.body||'').slice(0,160); }
+}
+
+let chanArm={};
+function setChan(id){
+  const dev=devById(id); if(!dev) return;
+  const e=$('chE-'+id); if(!e) return; e.style.color=''; e.textContent='';
+  if(dev.kind==='c5x'){ e.textContent='C5x channel change coming soon — abhi C5x dashboard se badlo.'; return; }
+  const f=parseFloat(($('chF-'+id)||{}).value), bw=+(($('chB-'+id)||{}).value);
+  if(isNaN(f)||f<1000||f>80000){ e.textContent='Frequency MHz mein daalo, jaise 5790'; return; }
+  const sig=f+'/'+bw;
+  if(chanArm[id]!==sig){ chanArm[id]=sig; e.style.color='var(--acc)'; e.textContent=''+dev.label+' → '+f+' MHz / '+bw+' MHz. Link kuch second ke liye tootega. Apply dobara dabao.'; return; }
+  chanArm[id]=null;
+  applyChan(dev,f,bw,e);
+}
+async function applyChan(dev,f,bw,e){
+  const cfg=(dev.d&&dev.d.cfg&&dev.d.cfg.mode==='STA')?'mimosa-wifi-radio:client-configuration':'mimosa-wifi-radio:access-point-configuration';
+  const inner={name:'wifi0'}; inner[cfg]={"channel-configuration":{"frequency":f,"bandwidth":bw}};
+  const body=JSON.stringify({"ietf-interfaces:interface":[inner]});
+  e.innerHTML='<span class="spin"></span> Applying...';
+  const r=await devReq(dev,'PATCH','/restconf/data/ietf-interfaces:interfaces/interface=wifi0',body);
+  if(r.status>=200 && r.status<300){ e.style.color='var(--lime)'; e.textContent=''+f+' MHz / '+bw+' MHz set.'; dev.tick=29; }
+  else { e.textContent='Failed ('+r.status+'): '+String(r.body||'').slice(0,160)+' — yeh error mujhe bhej do.'; }
+}
+
+let rdChanArm=null;
+async function rdSendChan(role){
+  const e=$('chErr'); e.style.color=''; e.textContent='';
+  const dev=firstOf(role==='isp'?'isp':'client');
+  if(!dev){ e.textContent='First add the '+(role==='isp'?'ISP':'Client')+' radio in the Radios tab.'; return; }
+  if(dev.kind==='c5x'){ e.textContent='C5x channel change is not supported yet — I can add it. For now change it from the C5x dashboard.'; return; }
+  const f=num('chFreq'), bw=+($('chBw').value);
+  if(f===null||f<1000||f>80000){ e.textContent='Enter the center frequency in MHz, e.g. 5790'; return; }
+  if(rdChanArm!==role){ rdChanArm=role; e.style.color='var(--acc)'; e.textContent=''+dev.label+' channel → '+f+' MHz / '+bw+' MHz. The link will drop for a few seconds. Press the same button again to apply.'; return; }
+  rdChanArm=null;
+  const cfg = (dev.d && dev.d.cfg && dev.d.cfg.mode==='STA') ? 'mimosa-wifi-radio:client-configuration' : 'mimosa-wifi-radio:access-point-configuration';
+  const inner={name:'wifi0'}; inner[cfg]={"channel-configuration":{"frequency":f,"bandwidth":bw}};
+  const body=JSON.stringify({"ietf-interfaces:interface":[inner]});
+  e.innerHTML='<span class="spin"></span> Applying...';
+  const r=await devReq(dev,'PATCH','/restconf/data/ietf-interfaces:interfaces/interface=wifi0',body);
+  if(r.status>=200 && r.status<300){ e.style.color='var(--lime)'; e.textContent=''+dev.label+': channel set to '+f+' MHz / '+bw+' MHz.'; dev.tick=29; }
+  else { e.textContent='Failed ('+r.status+'): '+String(r.body||'').slice(0,200)+' — yeh error mujhe bhej do, main command theek kar dunga.'; }
+}
+// App khulte hi saved radios khud jodo (purane 2-radio login bhi le aao)
+function autoConnectRadios(){
+  if(!hasBridge() || !Android.getSecret || DEVS.length) return;
+  let list=[]; try{ list=JSON.parse(Android.getSecret('rd_list')||'[]'); }catch(_){}
+  if(!list.length){ ['isp','client'].forEach(role=>{ try{ const v=Android.getSecret('rd_'+role); if(v){ const c=JSON.parse(v); list.push({id:'d'+role, label:role==='isp'?'ISP radio':'Client radio', type:role, ip:c.ip, u:c.u, pw:c.pw}); } }catch(_){} }); }
+  list.forEach(x=>{ const dev=Object.assign({auth:btoa(x.u+':'+x.pw), d:{}}, x); DEVS.push(dev); });
+  if(list.length) saveDevList();
+  if(!SEL && DEVS.length) SEL=(DEVS.find(d=>d.type==='client')||DEVS[0]).id;
+  DEVS.forEach(async dev=>{ mountDev(dev); devStatus(dev,'',''); $('rst-'+dev.id).innerHTML='<span class="spin"></span>';
+    if(dev.kind==='c5x'){ const j=await c5xReq(dev); if(j&&j.realtime){ applyC5x(dev,j); startDev(dev,true); } else { devStatus(dev,'C5x not responding — check password','#fbbf24'); startDev(dev,false); } return; }
+    const r=await devReq(dev,'GET','/restconf/data/mimosa-wifi-network:statistics/client-statistics');
+    if(r.status===401||r.status===403){ devStatus(dev,'Wrong password — remove and add again','#ff6b6b'); return; }
+    startDev(dev, r.status===200); });
 }
 
 /* ---------- license system (ported from production — same keys.json / revoked.json / device code) ---------- */
@@ -542,14 +1040,14 @@ function showLock(msg){ licExp=null; document.body.classList.add('ready'); $('lo
   $('devCode').textContent=deviceCode(); var ah=$('autoHint'); if(ah) ah.style.display=''; if(msg) $('licErr').textContent=msg; lucide.createIcons(); }
 function showApp(exp){ licExp=exp; document.body.classList.add('ready'); $('lock').style.display='none';
   document.querySelector('header').style.display=''; document.querySelector('main').style.display=''; document.querySelector('nav').style.display='';
-  const left=exp-Date.now()/1000, dd=Math.floor(left/86400), hh=Math.floor(left%86400/3600); $('licTxt').textContent=(dd>0?dd+'d '+hh+'h':hh+'h')+' left'; lucide.createIcons(); if(map) setTimeout(()=>map.invalidateSize(),150); }
+  const left=exp-Date.now()/1000, dd=Math.floor(left/86400), hh=Math.floor(left%86400/3600); $('licTxt').textContent=(dd>0?dd+'d '+hh+'h':hh+'h')+' left'; lucide.createIcons(); if(map) setTimeout(()=>map.invalidateSize(),150); try{ autoConnectRadios(); }catch(_){} }
 async function boot(){ const k=store('tdf_lic'); if(k){ const r=await checkKey(k); if(r.ok){ showApp(r.exp); autoKey(); return; } showLock(r.err); } else showLock(); autoKey(); }
 setInterval(autoKey,25000); setTimeout(checkRevoked,2500); setInterval(checkRevoked,5*60*1000);
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ checkRevoked(); autoKey(); } });
 
 /* ---------- boot ---------- */
 try{ const sa=localStorage.getItem('tf_a'),sb=localStorage.getItem('tf_b'); if(sa)$('a').value=sa; if(sb)$('b').value=sb; }catch(_){}
-renderRadios(); lucide.createIcons(); boot();
+lucide.createIcons(); boot();
 </script>
 </body>
 </html>
