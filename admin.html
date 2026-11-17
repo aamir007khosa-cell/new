@@ -69,6 +69,13 @@
   <div id="panel" class="hide">
 
     <div class="card">
+      <div class="top"><div><b>📥 Easypaisa / JazzCash orders</b> <span id="ocount" class="count"></span></div>
+        <button class="btn-ghost btn-sm" onclick="loadOrders()">↻ Refresh</button></div>
+      <div class="muted" style="margin:6px 0 4px">Pehle apne Easypaisa/JazzCash mein payment aur TID check karo, phir Approve dabao. Key customer ki app mein khud lag jati hai.</div>
+      <div id="orders"></div>
+    </div>
+
+    <div class="card">
       <div class="top">
         <div>
           <b>Customers</b>
@@ -126,7 +133,7 @@ function savePass(){
   if(!v){ return; }
   localStorage.setItem('tf_admin', v);
   $('gate').classList.add('hide'); $('panel').classList.remove('hide');
-  load();
+  load(); loadOrders();
 }
 function lock(){ $('panel').classList.add('hide'); $('gate').classList.remove('hide'); $('pass').value=''; }
 
@@ -225,8 +232,40 @@ function manual(){
   revoke(d, false, null);
 }
 
+
+/* ===== Easypaisa / JazzCash orders ===== */
+function ago(t){ var m=Math.max(0,Math.floor((Date.now()/1000-t)/60)); return m<60?m+' min ago':(m<1440?Math.floor(m/60)+' h ago':Math.floor(m/1440)+' d ago'); }
+async function orderApi(ep,extra){
+  var r=await fetch(WORKER+ep,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({admin:pass()},extra||{}))});
+  var j=await r.json().catch(function(){return {}});
+  if(!r.ok||!j.ok) throw new Error((j&&j.error)||('HTTP '+r.status));
+  return j;
+}
+async function loadOrders(){
+  var box=$('orders'); box.innerHTML='<div class="muted">Loading…</div>';
+  try{
+    var j=await orderApi('/orders');
+    var L=j.orders||[]; var pend=L.filter(function(o){return o.status==='pending'}).length;
+    $('ocount').textContent='· '+pend+' pending';
+    box.innerHTML=L.length?L.map(function(o){
+      var st=o.status==='pending'?'<span class="pill p-exp">Pending</span>':(o.status==='approved'?'<span class="pill p-act">Approved</span>':'<span class="pill p-rev">Rejected</span>');
+      var amt='Rs '+(o.days*1000).toLocaleString('en-PK');
+      var btn=o.status==='pending'?'<div style="margin-top:8px;display:flex;gap:8px"><button class="btn-lime btn-sm" onclick="ordAct(\''+o.id+'\',\'approve\',this)">✅ Approve</button><button class="btn-red btn-sm" onclick="ordAct(\''+o.id+'\',\'reject\',this)">Reject</button></div>':'';
+      return '<div style="border-top:1px solid var(--line);padding:10px 2px"><div class="top"><b style="font-family:monospace;letter-spacing:1px">'+esc(o.dev)+'</b>'+st+'</div>'+
+        '<div class="muted" style="margin-top:3px">'+o.days+' day'+(o.days>1?'s':'')+' · <b>'+amt+'</b> · '+esc(o.method)+' · TID <b style="color:#e7f0ee">'+esc(o.txid)+'</b></div>'+
+        '<div class="muted">'+esc(o.name||'-')+' · '+esc(o.phone||'-')+' · '+ago(o.t)+'</div>'+btn+'</div>';
+    }).join(''):'<div class="muted" style="padding:10px 2px">Abhi koi order nahi.</div>';
+  }catch(e){ box.innerHTML='<div class="err">'+esc(e.message||e)+'</div>'; }
+}
+async function ordAct(id,act,btn){
+  if(act==='reject'&&!confirm('Reject this order?')) return;
+  btn.disabled=true; btn.textContent='…';
+  try{ await orderApi('/'+act,{id:id}); setMsg(act==='approve'?'✓ Approved — key published, customer ki app khud unlock ho jayegi.':'Rejected',true); loadOrders(); setTimeout(load,800); }
+  catch(e){ setMsg('Failed: '+e.message,false); btn.disabled=false; btn.textContent=act==='approve'?'✅ Approve':'Reject'; }
+}
+
 /* boot */
-if(pass()){ $('gate').classList.add('hide'); $('panel').classList.remove('hide'); load(); }
+if(pass()){ $('gate').classList.add('hide'); $('panel').classList.remove('hide'); load(); loadOrders(); }
 $('pass').addEventListener('keydown',function(e){ if(e.key==='Enter') savePass(); });
 $('mdev').addEventListener('keydown',function(e){ if(e.key==='Enter') manual(); });
 </script>

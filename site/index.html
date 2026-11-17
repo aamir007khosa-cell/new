@@ -162,7 +162,7 @@ footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--mut);fon
 
 <section id="buy" class="wrap">
   <h2>Buy a license</h2>
-  <p class="sub">Pay with USDT or your bank card, send the proof, get your license key.</p>
+  <p class="sub">Pay with Easypaisa, JazzCash, USDT or your card — your app unlocks automatically.</p>
   <div class="card steps">
     <div class="step">
       <h3>Your Device Code</h3>
@@ -174,7 +174,27 @@ footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--mut);fon
       <div class="tabs" id="methods" style="margin-bottom:10px">
         <button class="on" onclick="setMethod('crypto')">🪙 Crypto wallet</button>
         <button onclick="setMethod('card')">💳 Debit / Credit card</button>
+        <button onclick="setMethod('pk')">📱 Easypaisa / JazzCash</button>
       </div>
+      <div id="pkBox" class="card" style="display:none;background:var(--card2);margin-bottom:12px">
+        <b>Pay with Easypaisa or JazzCash</b>
+        <p class="note" style="margin:6px 0 10px">Send <b class="ok" id="pkAmt">–</b> to this number (Send Money), then enter the Transaction ID (TID) from the confirmation SMS below.</p>
+        <div class="mono" id="pkNum" style="font-size:22px;margin:4px 0 10px;letter-spacing:2px">0343 2139878</div>
+        <button class="btn sm" onclick="copy('03432139878','Number copied')">📋 Copy number</button>
+        <button class="btn sm" onclick="copy(String(curPkr()),'Amount copied')">📋 Copy amount</button>
+        <label style="margin-top:14px;display:block">Paid with</label>
+        <select id="pkMethod" style="width:100%"><option value="easypaisa">Easypaisa</option><option value="jazzcash">JazzCash</option></select>
+        <label style="margin-top:10px;display:block">Transaction ID (TID) from the SMS</label>
+        <input type="text" id="pkTx" placeholder="e.g. 41234567890" autocomplete="off" style="font-family:ui-monospace,Consolas,monospace">
+        <label style="margin-top:10px;display:block">Your name (optional)</label>
+        <input type="text" id="pkName" placeholder="Your name" autocomplete="off">
+        <label style="margin-top:10px;display:block">Your phone / WhatsApp (optional)</label>
+        <input type="text" id="pkPhone" placeholder="03xx xxxxxxx" autocomplete="off">
+        <button class="btn main full" onclick="submitPk()" style="margin-top:14px">✅ I have paid — activate my app</button>
+        <div id="pkStatus" class="note" style="min-height:18px;margin-top:8px"></div>
+        <p class="note" style="margin:6px 0 0">We confirm your payment (usually within a few minutes). Your app then unlocks on its own — just open Tower Finder.</p>
+      </div>
+      <div id="cryptoBox">
       <div id="cardBox" class="card" style="display:none;background:var(--card2);margin-bottom:12px">
         <b>Pay with your Visa / Mastercard</b>
         <p class="note" style="margin:6px 0 10px">Your card buys USDT, which is sent straight to our address below. Takes about 5 minutes.</p>
@@ -198,8 +218,9 @@ footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--mut);fon
         </div>
       </div>
       <div class="warn">⚠️ Send <b>only USDT</b> on the <b id="netWarn"></b> network. Wrong coin or wrong network = funds lost. Network fee is paid by you.</div>
+      </div>
     </div>
-    <div class="step">
+    <div class="step" id="stepTx">
       <h3>Paste your Transaction ID (TXID)</h3>
       <p class="note" style="margin:0 0 8px">After sending, copy the TXID / hash from your wallet or exchange (Binance: Wallet → History → Withdrawal → TxID).</p>
       <input type="text" id="txid" placeholder="Transaction hash" autocomplete="off" style="font-family:ui-monospace,Consolas,monospace">
@@ -207,7 +228,7 @@ footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--mut);fon
       <label style="margin-top:10px;display:block">Your email (optional — for reply)</label>
       <input type="text" id="ordEmail" placeholder="you@email.com" autocomplete="off">
     </div>
-    <div class="step">
+    <div class="step" id="stepGet">
       <h3>Get your key — automatically</h3>
       <button class="btn main full" onclick="autoGetKey()" style="margin-bottom:8px">⚡ Verify payment &amp; activate my app</button>
       <div id="autoStatus" class="note" style="min-height:18px;margin-bottom:6px"></div>
@@ -295,7 +316,7 @@ const inApp = !!window.Android;           // opened inside the Tower Finder app
 if(inApp) document.querySelectorAll('.dl-only').forEach(e=>e.style.display='none');
 $('yr').textContent=new Date().getFullYear();
 
-let rate=SHOP.fallbackRate, net=SHOP.wallets[0];
+let rate=SHOP.fallbackRate, net=SHOP.wallets[0], payMethod='crypto';
 const days=$('days');
 const fmt=n=>n.toLocaleString('en-PK');
 function curPkr(){ return (+days.value)*SHOP.pricePerDay; }
@@ -316,7 +337,8 @@ function upd(){
   $('pkr').textContent=SHOP.priceUsdtPerDay.toFixed(2)+' USDT';
   const u=curUsdt();
   $('usdt').textContent=u.toFixed(2)+' USDT';
-  $('payAmt').textContent=u.toFixed(2)+' USDT ('+d+(d>1?' days':' day')+')';
+  $('payAmt').textContent= payMethod==='pk' ? 'Rs '+fmt(curPkr())+' ('+d+(d>1?' days':' day')+')' : u.toFixed(2)+' USDT ('+d+(d>1?' days':' day')+')';
+  if($('pkAmt')) $('pkAmt').textContent='Rs '+fmt(curPkr());
   $('cardAmt').textContent=(u+1.5).toFixed(2)+' USDT'; $('cardAmt2').textContent=u.toFixed(2)+' USDT';
   document.querySelectorAll('#quick button').forEach(b=>b.classList.toggle('on',+b.dataset.d===d));
   try{ localStorage.setItem('shop_days',d); }catch(_){}
@@ -326,9 +348,33 @@ days.oninput=upd;
 // networks
 SHOP.wallets.forEach((w,i)=>{ const b=document.createElement('button'); b.textContent=w.short; b.onclick=()=>setNet(i); $('nets').appendChild(b); });
 function setMethod(m){
-  [...$('methods').children].forEach((b,j)=>b.classList.toggle('on',(m==='card')===(j===1)));
+  payMethod=m;
+  const idx={crypto:0,card:1,pk:2}[m];
+  [...$('methods').children].forEach((b,j)=>b.classList.toggle('on',j===idx));
   $('cardBox').style.display=m==='card'?'block':'none';
+  $('pkBox').style.display=m==='pk'?'block':'none';
+  $('cryptoBox').style.display=m==='pk'?'none':'block';
+  $('stepTx').style.display=m==='pk'?'none':'';
+  $('stepGet').style.display=m==='pk'?'none':'';
   if(m==='card') setNet(Math.max(0,SHOP.wallets.findIndex(w=>w.id==='trc20')));
+  upd();
+}
+async function submitPk(){
+  const dev=$('dev').value.trim().toUpperCase(), tx=$('pkTx').value.trim().replace(/\s+/g,''), d=+days.value;
+  const s=$('pkStatus');
+  if(dev.length<6){ toast('Enter your Device Code'); $('dev').focus(); window.scrollTo({top:$('dev').getBoundingClientRect().top+scrollY-80,behavior:'smooth'}); return; }
+  if(tx.length<6){ toast('Enter the Transaction ID'); $('pkTx').focus(); return; }
+  s.style.color='var(--mut)'; s.textContent='Sending…';
+  const body={dev,days:d,method:$('pkMethod').value,txid:tx,name:$('pkName').value.trim(),phone:$('pkPhone').value.trim()};
+  try{
+    const r=await fetch(SHOP.worker+'/order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const j=await r.json();
+    if(j&&j.ok){
+      s.style.color='var(--lime)';
+      s.innerHTML='✅ Order received (#'+j.id+'). We are confirming your payment — your app will unlock on its own, usually within a few minutes. Open Tower Finder after a short while.';
+      try{ fetch('https://formsubmit.co/ajax/'+SHOP.email,{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({_subject:'New PK order '+dev,_template:'box',_captcha:'false',message:'Order '+j.id+'\nDevice: '+dev+'\nDays: '+d+'\nAmount: Rs '+curPkr()+'\nVia: '+body.method+'\nTID: '+tx+'\nName: '+(body.name||'-')+'\nPhone: '+(body.phone||'-')})}); }catch(_){}
+    } else { s.style.color='var(--red)'; s.textContent='❌ '+((j&&j.error)||'Could not send. Try again.'); }
+  }catch(e){ s.style.color='var(--red)'; s.textContent='Network error — try again, or contact us on Telegram.'; }
 }
 function setNet(i){
   net=SHOP.wallets[i];
