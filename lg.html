@@ -141,15 +141,16 @@ function render(){
       '<button class="s" onclick="renew('+i+')">🔄 Renew</button>'+
       '<button class="s" onclick="del('+i+')">🗑️</button></div>';
   }).join('') : '';
-  const cq=cloudOnly.filter(r=>!q||r.d.includes(q)).map(r=>{
-    const s=r.exp-Date.now()/1000, l2=left(r.exp);
+  const cq=cloudOnly.filter(r=>!q||r.d.includes(q)||ordName(r.d).toUpperCase().includes(q)).map(r=>{
+    const s=r.exp-Date.now()/1000, l2=left(r.exp), nm=ordName(r.d)||'Online customer';
     const st=r.blocked?'<span class="bad">Blocked</span>':(!l2?'<span class="bad">Expired</span>':(s<86400?'<span class="soon">'+l2+' left</span>':'<span class="ok">'+l2+' left</span>'));
-    const b=r.blocked?'<button class="s" onclick="cloudAct(\''+r.d+'\',true)">Re-enable</button><button class="s" onclick="cloudDel(\''+r.d+'\')">🗑 Delete</button>':'<button class="s" onclick="cloudAct(\''+r.d+'\',false)">🚪 Logout</button>';
-    return '<div class="cl"><div class="t"><span class="n">☁️ Online customer</span>'+st+'</div><div class="m">📱 '+r.d+' · '+(r.days||'?')+' days · Expires: '+(r.exp?new Date(r.exp*1000).toLocaleString('en-PK'):'—')+'</div>'+b+'</div>';
+    const b=(r.blocked?'<button class="s" onclick="cloudAct(\''+r.d+'\',true)">Re-enable</button>':'<button class="s" onclick="cloudAct(\''+r.d+'\',false)">🚪 Logout</button>')+'<button class="s" onclick="cloudDel(\''+r.d+'\')">🗑 Delete</button>';
+    return '<div class="cl"><div class="t"><span class="n">☁️ '+esc(nm)+'</span>'+st+'</div><div class="m">📱 '+r.d+' · '+(r.days||'?')+' days · Expires: '+(r.exp?new Date(r.exp*1000).toLocaleString('en-PK'):'—')+'</div>'+b+'</div>';
   }).join('');
   $('list').innerHTML=($('list').innerHTML||'')+cq;
   if(!$('list').innerHTML) $('list').innerHTML='<p style="color:#9aa3ae;font-size:13px">No customers yet.</p>';
 }
+function ordName(d){ try{ const m=JSON.parse(localStorage.getItem('lg_names')||'{}'); if(m[d]) return m[d]; }catch(_){} const o=(window.ORD||[]).filter(x=>x.dev===d&&x.name).sort((a,b)=>b.t-a.t)[0]; return o?(o.name+(o.phone?' · '+o.phone:'')):''; }
 function esc(t){ return String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function renew(i){ const r=load()[i]; $('name').value=r.name; $('dev').value=r.dev; $('msg').textContent='Choose a package and press Generate key.'; }
 let delArm=-1;
@@ -247,7 +248,7 @@ async function loadOrders(){
   if(!tok()){ box.innerHTML='<p style="color:#9aa3ae;font-size:13px">Save your admin password first (Remote control).</p>'; return; }
   box.innerHTML='<p style="color:#8b9290;font-size:13px">Loading…</p>';
   try{
-    const j=await wApi('/orders'); window.ORD=j.orders||[]; drawOrders();
+    const j=await wApi('/orders'); window.ORD=j.orders||[]; try{ const m=JSON.parse(localStorage.getItem('lg_names')||'{}'); window.ORD.forEach(o=>{ if(o.name) m[o.dev]=o.name+(o.phone?' · '+o.phone:''); }); localStorage.setItem('lg_names',JSON.stringify(m)); }catch(_){} drawOrders(); try{ render(); }catch(_){}
   }catch(e){ box.innerHTML='<p style="color:#ff6b6b;font-size:13px">'+esc(e.message||e)+'</p>'; }
 }
 function drawOrders(){
