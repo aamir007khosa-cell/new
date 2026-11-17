@@ -142,7 +142,7 @@ details[open] summary::before{content:"－ "}
 #toast.show{opacity:1;transform:translate3d(-50%,0,0)}
 
 /* Lock */
-.hero{text-align:center;padding:24px 0 10px}
+.hero{text-align:center;padding:12px 0 6px}
 .hero .logo{width:76px;height:76px;margin:0 auto 14px;background:var(--lime);border:none}
 .hero .logo svg{width:36px;height:36px;stroke:var(--ink)}
 .hero h1{margin:0;font-family:var(--display);font-size:25px;font-weight:700;letter-spacing:-.5px}
@@ -191,7 +191,7 @@ details[open] summary::before{content:"－ "}
 .page.on.fromR{animation:slideR .28s cubic-bezier(.2,.9,.3,1) both}
 .page.on.fromL{animation:slideL .28s cubic-bezier(.2,.9,.3,1) both}
 .needres .tower{width:84px;height:92px;margin:0 auto}
-.hero .tower{width:96px;height:106px;margin:0 auto 10px;display:block}
+.hero .tower{width:74px;height:82px;margin:0 auto 8px;display:block}
 .hero h1{animation:slideL .5s cubic-bezier(.2,.9,.3,1) .5s both}
 .hero .hint{animation:slideR .5s cubic-bezier(.2,.9,.3,1) .6s both}
 /* Height chart reveals left to right */
@@ -1149,17 +1149,34 @@ async function checkKey(key){
 }
 
 // ===== Packages (shared) + License sheet =====
+let USDT_RATE=282;   // PKR per 1 USDT (fallback until live rate loads)
+function pkgUsdt(pkr){ return Math.ceil(pkr/USDT_RATE*100)/100; }
 function pkgHTML(selId,priceId){
-  const fmt=n=>'Rs '+n.toLocaleString('en-PK');
-  return '<div><span>1 day</span><b>'+fmt(PRICE_PER_DAY)+'</b><span>Rs 1,000 per day</span></div>'+
-    '<div><span>Choose days</span><b id="'+priceId+'">'+fmt(7*PRICE_PER_DAY)+'</b><select id="'+selId+'" onchange="document.getElementById(\''+priceId+'\').textContent=\'Rs \'+(this.value*PRICE_PER_DAY).toLocaleString(\'en-PK\')" style="margin-top:6px;padding:8px 10px;font-size:14px;background:rgba(10,11,12,.15);border:none;color:inherit;font-weight:800">'+
-    PACKAGES.map(p=>'<option value="'+p.days+'"'+(p.days===7?' selected':'')+'>'+p.days+' day'+(p.days>1?'s':'')+'</option>').join('')+'</select></div>';
+  const fmt=n=>'Rs '+n.toLocaleString('en-PK'), d0=7, pkr0=d0*PRICE_PER_DAY, uId=selId+'U';
+  return '<div><span>Per day</span><b>'+fmt(PRICE_PER_DAY)+'</b><span>1 to 30 days</span></div>'+
+    '<div style="display:flex;flex-direction:column"><span>Choose package</span>'+
+    '<select id="'+selId+'" onchange="updPkg(\''+selId+'\',\''+priceId+'\')" style="margin-top:6px;padding:9px 10px;font-size:14px;background:rgba(10,11,12,.18);border:1px solid rgba(10,11,12,.25);border-radius:10px;color:inherit;font-weight:700">'+
+    PACKAGES.map(p=>'<option value="'+p.days+'"'+(p.days===d0?' selected':'')+'>'+p.days+' day'+(p.days>1?'s':'')+'</option>').join('')+'</select>'+
+    '<b id="'+priceId+'" style="margin-top:9px">'+fmt(pkr0)+'</b>'+
+    '<span id="'+uId+'" style="color:var(--ink);opacity:.72;font-weight:700">≈ '+pkgUsdt(pkr0).toFixed(2)+' USDT</span></div>';
+}
+function updPkg(selId,priceId){
+  const el=document.getElementById(selId); if(!el) return;
+  const d=+el.value, pkr=d*PRICE_PER_DAY;
+  const pe=document.getElementById(priceId); if(pe) pe.textContent='Rs '+pkr.toLocaleString('en-PK');
+  const ue=document.getElementById(selId+'U'); if(ue) ue.textContent='≈ '+pkgUsdt(pkr).toFixed(2)+' USDT';
+}
+async function loadPkgRate(){
+  try{ const j=await (await fetch('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=pkr',{cache:'no-store'})).json();
+    const r=j&&j.tether&&j.tether.pkr; if(r>100&&r<1000) USDT_RATE=r; }catch(_){}
+  if(document.getElementById('pkDays')) updPkg('pkDays','pkPrice');
+  if(document.getElementById('pkDays2')) updPkg('pkDays2','pkPrice2');
 }
 let licExp=null;
 function openLic(){
   $('licSheet').style.display='flex';
   $('lsCode').textContent=deviceCode();
-  $('pkgList2').innerHTML=pkgHTML('pkDays2','pkPrice2');
+  $('pkgList2').innerHTML=pkgHTML('pkDays2','pkPrice2'); loadPkgRate();
   $('payInfo2').innerHTML='<button class="main" style="margin:4px 0 10px" onclick="buyOnline()"><svg class="i" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19"/></svg> Buy online (USDT crypto)</button>Pay with USDT on our website — your Device Code is filled in automatically. You will receive a new key.';
   if(licExp){ const left=licExp-Date.now()/1000, dd=Math.floor(left/86400), hh=Math.floor(left%86400/3600);
     $('lsLeft').textContent= left>0 ? (dd>0? dd+'d '+hh+'h' : hh+'h') : 'Expired';
@@ -1183,7 +1200,7 @@ function showLock(msg){
   $('app').style.display='none'; $('nav').style.display='none'; $('lock').style.display='';
   $('devCode').textContent=deviceCode();
   if(window.Android) $('webWarn').style.display='none';
-  $('pkgList').innerHTML=pkgHTML('pkDays','pkPrice');
+  $('pkgList').innerHTML=pkgHTML('pkDays','pkPrice'); loadPkgRate();
   if(false) $('pkgList').innerHTML='<div><span>1 day</span><b>'+fmt(PRICE_PER_DAY)+'</b><span>Rs 1,000 per day</span></div>'+
     '<div><span>Choose days</span><b id="pkPrice">'+fmt(7*PRICE_PER_DAY)+'</b><select id="pkDays" onchange="$(\'pkPrice\').textContent=\'Rs \'+(this.value*PRICE_PER_DAY).toLocaleString(\'en-PK\')" style="margin-top:6px;padding:8px 10px;font-size:14px;background:rgba(10,11,12,.15);border:none;color:inherit;font-weight:800">'+
     PACKAGES.map(p=>'<option value="'+p.days+'"'+(p.days===7?' selected':'')+'>'+p.days+' day'+(p.days>1?'s':'')+'</option>').join('')+'</select></div>';
