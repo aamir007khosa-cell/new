@@ -162,7 +162,7 @@ footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--mut);fon
 
 <section id="buy" class="wrap">
   <h2>Buy a license</h2>
-  <p class="sub">Pay with USDT or your card — your app unlocks automatically.</p>
+  <p class="sub">Pay with Easypaisa, JazzCash, USDT or your card — your app unlocks automatically.</p>
   <div class="card steps">
     <div class="step">
       <h3>Your Device Code</h3>
@@ -179,9 +179,26 @@ footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--mut);fon
       <div id="pkBox" class="card" style="display:none;background:var(--card2);margin-bottom:12px">
         <b>Pay with Easypaisa or JazzCash</b>
         <p class="note" style="margin:6px 0 10px">Send <b class="ok" id="pkAmt">–</b> to this number (Send Money), then enter the Transaction ID (TID) from the confirmation SMS below.</p>
-        <div id="pkDetails" class="note" style="margin:6px 0 10px">Payment details will be added here.</div>
+        <div style="border:1px solid var(--line);border-radius:12px;padding:12px;margin:0 0 10px">
+          <b>Easypaisa</b>
+          <div class="note" style="margin:8px 0 2px">Account number</div>
+          <div class="mono" style="font-size:20px;letter-spacing:2px">03432139878</div>
+          <button class="btn sm" style="margin:6px 6px 8px 0" onclick="copy('03432139878','Easypaisa number copied')">📋 Copy number</button>
+          <div class="note" style="margin:6px 0 2px">IBAN (Telenor Microfinance Bank)</div>
+          <div class="mono" style="font-size:14px;word-break:break-all">PK42TMFB0000000094425104</div>
+          <button class="btn sm" style="margin:6px 0 0" onclick="copy('PK42TMFB0000000094425104','Easypaisa IBAN copied')">📋 Copy IBAN</button>
+        </div>
+        <div style="border:1px solid var(--line);border-radius:12px;padding:12px;margin:0 0 10px">
+          <b>JazzCash</b>
+          <div class="note" style="margin:8px 0 2px">Account number</div>
+          <div class="mono" style="font-size:20px;letter-spacing:2px">03432139878</div>
+          <button class="btn sm" style="margin:6px 6px 8px 0" onclick="copy('03432139878','JazzCash number copied')">📋 Copy number</button>
+          <div class="note" style="margin:6px 0 2px">IBAN (Jazz Microfinance Bank)</div>
+          <div class="mono" style="font-size:14px;word-break:break-all">PK06JCMA1511923432139878</div>
+          <button class="btn sm" style="margin:6px 0 0" onclick="copy('PK06JCMA1511923432139878','JazzCash IBAN copied')">📋 Copy IBAN</button>
+        </div>
         <label style="margin-top:14px;display:block">Paid with</label>
-        <select id="pkMethod" style="width:100%"><option value="easypaisa">Easypaisa</option><option value="jazzcash">JazzCash</option><option value="easypaisa">Bank transfer (IBAN)</option></select>
+        <select id="pkMethod" style="width:100%"><option value="easypaisa">Easypaisa</option><option value="jazzcash">JazzCash</option></select>
         <label style="margin-top:10px;display:block">Transaction ID (TID) from the SMS</label>
         <input type="text" id="pkTx" placeholder="e.g. 41234567890" autocomplete="off" style="font-family:ui-monospace,Consolas,monospace">
         <label style="margin-top:10px;display:block">Your name (optional)</label>
@@ -460,7 +477,7 @@ function ticket(kind){
 
 if(!SHOP.email) document.querySelectorAll('[onclick*="mail"]').forEach(b=>b.style.display='none');
 setNet(0); upd(); loadRate();
-const PK_ON=false;   // set true after adding the Easypaisa/JazzCash details in #pkDetails
+const PK_ON=true;   // set true after adding the Easypaisa/JazzCash details in #pkDetails
 if(PK_ON){ $('pkTab').style.display=''; if(/[?&]m=pk/.test(location.search+location.hash)) setMethod('pk'); }
 </script>
 </body>
