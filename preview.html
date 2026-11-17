@@ -53,9 +53,33 @@ input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:22px;hei
 #map{ height:260px; border-radius:16px; z-index:0; }
 .leaflet-container{ background:#0b1220; font-family:inherit; }
 ::-webkit-scrollbar{ width:8px;height:8px; } ::-webkit-scrollbar-thumb{ background:var(--line);border-radius:8px; }
+body:not(.ready) header, body:not(.ready) main, body:not(.ready) nav{ display:none; }
 </style>
 </head>
 <body class="min-h-screen pb-24">
+
+<!-- ===== LOCK SCREEN ===== -->
+<div id="lock" class="min-h-screen px-4 py-8 max-w-md mx-auto" style="display:none">
+  <div class="text-center mb-6">
+    <div class="w-16 h-16 mx-auto rounded-2xl grid place-items-center mb-3" style="background:linear-gradient(135deg,var(--cyan),#0e7490);box-shadow:0 0 30px -4px rgba(6,182,212,.6)"><i data-lucide="radio-tower" class="w-8 h-8 text-white"></i></div>
+    <h1 class="font-extrabold text-xl">Tower Direction Finder</h1>
+    <p class="text-[13px]" style="color:var(--mut)">Everything for WISP site surveys — in one app</p>
+  </div>
+  <div class="glass rounded-2xl p-4 mb-4">
+    <div class="flex items-center gap-2 mb-2"><i data-lucide="smartphone" class="w-4 h-4" style="color:var(--cyan)"></i><h2 class="font-bold text-sm">Your Device Code</h2></div>
+    <div class="mono text-center text-2xl font-extrabold tracking-[.2em] py-3 rounded-xl" style="background:rgba(2,6,23,.35);color:var(--cyan)" id="devCode">—</div>
+    <button onclick="copyCode()" class="w-full mt-2 chip rounded-xl py-2.5 text-sm font-bold active:scale-95">Copy code</button>
+    <button onclick="buyOnline()" class="w-full mt-2 rounded-xl py-3 font-bold active:scale-[.98] transition" style="background:var(--cyan);color:#02131a">Buy online (USDT) →</button>
+    <p class="text-[12px] mt-2" style="color:var(--mut)">After payment your app activates <b>automatically</b> — just reopen it. No key to paste.</p>
+  </div>
+  <div class="glass rounded-2xl p-4">
+    <div class="flex items-center gap-2 mb-2"><i data-lucide="key-round" class="w-4 h-4" style="color:var(--cyan)"></i><h2 class="font-bold text-sm">Enter license key</h2></div>
+    <input id="licKey" class="field rounded-xl px-3 py-2.5 mono text-sm w-full" placeholder="Paste your key here" autocomplete="off">
+    <button onclick="activate()" class="w-full mt-2 rounded-xl py-3 font-bold active:scale-[.98] transition" style="background:var(--cyan);color:#02131a">Activate</button>
+    <p id="licErr" class="text-[12px] mt-2" style="color:var(--danger)"></p>
+    <p id="autoHint" class="text-[12px] mt-1" style="color:var(--emerald);display:none">✓ After we confirm your payment, your key activates automatically.</p>
+  </div>
+</div>
 
 <!-- Header -->
 <header class="glass sticky top-0 z-30 px-4 py-3 flex items-center gap-3" style="border-left:0;border-right:0;border-top:0">
@@ -487,9 +511,43 @@ function renderRadios(){ const a=loadRadios();
   lucide.createIcons();
 }
 
+/* ---------- license system (ported from production — same keys.json / revoked.json / device code) ---------- */
+const PUBKEY={"kty":"EC","crv":"P-256","x":"X3qDab0PFkISO3Yoit0w6ZG8Q3KnZGqjXTv6O_GKWGw","y":"AZV-b78UK56MEwmqjovZwu1JWuOnuV-HhfTER5WOgtY"};
+const SHOP_URL='https://towerfinder.online/site/', KEYS_URL='https://towerfinder.online/keys.json', REVOKE_URL='https://towerfinder.online/revoked.json';
+function b64u(s){ s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4)s+='='; return Uint8Array.from(atob(s),c=>c.charCodeAt(0)); }
+function store(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); }catch(_){ return null; } }
+function deviceCode(){ try{ if(window.Android&&Android.deviceCode) return Android.deviceCode(); }catch(_){}
+  let c=store('tdf_dev'); if(!c){ const al='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; c=''; crypto.getRandomValues(new Uint8Array(8)).forEach(x=>c+=al[x%al.length]); store('tdf_dev',c); } return c; }
+async function checkKey(key){ try{ const [p,sg]=key.trim().split('.'); const pk=await crypto.subtle.importKey('jwk',PUBKEY,{name:'ECDSA',namedCurve:'P-256'},false,['verify']);
+  const ok=await crypto.subtle.verify({name:'ECDSA',hash:'SHA-256'},pk,b64u(sg),new TextEncoder().encode(p)); if(!ok) return {err:'Invalid key.'};
+  const d=JSON.parse(new TextDecoder().decode(b64u(p))); if(d.d!==deviceCode()) return {err:'This key belongs to another phone.'};
+  const now=Date.now()/1000, last=+(store('tdf_last')||0); if(now<last-3600) return {err:'Phone date/time is wrong. Please fix it.'}; if(now>d.e) return {err:'License expired. Please buy a new package.',exp:true};
+  store('tdf_last',String(Math.max(now,last))); return {ok:true,exp:d.e,iss:d.e-(d.p||0)*86400}; }catch(_){ return {err:'Invalid key.'}; } }
+let licExp=null;
+async function isRevoked(iss){ try{ const j=await (await fetch(REVOKE_URL+'?t='+Date.now(),{cache:'no-store'})).json(); const me=deviceCode(); return !!((j&&j.list||[]).find(x=>x.d===me&&x.t>iss)); }catch(_){ return false; } }
+async function checkRevoked(){ const k=store('tdf_lic'); if(!k) return; let j=null; try{ j=await (await fetch(REVOKE_URL+'?t='+Date.now(),{cache:'no-store'})).json(); }catch(_){ return; } const r=await checkKey(k); if(!r.ok) return; const me=deviceCode(); if((j&&j.list||[]).find(x=>x.d===me&&x.t>r.iss)){ store('tdf_lic',''); showLock('This license has been cancelled. Please contact the seller.'); } }
+let lastCloudKey='';
+async function autoKey(){ let j=null; try{ j=await (await fetch(KEYS_URL+'?t='+Date.now(),{cache:'no-store'})).json(); }catch(_){ return false; }
+  const me=deviceCode(), hit=((j&&j.list)||[]).filter(x=>x&&x.d===me).sort((a,b)=>(b.t||0)-(a.t||0))[0]; if(!hit||!hit.k) return false;
+  const k=String(hit.k).trim(); if(k===lastCloudKey) return false; const have=(store('tdf_lic')||'').trim(); if(k===have){ lastCloudKey=k; return false; }
+  const r=await checkKey(k); lastCloudKey=k; if(!r.ok) return false; if(await isRevoked(r.iss)) return false; if(licExp&&r.exp<=licExp) return false;
+  store('tdf_lic',k); const wasLocked=$('lock').style.display!=='none'; showApp(r.exp); toast(wasLocked?'License activated':'License updated'); return true; }
+async function activate(){ const k=$('licKey').value; if(!k.trim()){ $('licErr').textContent='Paste your key.'; return; } const r=await checkKey(k); if(!r.ok){ $('licErr').textContent=r.err; return; } if(await isRevoked(r.iss)){ $('licErr').textContent='This license has been cancelled. Please contact the seller.'; return; } store('tdf_lic',k.trim()); showApp(r.exp); }
+function copyCode(){ const c=deviceCode(); if(window.Android&&Android.copy){ Android.copy(c); toast('Code copied'); return; } try{ navigator.clipboard.writeText(c).then(()=>toast('Code copied')); }catch(_){} }
+function buyOnline(){ location.href=SHOP_URL+'?d='+encodeURIComponent(deviceCode())+'#buy'; }
+function showLock(msg){ licExp=null; document.body.classList.add('ready'); $('lock').style.display='';
+  document.querySelector('header').style.display='none'; document.querySelector('main').style.display='none'; document.querySelector('nav').style.display='none';
+  $('devCode').textContent=deviceCode(); var ah=$('autoHint'); if(ah) ah.style.display=''; if(msg) $('licErr').textContent=msg; lucide.createIcons(); }
+function showApp(exp){ licExp=exp; document.body.classList.add('ready'); $('lock').style.display='none';
+  document.querySelector('header').style.display=''; document.querySelector('main').style.display=''; document.querySelector('nav').style.display='';
+  const left=exp-Date.now()/1000, dd=Math.floor(left/86400), hh=Math.floor(left%86400/3600); $('licTxt').textContent=(dd>0?dd+'d '+hh+'h':hh+'h')+' left'; lucide.createIcons(); if(map) setTimeout(()=>map.invalidateSize(),150); }
+async function boot(){ const k=store('tdf_lic'); if(k){ const r=await checkKey(k); if(r.ok){ showApp(r.exp); autoKey(); return; } showLock(r.err); } else showLock(); autoKey(); }
+setInterval(autoKey,25000); setTimeout(checkRevoked,2500); setInterval(checkRevoked,5*60*1000);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ checkRevoked(); autoKey(); } });
+
 /* ---------- boot ---------- */
 try{ const sa=localStorage.getItem('tf_a'),sb=localStorage.getItem('tf_b'); if(sa)$('a').value=sa; if(sb)$('b').value=sb; }catch(_){}
-renderRadios(); lucide.createIcons();
+renderRadios(); lucide.createIcons(); boot();
 </script>
 </body>
 </html>
