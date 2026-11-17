@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Tower Direction Finder — WISP Survey App</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
 <meta name="description" content="Tower direction, distance, tower height, Fresnel zone, frequency planner and live Mimosa radio data — in one Android app for WISP operators.">
 <meta name="theme-color" content="#0a0b0c">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
@@ -11,7 +13,7 @@
 :root{--bg:#0a0b0c;--card:#141617;--card2:#1c1f21;--line:#24282b;--txt:#f4f6f5;--mut:#8b9290;--lime:#c8f135;--ink:#0a0b0c;--red:#ff6b6b}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.55 "Segoe UI",Roboto,system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.55 "Plus Jakarta Sans","Segoe UI",Roboto,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 a{color:var(--lime);text-decoration:none}
 .wrap{max-width:980px;margin:0 auto;padding:0 18px}
 nav{position:sticky;top:0;z-index:20;background:rgba(10,11,12,.86);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
@@ -22,7 +24,7 @@ nav .links{margin-left:auto;display:flex;gap:4px;overflow-x:auto}
 nav .links a{color:var(--mut);font-weight:700;font-size:13.5px;padding:8px 10px;border-radius:999px;white-space:nowrap}
 nav .links a:hover{color:var(--txt);background:var(--card2)}
 .hero{padding:56px 0 30px;text-align:center}
-.hero h1{font-size:clamp(30px,6vw,50px);line-height:1.08;margin:14px 0 12px;font-weight:900}
+.hero h1{font-family:"Space Grotesk","Plus Jakarta Sans",sans-serif;font-size:clamp(30px,6vw,50px);line-height:1.08;margin:14px 0 12px;font-weight:700}
 .hero h1 span{color:var(--lime)}
 .hero p{color:var(--mut);max-width:620px;margin:0 auto 24px;font-size:16.5px}
 .tower{width:92px;height:100px}
