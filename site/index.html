@@ -438,8 +438,12 @@ async function submitPk(){
   s.style.color='var(--mut)'; s.textContent='Sending…';
   const body={dev,days:d,method:$('pkMethod').value,shot:pkShot,name:($('pkBank').value+' · '+$('pkName').value.trim()).replace(/ · $/,''),phone:$('pkPhone').value.trim()};
   try{
-    const r=await fetch(SHOP.worker+'/order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    const j=await r.json();
+    let j=null, lastErr=null;
+    for(let k=0;k<3 && !j;k++){
+      try{ const r=await fetch(SHOP.worker+'/order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); j=await r.json(); }
+      catch(e){ lastErr=e; s.textContent='Sending… (retrying)'; await new Promise(z=>setTimeout(z,1500*(k+1))); }
+    }
+    if(!j) throw lastErr||new Error('net');
     if(j&&j.ok){
       s.style.color='var(--lime)';
       s.innerHTML='✅ Order received (#'+j.id+'). We are checking your payment. Keep this page open — when it is approved, Tower Finder opens by itself.';
