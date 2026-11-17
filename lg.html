@@ -34,6 +34,8 @@ button.s{background:#1c1f21;color:#f4f6f5;border:1px solid #24282b;width:auto;pa
 .sum div:first-child b{color:#0a0b0c}
 .sum b{display:block;font-size:26px;font-weight:900;color:#f4f6f5;letter-spacing:-.5px}
 #msg{color:#c8f135!important}
+#msg:empty{display:none}
+#msg{position:fixed;left:10px;right:10px;bottom:14px;z-index:9999;background:#0b0f0c;border:1px solid #c8f135;border-radius:12px;padding:12px 14px;font-size:14px!important;box-shadow:0 6px 24px #000a}
 </style></head><body><div class="w">
 <h2>License Generator</h2>
 <p class="warn">⚠️ Private — works only inside the License Generator app.</p>
@@ -133,7 +135,7 @@ function render(){
   }).join('') : '<p style="color:#9aa3ae;font-size:13px">No customers yet.</p>';
 }
 function esc(t){ return String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-function renew(i){ const r=load()[i]; $('name').value=r.name; $('dev').value=r.dev; window.scrollTo(0,0); $('msg').textContent='Choose a package and press Generate key.'; }
+function renew(i){ const r=load()[i]; $('name').value=r.name; $('dev').value=r.dev; $('msg').textContent='Choose a package and press Generate key.'; }
 let delArm=-1;
 async function del(i){
   if(delArm!==i){ delArm=i; $('msg').textContent='Press 🗑️ again to delete and log out this customer.'; return; }
@@ -167,7 +169,7 @@ async function unpublishKey(dev){ await wApi('/unpublish',{dev}); }
 
 // WebView has no confirm() popup: ask for a second tap instead
 let _arm='';
-function armTap(k,msg){ if(_arm!==k){ _arm=k; $('msg').textContent=msg; window.scrollTo(0,0); setTimeout(()=>{ if(_arm===k) _arm=''; },5000); return false; } _arm=''; return true; }
+function armTap(k,msg){ if(_arm!==k){ _arm=k; $('msg').textContent=msg; setTimeout(()=>{ if(_arm===k) _arm=''; },5000); return false; } _arm=''; return true; }
 
 // ===== Cloud customers (keys.json + revoked.json) =====
 function dk(k){ try{ let x=String(k).split('.')[0].replace(/-/g,'+').replace(/_/g,'/'); while(x.length%4)x+='='; const p=JSON.parse(atob(x)); return {days:+p.p||0,exp:+p.e||0,iss:(+p.e||0)-(+p.p||0)*86400}; }catch(_){ return {}; } }
@@ -190,13 +192,13 @@ async function loadCloud(){
 async function cloudDel(d){
   if(!armTap('cd'+d,'Tap 🗑 Delete again within 5 s to remove '+d+' from the list.')) return;
   try{ await wApi('/revoke',{dev:d}); await wApi('/unpublish',{dev:d}); $('msg').textContent='🗑 Removed '+d; loadCloud(); }
-  catch(e){ $('msg').textContent='❌ '+e.message; window.scrollTo(0,0); }
+  catch(e){ $('msg').textContent='❌ '+e.message; }
 }
 async function cloudAct(d,un){
-  if(!tok()){ $('msg').textContent='Save your admin password first (Remote control).'; window.scrollTo(0,0); return; }
+  if(!tok()){ $('msg').textContent='Save your admin password first (Remote control).'; return; }
   if(!un && !armTap('lo'+d,'Tap 🚪 Logout again within 5 s to log out '+d+'.')) return;
   try{ await wApi(un?'/unrevoke':'/revoke',{dev:d}); $('msg').textContent=(un?'✅ Re-enabled ':'✅ Logged out ')+d; setTimeout(loadCloud,800); }
-  catch(e){ $('msg').textContent='❌ '+e.message; window.scrollTo(0,0); }
+  catch(e){ $('msg').textContent='❌ '+e.message; }
 }
 
 // ===== Easypaisa / JazzCash orders =====
@@ -210,7 +212,7 @@ function viewShot(id){
     const x=document.createElement('button'); x.textContent='✕ Close'; x.style.cssText='position:fixed;top:12px;right:12px;padding:10px 16px;border:0;border-radius:10px;background:#c8f135;color:#000;font-weight:700;font-size:15px'; x.onclick=close; o.appendChild(x);
     document.body.appendChild(o);
     try{ history.pushState({shot:1},''); window.addEventListener('popstate',()=>{ if(!done){ done=true; o.remove(); } },{once:true}); }catch(_){}
-  }).catch(e=>{ $('msg').textContent='❌ '+(e.message||e); window.scrollTo(0,0); });
+  }).catch(e=>{ $('msg').textContent='❌ '+(e.message||e); });
 }
 
 function agoO(t){ const m=Math.max(0,Math.floor((Date.now()/1000-t)/60)); return m<60?m+' min ago':(m<1440?Math.floor(m/60)+' h ago':Math.floor(m/1440)+' d ago'); }
@@ -222,7 +224,7 @@ async function loadOrders(){
     const j=await wApi('/orders'); const L=j.orders||[];
     box.innerHTML=L.length? L.map(o=>{
       const st=o.status==='pending'?'<span class="soon">Pending</span>':(o.status==='approved'?'<span class="ok">Approved</span>':'<span class="bad">Rejected</span>');
-      const btn=o.status==='pending'?'<button class="s" onclick="ordAct(\''+o.id+'\',\'approve\')">✅ Approve</button><button class="s" onclick="ordAct(\''+o.id+'\',\'reject\')">Reject</button>':'';
+      const btn=o.status==='pending'?'<button class="s" onclick="ordAct(\''+o.id+'\',\'approve\')">✅ Approve</button><button class="s" onclick="ordAct(\''+o.id+'\',\'reject\')">Reject</button>':'<button class="s" onclick="ordDel(\''+o.id+'\')">🗑 Delete</button>';
       return '<div class="cl"><div class="t"><span class="n">📱 '+esc(o.dev)+'</span>'+st+'</div><div class="m">'+o.days+' day'+(o.days>1?'s':'')+' · Rs '+(o.days*1000).toLocaleString('en-PK')+' · '+esc(o.method)+(o.shot?' · <a href="#" onclick="viewShot(\''+o.id+'\');return false" style="color:#c8f135">🖼 View screenshot</a>':' · TID '+esc(o.txid))+'</div><div class="m">'+esc(o.name||'-')+' · '+esc(o.phone||'-')+' · '+agoO(o.t)+'</div>'+btn+'</div>';
     }).join('') : '<p style="color:#9aa3ae;font-size:13px">No orders yet.</p>';
   }catch(e){ box.innerHTML='<p style="color:#ff6b6b;font-size:13px">'+esc(e.message||e)+'</p>'; }
@@ -230,13 +232,14 @@ async function loadOrders(){
 async function ordDel(id){
   if(!armTap('od'+id,'Tap 🗑 Delete again within 5 s to delete this order.')) return;
   try{ await wApi('/delorder',{id}); $('msg').textContent='🗑 Order deleted.'; loadOrders(); }
-  catch(e){ $('msg').textContent='❌ '+e.message; window.scrollTo(0,0); }
+  catch(e){ $('msg').textContent='❌ '+e.message; }
 }
 async function ordAct(id,act){
   if(act==='reject' && !armTap('rj'+id,'Tap Reject again within 5 s to reject this order.')) return;
   try{ await wApi('/'+act,{id}); $('msg').textContent=act==='approve'?'✅ Approved — customer app will unlock automatically.':'Rejected.'; loadOrders(); setTimeout(loadCloud,800); }
-  catch(e){ $('msg').textContent='❌ '+e.message; window.scrollTo(0,0); }
+  catch(e){ $('msg').textContent='❌ '+e.message; }
 }
 
+(function(){ const m=document.getElementById('msg'); let t; new MutationObserver(()=>{ clearTimeout(t); if(m.textContent) t=setTimeout(()=>{ m.textContent=''; },6000); }).observe(m,{childList:true,characterData:true,subtree:true}); })();
 render(); setInterval(render,60000); loadCloud(); loadOrders();
 </script></body></html>
