@@ -1350,7 +1350,7 @@ async function autoKey(){
   toast(wasLocked?'License activated':'License updated');
   return true;
 }
-setInterval(autoKey, 25000);
+setInterval(autoKey, 8000);
 // ===== Payment status (Easypaisa/JazzCash): rejected -> tell customer =====
 async function checkOrder(){
   if(window.__ordBusy) return; window.__ordBusy=true;
@@ -1365,7 +1365,7 @@ async function checkOrder(){
     }
   }catch(_){} finally{ window.__ordBusy=false; }
 }
-setTimeout(checkOrder,3000); setInterval(checkOrder,30000);
+setTimeout(checkOrder,3000); setInterval(checkOrder,8000);
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden) checkOrder(); });
 
 

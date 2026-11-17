@@ -236,6 +236,7 @@ async function ordDel(id){
 }
 async function ordAct(id,act){
   if(act==='reject' && !armTap('rj'+id,'Tap Reject again within 5 s to reject this order.')) return;
+  $('msg').textContent='⏳ Working…';
   try{ await wApi('/'+act,{id}); $('msg').textContent=act==='approve'?'✅ Approved — customer app will unlock automatically.':'Rejected.'; loadOrders(); setTimeout(loadCloud,800); }
   catch(e){ $('msg').textContent='❌ '+e.message; }
 }
