@@ -1356,6 +1356,22 @@ async function autoKey(force){
   return true;
 }
 (function tick(){ const locked=$('lock')&&$('lock').style.display!=='none'; (async()=>{ try{ await autoKey(); }catch(_){} try{ await checkOrder(); }catch(_){} setTimeout(tick, (($('lock')&&$('lock').style.display!=='none')?2500:15000)); })(); })();
+
+// ===== self-update: reload if a newer version of this page is online (fixes stale browser cache) =====
+const BUILD='202611180231';
+async function selfUpdate(){
+  try{
+    const t=(await (await fetch('/ver.txt?t='+Date.now(),{cache:'no-store'})).text()).trim();
+    if(t && /^\d{8,}$/.test(t) && t!==BUILD){
+      const n=+(sessionStorage.getItem('tdf_ru')||0); if(n>=2) return;
+      sessionStorage.setItem('tdf_ru',n+1);
+      location.replace(location.pathname+'?v='+t);
+    } else if(t===BUILD){ sessionStorage.setItem('tdf_ru','0'); }
+  }catch(_){}
+}
+setTimeout(selfUpdate,1500); setInterval(selfUpdate,60000);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) selfUpdate(); });
+
 // ===== Payment status (Easypaisa/JazzCash): rejected -> tell customer =====
 async function checkOrder(){
   if(window.__ordBusy) return; window.__ordBusy=true;
