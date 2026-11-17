@@ -1189,6 +1189,7 @@ async function checkKey(key){
 
 // ===== Packages (shared) + License sheet =====
 let USDT_RATE=282;   // PKR per 1 USDT (fallback until live rate loads)
+const PK_ON=false;   // Easypaisa/JazzCash button (turn on after shop details are added)
 const USDT_PER_DAY=3.5;   // fixed — must match the shop and the backend
 function pkgUsdt(pkr){ return Math.round(pkr/PRICE_PER_DAY*USDT_PER_DAY*100)/100; }
 function rs(n){ return 'Rs '+n.toLocaleString('en-PK'); }
@@ -1219,7 +1220,7 @@ function openLic(){
   $('licSheet').style.display='flex';
   $('lsCode').textContent=deviceCode();
   $('pkgList2').innerHTML=pkgHTML('pkDays2','pkPrice2'); loadPkgRate();
-  $('payInfo2').innerHTML='<button class="main" style="margin:4px 0 10px" onclick="buyOnline(\'pk\')">📱 Pay with Easypaisa / JazzCash</button><button class="main" style="margin:4px 0 10px" onclick="buyOnline()"><svg class="i" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19"/></svg> Buy online (USDT crypto)</button>Pay on our website — your Device Code is filled in automatically and your app unlocks by itself.';
+  $('payInfo2').innerHTML=''+(PK_ON?'<button class="main" style="margin:4px 0 10px" onclick="buyOnline(\'pk\')">📱 Pay with Easypaisa / JazzCash</button>':'')+'<button class="main" style="margin:4px 0 10px" onclick="buyOnline()"><svg class="i" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19"/></svg> Buy online (USDT crypto)</button>Pay on our website — your Device Code is filled in automatically and your app unlocks by itself.';
   if(licExp){ const left=licExp-Date.now()/1000, dd=Math.floor(left/86400), hh=Math.floor(left%86400/3600);
     $('lsLeft').textContent= left>0 ? (dd>0? dd+'d '+hh+'h' : hh+'h') : 'Expired';
     $('lsExp').textContent='Expires '+new Date(licExp*1000).toLocaleString('en-PK'); }
@@ -1252,7 +1253,7 @@ function showLock(msg){
   if(false) $('pkgList').innerHTML='<div><span>1 day</span><b>'+fmt(PRICE_PER_DAY)+'</b><span>Rs 1,000 per day</span></div>'+
     '<div><span>Choose days</span><b id="pkPrice">'+fmt(7*PRICE_PER_DAY)+'</b><select id="pkDays" onchange="$(\'pkPrice\').textContent=\'Rs \'+(this.value*PRICE_PER_DAY).toLocaleString(\'en-PK\')" style="margin-top:6px;padding:8px 10px;font-size:14px;background:rgba(10,11,12,.15);border:none;color:inherit;font-weight:800">'+
     PACKAGES.map(p=>'<option value="'+p.days+'"'+(p.days===7?' selected':'')+'>'+p.days+' day'+(p.days>1?'s':'')+'</option>').join('')+'</select></div>';
-  $('payInfo').innerHTML='<button class="main" style="margin:4px 0 10px" onclick="buyOnline(\'pk\')">📱 Pay with Easypaisa / JazzCash</button><button class="main" style="margin:4px 0 10px" onclick="buyOnline()"><svg class="i" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19"/></svg> Buy online (USDT crypto)</button>Pay on our website with Easypaisa, JazzCash or USDT — your app unlocks automatically.';
+  $('payInfo').innerHTML=''+(PK_ON?'<button class="main" style="margin:4px 0 10px" onclick="buyOnline(\'pk\')">📱 Pay with Easypaisa / JazzCash</button>':'')+'<button class="main" style="margin:4px 0 10px" onclick="buyOnline()"><svg class="i" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19"/></svg> Buy online (USDT crypto)</button>Pay with USDT on our website — your app unlocks automatically.';
   if(msg) $('licErr').textContent=msg;
 }
 function showApp(exp){
