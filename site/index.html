@@ -131,13 +131,13 @@ footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--mut);fon
   <h2>Pricing</h2>
   <p class="sub">Simple daily pricing. Pick any package from 1 to 30 days.</p>
   <div class="card">
-    <div class="price-top"><span class="big">Rs 1,000</span><span class="note">per day · 1 to 30 days · pay by crypto or card</span></div>
+    <div class="price-top"><span class="big">3.50 USDT</span><span class="note">per day · 1 to 30 days · pay by crypto or card</span></div>
     <label>Package: <b id="daysLbl" style="color:var(--txt)">7 days</b></label>
     <input type="range" id="days" min="1" max="30" value="7">
     <div class="quick" id="quick"></div>
     <div class="row2" style="margin-top:14px">
-      <div class="card" style="background:var(--card2)"><div class="note">Price in rupees</div><div class="amt" id="pkr">Rs 7,000</div></div>
-      <div class="card" style="background:var(--card2)"><div class="note">Pay in USDT</div><div class="amt ok" id="usdt">–</div><div class="note" id="rateTxt">Loading rate…</div></div>
+      <div class="card" style="background:var(--card2)"><div class="note">Per day</div><div class="amt" id="pkr">3.50 USDT</div></div>
+      <div class="card" style="background:var(--card2)"><div class="note">Total to pay</div><div class="amt ok" id="usdt">–</div><div class="note" id="rateTxt">Fixed USDT pricing</div></div>
     </div>
     <a class="btn main full" href="#buy" style="margin-top:14px">Continue to payment →</a>
   </div>
@@ -191,12 +191,17 @@ footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--mut);fon
       <input type="text" id="ordEmail" placeholder="you@email.com" autocomplete="off">
     </div>
     <div class="step">
-      <h3>Send proof &amp; get your key</h3>
-      <div class="contact">
-        <button class="btn main" onclick="sendProof('tg')">✈️ Send on Telegram</button>
-        <button class="btn" onclick="sendProof('mail')">✉️ Send by email</button>
+      <h3>Get your key — automatically</h3>
+      <button class="btn main full" onclick="autoGetKey()" style="margin-bottom:8px">⚡ Verify payment &amp; activate my app</button>
+      <div id="autoStatus" class="note" style="min-height:18px;margin-bottom:6px"></div>
+      <p class="note" style="margin:0 0 14px">We check your payment on the blockchain and your app unlocks on its own — just open the Tower Finder app. No key to copy or paste.</p>
+      <div style="border-top:1px solid var(--line);padding-top:12px">
+        <p class="note" style="margin:0 0 8px">Payment not detected or paid a different way? Send us the proof:</p>
+        <div class="contact">
+          <button class="btn" onclick="sendProof('tg')">✈️ Send on Telegram</button>
+          <button class="btn" onclick="sendProof('mail')">✉️ Send by email</button>
+        </div>
       </div>
-      <p class="note" style="margin-top:10px">Your key is sent after the payment is confirmed on the blockchain — usually within a few minutes to a few hours. Open the app → <b>License</b> → paste the key → Activate.</p>
     </div>
   </div>
 </section>
@@ -253,7 +258,9 @@ footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--mut);fon
 <script>
 // ===================== SETTINGS — edit these =====================
 const SHOP = {
-  pricePerDay: 1000,                 // Rs per day
+  pricePerDay: 1000,                 // Rs per day (legacy, not shown)
+  priceUsdtPerDay: 3.5,              // fixed USDT per day (must match the backend Worker)
+  worker: 'https://towerfinder-license.databasehes91.workers.dev', // auto key backend
   whatsapp: '923493942102',          // international format, no + or spaces
   telegram: 'Toweralignment',        // without @
   email:    'support@towerfinder.online', // forwards to owner inbox
@@ -275,7 +282,7 @@ let rate=SHOP.fallbackRate, net=SHOP.wallets[0];
 const days=$('days');
 const fmt=n=>n.toLocaleString('en-PK');
 function curPkr(){ return (+days.value)*SHOP.pricePerDay; }
-function curUsdt(){ return Math.ceil(curPkr()/(rate*(1+SHOP.rateMargin/100))*100)/100; }
+function curUsdt(){ return Math.round((+days.value)*SHOP.priceUsdtPerDay*100)/100; }
 function toast(t){ const e=$('toast'); e.textContent=t; e.classList.add('on'); clearTimeout(toast.t); toast.t=setTimeout(()=>e.classList.remove('on'),1600); }
 function copy(t,msg){
   if(window.Android&&Android.copy){ try{ Android.copy(t); toast(msg); return; }catch(_){} }
@@ -289,7 +296,7 @@ function copy(t,msg){
 function upd(){
   const d=+days.value;
   $('daysLbl').textContent=d+(d>1?' days':' day');
-  $('pkr').textContent='Rs '+fmt(curPkr());
+  $('pkr').textContent=SHOP.priceUsdtPerDay.toFixed(2)+' USDT';
   const u=curUsdt();
   $('usdt').textContent=u.toFixed(2)+' USDT';
   $('payAmt').textContent=u.toFixed(2)+' USDT ('+d+(d>1?' days':' day')+')';
@@ -315,13 +322,7 @@ function setNet(i){
 }
 
 // live USDT→PKR rate (free CoinGecko API)
-async function loadRate(){
-  try{
-    const j=await (await fetch('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=pkr',{cache:'no-store'})).json();
-    const r=j&&j.tether&&j.tether.pkr; if(r>100&&r<1000){ rate=r; $('rateTxt').textContent='Rate: 1 USDT ≈ Rs '+r.toFixed(1)+' (live)'; upd(); return; }
-  }catch(_){}
-  $('rateTxt').textContent='Rate: 1 USDT ≈ Rs '+rate+' (approx.)'; upd();
-}
+function loadRate(){ $('rateTxt').textContent='Fixed USDT pricing'; upd(); }
 
 // device code from link (?d=CODE or #buy?d=CODE)
 (function(){
@@ -353,6 +354,27 @@ function openChat(kind,text,subject,replyto){
   if(kind==='wa') url='https://wa.me/'+SHOP.whatsapp+'?text='+encodeURIComponent(text);
   else { copy(text,'Message copied — paste it in Telegram'); url='https://t.me/'+SHOP.telegram; }
   if(inApp) location.href=url; else window.open(url,'_blank');
+}
+async function autoGetKey(){
+  const dev=$('dev').value.trim().toUpperCase(), tx=$('txid').value.trim(), d=+days.value, netId=net.id;
+  const s=$('autoStatus');
+  if(dev.length<6){ toast('Enter your Device Code'); $('dev').focus(); return; }
+  if(tx.length<20){ toast('Paste the Transaction ID'); $('txid').focus(); return; }
+  s.style.color='var(--mut)'; s.textContent='Checking your payment on the blockchain… (up to a minute)';
+  try{
+    const r=await fetch(SHOP.worker+'/issue',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dev,txid:tx,net:netId,days:d})});
+    const j=await r.json();
+    if(j && j.ok){
+      s.style.color='var(--lime)';
+      s.innerHTML='✅ Payment confirmed — your license is ready! Open the Tower Finder app; it activates on its own within a minute. If it was already open, close and reopen it.';
+    } else {
+      s.style.color='var(--red)';
+      s.textContent='⏳ '+((j&&j.error)||'Could not verify yet.')+' Wait a minute and press again, or send proof below.';
+    }
+  }catch(e){
+    s.style.color='var(--red)';
+    s.textContent='Network error — try again in a moment, or send proof below.';
+  }
 }
 function sendProof(kind){
   const dev=$('dev').value.trim(), tx=$('txid').value.trim(), d=+days.value;
