@@ -404,6 +404,32 @@ function setMethod(m){
 let pkShot='';
 function shrinkImg(f){return new Promise((res,rej)=>{const img=new Image(),u=URL.createObjectURL(f);img.onload=()=>{let w=img.width,h=img.height;const m=1000;if(Math.max(w,h)>m){const k=m/Math.max(w,h);w=Math.round(w*k);h=Math.round(h*k);}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);URL.revokeObjectURL(u);let q=.72,d=c.toDataURL('image/jpeg',q);while(d.length>330000&&q>.3){q-=.1;d=c.toDataURL('image/jpeg',q);}res(d);};img.onerror=()=>rej(new Error('bad image'));img.src=u;});}
 $('pkFile').onchange=async e=>{ const f=e.target.files[0]; pkShot=''; $('pkPrev').style.display='none'; if(!f) return; try{ pkShot=await shrinkImg(f); $('pkPrev').src=pkShot; $('pkPrev').style.display='block'; }catch(_){ toast('Could not read that image'); } };
+let _wo=0;
+function watchOrder(id,dev){
+  clearTimeout(_wo);
+  const s=$('pkStatus');
+  (async function poll(){
+    try{
+      const r=await fetch(SHOP.worker+'/mystatus',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dev})});
+      const j=await r.json();
+      if(j&&j.ok&&j.id===id){
+        if(j.status==='approved'){
+          try{ localStorage.removeItem('pk_wait'); }catch(_){}
+          s.style.color='var(--lime)'; s.innerHTML='🎉 Payment approved! Opening Tower Finder…';
+          setTimeout(()=>{ location.href='https://towerfinder.online/?d='+encodeURIComponent(dev)+'&ap=1&v='+Date.now(); },1200);
+          return;
+        }
+        if(j.status==='rejected'){
+          try{ localStorage.removeItem('pk_wait'); }catch(_){}
+          s.style.color='var(--red)'; s.innerHTML='❌ Payment not received, so the order was rejected. If you already paid, send the screenshot to us on Telegram with your Device Code <b>'+dev+'</b>, or place a new order.';
+          return;
+        }
+      }
+    }catch(_){}
+    _wo=setTimeout(poll,2500);
+  })();
+}
+(function(){ try{ const w=JSON.parse(localStorage.getItem('pk_wait')||'null'); if(w&&w.id&&Date.now()-w.t<7*86400000){ addEventListener('DOMContentLoaded',()=>{ const s=$('pkStatus'); if(s){ s.style.color='var(--lime)'; s.textContent='⏳ Waiting for approval of order #'+w.id+'… this page opens Tower Finder automatically.'; } watchOrder(w.id,w.dev); }); } }catch(_){} })();
 async function submitPk(){
   const dev=$('dev').value.trim().toUpperCase(), d=+days.value;
   const s=$('pkStatus');
@@ -416,7 +442,9 @@ async function submitPk(){
     const j=await r.json();
     if(j&&j.ok){
       s.style.color='var(--lime)';
-      s.innerHTML='✅ Order received (#'+j.id+'). We are checking your payment — your app will unlock on its own, usually within a few minutes. Open Tower Finder after a short while.';
+      s.innerHTML='✅ Order received (#'+j.id+'). We are checking your payment. Keep this page open — when it is approved, Tower Finder opens by itself.';
+      try{ localStorage.setItem('pk_wait',JSON.stringify({id:j.id,dev:dev,t:Date.now()})); }catch(_){}
+      watchOrder(j.id,dev);
       try{ fetch('https://formsubmit.co/ajax/'+SHOP.email,{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({_subject:'New PK order '+dev,_template:'box',_captcha:'false',message:'Order '+j.id+'\nDevice: '+dev+'\nDays: '+d+'\nAmount: Rs '+curPkr()+'\nTo: '+body.method+'\nFrom/Name: '+(body.name||'-')+'\nPhone: '+(body.phone||'-')+'\n(Screenshot: open admin page)'})}); }catch(_){}
     } else { s.style.color='var(--red)'; s.textContent='❌ '+((j&&j.error)||'Could not send. Try again.'); }
   }catch(e){ s.style.color='var(--red)'; s.textContent='Network error — try again, or contact us on Telegram.'; }
