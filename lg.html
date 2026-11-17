@@ -142,7 +142,7 @@ async function del(i){
   if(others.length){ const a=load(); a.splice(i,1); saveL(a); render(); $('msg').textContent='Old entry removed. '+r.dev+' still has an active key, so it was not logged out.'; return; }
   if(tok()){
     $('msg').textContent='Blocking '+r.dev+'...';
-    try{ await blockDevice(r.dev); $('msg').textContent='✅ '+r.name+' deleted — their app logs out within ~20 seconds, and the same key cannot log in again.'; }
+    try{ await blockDevice(r.dev); try{ await unpublishKey(r.dev); }catch(_){} $('msg').textContent='✅ '+r.name+' deleted — their app logs out within ~20 seconds, and the same key cannot log in again.'; }
     catch(e){ $('msg').textContent='❌ Could not block online ('+e.message+'). Not deleted.'; return; }
   } else { $('msg').textContent='Deleted from list only — set your admin password (Remote control) to log the customer out.'; }
   const a=load(); a.splice(i,1); saveL(a); render();
@@ -182,10 +182,15 @@ async function loadCloud(){
     const rows=Object.keys(by).map(d=>{ const e=by[d], x=dk(e.k), iss=x.iss||e.t||0; const blocked=R.some(r=>r.d===d&&(r.t||0)>iss); return {d,x,t:e.t||0,blocked,exp:x.exp||0}; }).sort((a,c)=>c.t-a.t);
     box.innerHTML=rows.length? rows.map(r=>{
       const st=r.blocked?'<span class="bad">Blocked</span>':(r.exp&&r.exp<now?'<span class="soon">Expired</span>':'<span class="ok">Active</span>');
-      const btn=r.blocked?'<button class="s" onclick="cloudAct(\''+r.d+'\',true)">Re-enable</button>':'<button class="s" onclick="cloudAct(\''+r.d+'\',false)">🚪 Logout</button>';
+      const btn=r.blocked?'<button class="s" onclick="cloudAct(\''+r.d+'\',true)">Re-enable</button><button class="s" onclick="cloudDel(\''+r.d+'\')">🗑 Delete</button>':'<button class="s" onclick="cloudAct(\''+r.d+'\',false)">🚪 Logout</button>';
       return '<div class="cl"><div class="t"><span class="n">📱 '+r.d+'</span>'+st+'</div><div class="m">'+(r.x.days||'?')+' days · Expires: '+(r.exp?new Date(r.exp*1000).toLocaleDateString('en-PK'):'—')+'</div>'+btn+'</div>';
     }).join('') : '<p style="color:#9aa3ae;font-size:13px">No cloud customers yet.</p>';
   }catch(e){ box.innerHTML='<p style="color:#ff6b6b;font-size:13px">Load failed: '+esc(e.message||e)+'</p>'; }
+}
+async function cloudDel(d){
+  if(!armTap('cd'+d,'Tap 🗑 Delete again within 5 s to remove '+d+' from the list.')) return;
+  try{ await wApi('/revoke',{dev:d}); await wApi('/unpublish',{dev:d}); $('msg').textContent='🗑 Removed '+d; loadCloud(); }
+  catch(e){ $('msg').textContent='❌ '+e.message; window.scrollTo(0,0); }
 }
 async function cloudAct(d,un){
   if(!tok()){ $('msg').textContent='Save your admin password first (Remote control).'; window.scrollTo(0,0); return; }
@@ -217,6 +222,11 @@ async function loadOrders(){
       return '<div class="cl"><div class="t"><span class="n">📱 '+esc(o.dev)+'</span>'+st+'</div><div class="m">'+o.days+' day'+(o.days>1?'s':'')+' · Rs '+(o.days*1000).toLocaleString('en-PK')+' · '+esc(o.method)+(o.shot?' · <a href="#" onclick="viewShot(\''+o.id+'\');return false" style="color:#c8f135">🖼 View screenshot</a>':' · TID '+esc(o.txid))+'</div><div class="m">'+esc(o.name||'-')+' · '+esc(o.phone||'-')+' · '+agoO(o.t)+'</div>'+btn+'</div>';
     }).join('') : '<p style="color:#9aa3ae;font-size:13px">No orders yet.</p>';
   }catch(e){ box.innerHTML='<p style="color:#ff6b6b;font-size:13px">'+esc(e.message||e)+'</p>'; }
+}
+async function ordDel(id){
+  if(!armTap('od'+id,'Tap 🗑 Delete again within 5 s to delete this order.')) return;
+  try{ await wApi('/delorder',{id}); $('msg').textContent='🗑 Order deleted.'; loadOrders(); }
+  catch(e){ $('msg').textContent='❌ '+e.message; window.scrollTo(0,0); }
 }
 async function ordAct(id,act){
   if(act==='reject' && !armTap('rj'+id,'Tap Reject again within 5 s to reject this order.')) return;

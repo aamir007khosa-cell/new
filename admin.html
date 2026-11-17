@@ -259,7 +259,7 @@ async function loadOrders(){
     box.innerHTML=L.length?L.map(function(o){
       var st=o.status==='pending'?'<span class="pill p-exp">Pending</span>':(o.status==='approved'?'<span class="pill p-act">Approved</span>':'<span class="pill p-rev">Rejected</span>');
       var amt='Rs '+(o.days*1000).toLocaleString('en-PK');
-      var btn=o.status==='pending'?'<div style="margin-top:8px;display:flex;gap:8px"><button class="btn-lime btn-sm" onclick="ordAct(\''+o.id+'\',\'approve\',this)">✅ Approve</button><button class="btn-red btn-sm" onclick="ordAct(\''+o.id+'\',\'reject\',this)">Reject</button></div>':'';
+      var btn=o.status==='pending'?'<div style="margin-top:8px;display:flex;gap:8px"><button class="btn-lime btn-sm" onclick="ordAct(\''+o.id+'\',\'approve\',this)">✅ Approve</button><button class="btn-red btn-sm" onclick="ordAct(\''+o.id+'\',\'reject\',this)">Reject</button></div>':'<div style="margin-top:8px"><button class="btn-red btn-sm" onclick="ordAct(\''+o.id+'\',\'delorder\',this)">🗑 Delete</button></div>';
       return '<div style="border-top:1px solid var(--line);padding:10px 2px"><div class="top"><b style="font-family:monospace;letter-spacing:1px">'+esc(o.dev)+'</b>'+st+'</div>'+
         '<div class="muted" style="margin-top:3px">'+o.days+' day'+(o.days>1?'s':'')+' · <b>'+amt+'</b> · '+esc(o.method)+(o.shot?' · <a href="#" onclick="viewShot(\''+o.id+'\');return false" style="color:#c8f135">🖼 View screenshot</a>':' · TID <b style="color:#e7f0ee">'+esc(o.txid)+'</b>')+'</div>'+
         '<div class="muted">'+esc(o.name||'-')+' · '+esc(o.phone||'-')+' · '+ago(o.t)+'</div>'+btn+'</div>';
@@ -269,7 +269,7 @@ async function loadOrders(){
 async function ordAct(id,act,btn){
   if(act==='reject'&&!confirm('Reject this order?')) return;
   btn.disabled=true; btn.textContent='…';
-  try{ await orderApi('/'+act,{id:id}); setMsg(act==='approve'?'✓ Approved — key published, customer ki app khud unlock ho jayegi.':'Rejected',true); loadOrders(); setTimeout(load,800); }
+  try{ await orderApi('/'+act,{id:id}); setMsg(act==='approve'?'✓ Approved — key published, customer ki app khud unlock ho jayegi.':(act==='delorder'?'Deleted':'Rejected'),true); loadOrders(); setTimeout(load,800); }
   catch(e){ setMsg('Failed: '+e.message,false); btn.disabled=false; btn.textContent=act==='approve'?'✅ Approve':'Reject'; }
 }
 
