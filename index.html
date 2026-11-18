@@ -1271,6 +1271,7 @@ function buyOnline(m){
   location.href=SHOP_URL+'?d='+encodeURIComponent(deviceCode())+'&p='+d+(m==='pk'?'&m=pk':'')+'#buy';
 }
 function showLock(msg){
+  wipeCoords();
   $('app').style.display='none'; $('nav').style.display='none'; $('lock').style.display='';
   $('devCode').textContent=deviceCode();
   var ah=$('autoHint'); if(ah) ah.style.display='';
@@ -1282,7 +1283,12 @@ function showLock(msg){
   $('payInfo').innerHTML=''+(PK_ON?'<button class="main" style="margin:4px 0 10px" onclick="buyOnline(\'pk\')">📱 Pay with Easypaisa / JazzCash</button>':'')+'<button class="main" style="margin:4px 0 10px" onclick="buyOnline()"><svg class="i" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19"/></svg> Buy online (USDT crypto)</button>Pay on our website with Easypaisa, JazzCash or USDT — your app unlocks automatically.';
   if(msg) $('licErr').textContent=msg;
 }
+function wipeCoords(){
+  try{ ['a','b'].forEach(k=>{ const e=$(k); if(e) e.value=''; localStorage.removeItem('tdf_'+k); }); ['aErr','bErr','aGps','bGps'].forEach(i=>{ const e=$(i); if(e) e.textContent=''; }); }catch(_){}
+  try{ document.querySelectorAll('[id$="Res"],#res,#out').forEach(e=>{ if(e.closest&&e.closest('#page-dir')) e.innerHTML=''; }); }catch(_){}
+}
 function showApp(exp){
+  if(!licExp) wipeCoords();   // fresh activation / re-activation: start with empty coordinates
   licExp=exp;
   $('lock').style.display='none'; $('app').style.display=''; $('nav').style.display='';
   setTimeout(autoConnectRadios, 300);
@@ -1359,7 +1365,7 @@ async function autoKey(force){
 (function tick(){ const locked=$('lock')&&$('lock').style.display!=='none'; (async()=>{ try{ await autoKey(); }catch(_){} try{ await checkOrder(); }catch(_){} setTimeout(tick, (($('lock')&&$('lock').style.display!=='none')?2500:15000)); })(); })();
 
 // ===== self-update: reload if a newer version of this page is online (fixes stale browser cache) =====
-const BUILD='202611181715';
+const BUILD='202611181716';
 async function selfUpdate(){
   try{
     const t=(await (await fetch('/ver.txt?t='+Date.now(),{cache:'no-store'})).text()).trim();
