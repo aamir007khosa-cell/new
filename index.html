@@ -1286,7 +1286,7 @@ function showLock(msg){
 }
 function wipeCoords(){
   try{ ['a','b'].forEach(k=>{ const e=$(k); if(e) e.value=''; localStorage.removeItem('tdf_'+k); }); ['aErr','bErr','aGps','bGps'].forEach(i=>{ const e=$(i); if(e) e.textContent=''; }); }catch(_){}
-  try{ document.querySelectorAll('[id$="Res"],#res,#out').forEach(e=>{ if(e.closest&&e.closest('#page-dir')) e.innerHTML=''; }); }catch(_){}
+  try{ result=null; const o=$('out'); if(o) o.style.display='none'; }catch(_){}
 }
 function showApp(exp){
   if(!licExp) wipeCoords();   // fresh activation / re-activation: start with empty coordinates
@@ -1366,7 +1366,7 @@ async function autoKey(force){
 (function tick(){ const locked=$('lock')&&$('lock').style.display!=='none'; (async()=>{ try{ await autoKey(); }catch(_){} try{ await checkOrder(); }catch(_){} setTimeout(tick, (($('lock')&&$('lock').style.display!=='none')?2500:15000)); })(); })();
 
 // ===== self-update: reload if a newer version of this page is online (fixes stale browser cache) =====
-const BUILD='202611181720';
+const BUILD='202611201803';
 async function selfUpdate(){
   try{
     const t=(await (await fetch('/ver.txt?t='+Date.now(),{cache:'no-store'})).text()).trim();
